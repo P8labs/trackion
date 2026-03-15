@@ -1,18 +1,43 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/http"
+	"log/slog"
+	"os"
+	"trackion/internal/config"
+
+	"github.com/jackc/pgx/v5"
 )
 
-func health(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Ok")
-}
-
 func main() {
-	http.HandleFunc("/health", health)
-	fmt.Println("Trackion ingestor running")
+	ctx := context.Background()
 
-	http.ListenAndServe(":3000", nil)
+	cfg := appConfig{
+		addr: fmt.Sprintf(":%s", config.GetEnv("PORT", "8000")),
+		db: dbConfig{
+			url: config.GetEnv("GOOSE_DBSTRING", "postgres://user:password@localhost:5432/db"),
+		},
+	}
 
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
+	conn, err := pgx.Connect(ctx, cfg.db.url)
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close(ctx)
+
+	logger.Info("connected to database")
+
+	api := application{
+		config: cfg,
+		db:     conn,
+		logger: logger,
+	}
+	if err := api.run(api.mount()); err != nil {
+		slog.Error("server failed to start", "error", err)
+		os.Exit(1)
+	}
 }
