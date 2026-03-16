@@ -11,12 +11,11 @@ type Config struct {
 	Mode               Mode
 	Port               string
 	DatabaseURL        string
-	JWTSecret          string
 	GithubClientID     string
 	GithubClientSecret string
 	AdminToken         string
 	BaseURL            string
-
+	AuthSecret         string
 	EventBodySizeLimit int32
 	EventBatchLimit    int32
 }
@@ -28,13 +27,12 @@ func Load() *Config {
 		Mode:               mode,
 		Port:               GetEnv("PORT", "8000"),
 		DatabaseURL:        MustEnv("DATABASE_URL"),
-		JWTSecret:          MustEnv("JWT_SECRET"),
 		GithubClientID:     GetEnv("GITHUB_CLIENT_ID", ""),
 		GithubClientSecret: GetEnv("GITHUB_CLIENT_SECRET", ""),
 		AdminToken:         GetEnv("TRACKION_ADMIN_TOKEN", ""),
-		BaseURL:            GetEnv("BASE_URL", "http://locahost:8000"),
-
-		EventBodySizeLimit: 264,
+		BaseURL:            GetEnv("BASE_URL", "http://localhost:8000"),
+		AuthSecret:         GetEnv("AUTH_SECRET", "random-noise"),
+		EventBodySizeLimit: 256,
 		EventBatchLimit:    100,
 	}
 

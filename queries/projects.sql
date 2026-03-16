@@ -1,6 +1,6 @@
 -- name: CreateProject :one
-INSERT INTO projects (id, name, api_key)
-VALUES ($1, $2, $3)
+INSERT INTO projects (id, name, api_key, owner_id)
+VALUES ($1, $2, $3, $4)
 RETURNING *;
 
 
@@ -22,6 +22,13 @@ LIMIT 1;
 SELECT *
 FROM projects
 ORDER BY created_at DESC;
+
+-- name: GetUserProjects :many
+SELECT *
+FROM projects
+WHERE owner_id = $1
+ORDER BY created_at DESC;
+
 
 -- name: GetProjectConfig :one
 SELECT auto_pageview, track_time_spent, track_campaign, track_clicks

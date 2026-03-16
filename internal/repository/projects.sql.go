@@ -12,19 +12,25 @@ import (
 )
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (id, name, api_key)
-VALUES ($1, $2, $3)
+INSERT INTO projects (id, name, api_key, owner_id)
+VALUES ($1, $2, $3, $4)
 RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
 `
 
 type CreateProjectParams struct {
-	ID     uuid.UUID `json:"id"`
-	Name   string    `json:"name"`
-	ApiKey string    `json:"api_key"`
+	ID      uuid.UUID `json:"id"`
+	Name    string    `json:"name"`
+	ApiKey  string    `json:"api_key"`
+	OwnerID uuid.UUID `json:"owner_id"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
-	row := q.db.QueryRow(ctx, createProject, arg.ID, arg.Name, arg.ApiKey)
+	row := q.db.QueryRow(ctx, createProject,
+		arg.ID,
+		arg.Name,
+		arg.ApiKey,
+		arg.OwnerID,
+	)
 	var i Project
 	err := row.Scan(
 		&i.ID,
@@ -112,6 +118,43 @@ func (q *Queries) GetProjectConfig(ctx context.Context, apiKey string) (GetProje
 		&i.TrackClicks,
 	)
 	return i, err
+}
+
+const getUserProjects = `-- name: GetUserProjects :many
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+FROM projects
+WHERE owner_id = $1
+ORDER BY created_at DESC
+`
+
+func (q *Queries) GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error) {
+	rows, err := q.db.Query(ctx, getUserProjects, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Project
+	for rows.Next() {
+		var i Project
+		if err := rows.Scan(
+			&i.ID,
+			&i.OwnerID,
+			&i.Name,
+			&i.ApiKey,
+			&i.CreatedAt,
+			&i.AutoPageview,
+			&i.TrackTimeSpent,
+			&i.TrackCampaign,
+			&i.TrackClicks,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listProjects = `-- name: ListProjects :many

@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"time"
 	"trackion/internal/config"
+	"trackion/internal/features/auth"
 	"trackion/internal/features/events"
+	"trackion/internal/features/projects"
 	"trackion/internal/features/tracker"
 	"trackion/internal/repository"
 
@@ -35,11 +37,20 @@ func (app *application) mount() http.Handler {
 
 	// auth related
 
-	// admin related
+	if app.config.IsSaaS() {
+		auth.InitOAuth(*app.config)
+		r.Mount("/auth", auth.Routes(repo))
+	}
 
-	// projectsService := projects.NewService(repository.New(app.db))
-	// projectsHandler := projects.NewHandler(projectsService)
-	// r.Post("/projects", projectsHandler.CreateProject)
+	// admin related
+	r.Route("/admin", func(r chi.Router) {
+		mw := auth.NewMiddleware(repo, *app.config)
+		r.Use(mw.AuthMiddleware)
+		projectsService := projects.NewService(repository.New(app.db))
+		projectsHandler := projects.NewHandler(projectsService)
+		r.Post("/projects", projectsHandler.CreateProject)
+		r.Get("/projects/{id}", projectsHandler.GetProjectDetails)
+	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("all good"))

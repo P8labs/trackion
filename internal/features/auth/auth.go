@@ -13,7 +13,8 @@ func InitOAuth(cfg config.Config) {
 		github.New(
 			cfg.GithubClientID,
 			cfg.GithubClientSecret,
-			fmt.Sprintf("{%s}/auth/github/callback", cfg.BaseURL),
+			fmt.Sprintf("%s/auth/callback/github", cfg.BaseURL),
+			"user:email",
 		),
 	)
 }

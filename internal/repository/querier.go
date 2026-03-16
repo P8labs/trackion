@@ -11,10 +11,19 @@ import (
 )
 
 type Querier interface {
+	CleanupExpiredSessions(ctx context.Context) error
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteSession(ctx context.Context, token string) error
+	DeleteUserSessions(ctx context.Context, userID uuid.UUID) error
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
 	GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error)
+	GetSessionByToken(ctx context.Context, token string) (Session, error)
+	GetUser(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserByGithubId(ctx context.Context, githubID *string) (User, error)
+	GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error)
 	InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error)
 	InsertEventsBatch(ctx context.Context, arg []InsertEventsBatchParams) *InsertEventsBatchBatchResults
 	ListProjects(ctx context.Context) ([]Project, error)

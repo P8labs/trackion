@@ -62,7 +62,6 @@
     if (!queue.length) return;
 
     const payloadObj = {
-      projectKey,
       events: queue.splice(0, queue.length)
     };
 
@@ -78,7 +77,7 @@
     } else {
       fetch(ingestURL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Trackion-Key": projectKey },
         body: payload,
         keepalive: true
       }).catch(function () {});

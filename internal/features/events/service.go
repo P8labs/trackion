@@ -55,7 +55,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 		return 0, err
 	}
 
-	projectId := ctx.Value(UserIdContextKey).(uuid.UUID)
+	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	id, err := s.repo.InsertEvent(ctx, repository.InsertEventParams{
 		ProjectID:   projectId,
@@ -78,7 +78,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 }
 
 func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error) {
-	projectId := ctx.Value(UserIdContextKey).(uuid.UUID)
+	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 	events, err := ToInsertEvents(projectId, params.Events)
 
 	if err != nil {

@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"trackion/internal/res"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type handler struct {
@@ -33,4 +35,17 @@ func (h *handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res.Success(w, res.M{"projectId": id}, "Project created successfully.")
+}
+
+func (h *handler) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	project, err := h.service.GetProject(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	res.Success(w, project, "Project created successfully.")
 }

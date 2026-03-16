@@ -12,7 +12,7 @@ type Middleware struct {
 }
 
 const (
-	UserIdContextKey string = "userId"
+	ProjectIdContextKey string = "projectId"
 )
 
 func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
@@ -25,7 +25,7 @@ func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
 			res.Error(w, "Invalid project key.", 400)
 			return
 		}
-		ctx := context.WithValue(r.Context(), UserIdContextKey, project.ID)
+		ctx := context.WithValue(r.Context(), ProjectIdContextKey, project.ID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
