@@ -1,13 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
 	"time"
+	"trackion/internal/config"
+	"trackion/internal/features/events"
+	"trackion/internal/features/tracker"
 	"trackion/internal/repository"
-	"trackion/internal/routes/events"
-	"trackion/internal/routes/projects"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,7 +20,7 @@ func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID) // important for rate limiting
-	r.Use(middleware.RealIP)    // import for rate limiting and analytics and tracing
+	r.Use(middleware.RealIP)    // import for rate limiting
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer) // recover from crashes
 
@@ -27,6 +29,18 @@ func (app *application) mount() http.Handler {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
+	repo := repository.New(app.db)
+
+	r.Mount("/events", events.Routes(repo))
+
+	// auth related
+
+	// admin related
+
+	// projectsService := projects.NewService(repository.New(app.db))
+	// projectsHandler := projects.NewHandler(projectsService)
+	// r.Post("/projects", projectsHandler.CreateProject)
+
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("all good"))
 	})
@@ -34,43 +48,28 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("OK"))
 	})
 
-	eventService := events.NewService(repository.New(app.db))
-	eventHandler := events.NewHandler(eventService)
-	r.Post("/collect", eventHandler.CollectEvent)
-
-	projectsService := projects.NewService(repository.New(app.db))
-	projectsHandler := projects.NewHandler(projectsService)
-
-	r.Post("/projects", projectsHandler.CreateProject)
+	r.Get("/t.js", tracker.ServeTracker)
+	r.Get("/t.min.js", tracker.ServeTrackerMin)
 
 	return r
 }
 
 func (app *application) run(h http.Handler) error {
 	srv := &http.Server{
-		Addr:         app.config.addr,
+		Addr:         fmt.Sprintf(":%s", app.config.Port),
 		Handler:      h,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("server has started at addr %s", app.config.addr)
+	log.Printf("server has started at addr %s", app.config.Port)
 
 	return srv.ListenAndServe()
 }
 
 type application struct {
-	config appConfig
+	config *config.Config
 	logger *slog.Logger
 	db     *pgx.Conn
-}
-
-type appConfig struct {
-	addr string
-	db   dbConfig
-}
-
-type dbConfig struct {
-	url string
 }

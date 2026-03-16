@@ -3,7 +3,7 @@ package projects
 import (
 	"log"
 	"net/http"
-	"trackion/internal/json"
+	"trackion/internal/res"
 )
 
 type handler struct {
@@ -17,20 +17,20 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) CreateProject(w http.ResponseWriter, r *http.Request) {
-	body, err := json.Parse[CreateProjectParams](r)
+	body, err := res.Parse[CreateProjectParams](r)
 
 	if err != nil {
 		log.Println(err)
-		json.Error(w, err.Error(), 400)
+		res.Error(w, err.Error(), 400)
 		return
 	}
 
 	id, err := h.service.CreateProject(r.Context(), body)
 	if err != nil {
 		log.Println(err)
-		json.Error(w, err.Error(), 400)
+		res.Error(w, err.Error(), 400)
 		return
 	}
 
-	json.Success(w, json.M{"projectId": id}, "Project created successfully.")
+	res.Success(w, res.M{"projectId": id}, "Project created successfully.")
 }

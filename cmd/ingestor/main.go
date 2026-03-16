@@ -2,28 +2,30 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"log/slog"
 	"os"
 	"trackion/internal/config"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file: %s", err)
+	}
+
 	ctx := context.Background()
 
-	cfg := appConfig{
-		addr: fmt.Sprintf(":%s", config.GetEnv("PORT", "8000")),
-		db: dbConfig{
-			url: config.GetEnv("GOOSE_DBSTRING", "postgres://user:password@localhost:5432/db"),
-		},
-	}
+	cfg := config.Load()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	conn, err := pgx.Connect(ctx, cfg.db.url)
+	conn, err := pgx.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
 		panic(err)
 	}

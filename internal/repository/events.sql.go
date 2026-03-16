@@ -9,20 +9,36 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const insertEvent = `-- name: InsertEvent :one
-INSERT INTO events (project_id, event_name, session_id, properties)
-VALUES ($1, $2, $3, $4)
+INSERT INTO events (
+    project_id,
+    event_name,
+    session_id,
+    page_path,
+    page_title,
+    referrer,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    properties
+)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 RETURNING id
 `
 
 type InsertEventParams struct {
-	ProjectID  uuid.UUID   `json:"project_id"`
-	EventName  string      `json:"event_name"`
-	SessionID  pgtype.Text `json:"session_id"`
-	Properties []byte      `json:"properties"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	EventName   string    `json:"event_name"`
+	SessionID   *string   `json:"session_id"`
+	PagePath    *string   `json:"page_path"`
+	PageTitle   *string   `json:"page_title"`
+	Referrer    *string   `json:"referrer"`
+	UtmSource   *string   `json:"utm_source"`
+	UtmMedium   *string   `json:"utm_medium"`
+	UtmCampaign *string   `json:"utm_campaign"`
+	Properties  []byte    `json:"properties"`
 }
 
 func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error) {
@@ -30,35 +46,15 @@ func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) (int64
 		arg.ProjectID,
 		arg.EventName,
 		arg.SessionID,
+		arg.PagePath,
+		arg.PageTitle,
+		arg.Referrer,
+		arg.UtmSource,
+		arg.UtmMedium,
+		arg.UtmCampaign,
 		arg.Properties,
 	)
 	var id int64
 	err := row.Scan(&id)
 	return id, err
-}
-
-const insertEventsBatch = `-- name: InsertEventsBatch :exec
-INSERT INTO events ( project_id, event_name, session_id, properties)
-SELECT
-    unnest($1::uuid[]),
-    unnest($2::text[]),
-    unnest($3::text[]),
-    unnest($4::jsonb[])
-`
-
-type InsertEventsBatchParams struct {
-	Column1 []uuid.UUID `json:"column_1"`
-	Column2 []string    `json:"column_2"`
-	Column3 []string    `json:"column_3"`
-	Column4 [][]byte    `json:"column_4"`
-}
-
-func (q *Queries) InsertEventsBatch(ctx context.Context, arg InsertEventsBatchParams) error {
-	_, err := q.db.Exec(ctx, insertEventsBatch,
-		arg.Column1,
-		arg.Column2,
-		arg.Column3,
-		arg.Column4,
-	)
-	return err
 }

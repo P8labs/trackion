@@ -14,8 +14,9 @@ type Querier interface {
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
+	GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error)
 	InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error)
-	InsertEventsBatch(ctx context.Context, arg InsertEventsBatchParams) error
+	InsertEventsBatch(ctx context.Context, arg []InsertEventsBatchParams) *InsertEventsBatchBatchResults
 	ListProjects(ctx context.Context) ([]Project, error)
 }
 

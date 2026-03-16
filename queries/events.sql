@@ -1,13 +1,31 @@
 -- name: InsertEvent :one
-INSERT INTO events (project_id, event_name, session_id, properties)
-VALUES ($1, $2, $3, $4)
+INSERT INTO events (
+    project_id,
+    event_name,
+    session_id,
+    page_path,
+    page_title,
+    referrer,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    properties
+)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
 RETURNING id;
 
 
--- name: InsertEventsBatch :exec
-INSERT INTO events ( project_id, event_name, session_id, properties)
-SELECT
-    unnest($1::uuid[]),
-    unnest($2::text[]),
-    unnest($3::text[]),
-    unnest($4::jsonb[]);
+-- name: InsertEventsBatch :batchexec
+INSERT INTO events (
+    project_id,
+    event_name,
+    session_id,
+    page_path,
+    page_title,
+    referrer,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    properties
+)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10);

@@ -22,3 +22,9 @@ LIMIT 1;
 SELECT *
 FROM projects
 ORDER BY created_at DESC;
+
+-- name: GetProjectConfig :one
+SELECT auto_pageview, track_time_spent, track_campaign, track_clicks
+FROM projects
+WHERE api_key = $1
+LIMIT 1;

@@ -14,7 +14,7 @@ import (
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (id, name, api_key)
 VALUES ($1, $2, $3)
-RETURNING id, name, api_key, created_at
+RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
 `
 
 type CreateProjectParams struct {
@@ -28,15 +28,20 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Name,
 		&i.ApiKey,
 		&i.CreatedAt,
+		&i.AutoPageview,
+		&i.TrackTimeSpent,
+		&i.TrackCampaign,
+		&i.TrackClicks,
 	)
 	return i, err
 }
 
 const getProjectByAPIKey = `-- name: GetProjectByAPIKey :one
-SELECT id, name, api_key, created_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
 FROM projects
 WHERE api_key = $1
 LIMIT 1
@@ -47,15 +52,20 @@ func (q *Queries) GetProjectByAPIKey(ctx context.Context, apiKey string) (Projec
 	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Name,
 		&i.ApiKey,
 		&i.CreatedAt,
+		&i.AutoPageview,
+		&i.TrackTimeSpent,
+		&i.TrackCampaign,
+		&i.TrackClicks,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, name, api_key, created_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
 FROM projects
 WHERE id = $1
 LIMIT 1
@@ -66,15 +76,46 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 	var i Project
 	err := row.Scan(
 		&i.ID,
+		&i.OwnerID,
 		&i.Name,
 		&i.ApiKey,
 		&i.CreatedAt,
+		&i.AutoPageview,
+		&i.TrackTimeSpent,
+		&i.TrackCampaign,
+		&i.TrackClicks,
+	)
+	return i, err
+}
+
+const getProjectConfig = `-- name: GetProjectConfig :one
+SELECT auto_pageview, track_time_spent, track_campaign, track_clicks
+FROM projects
+WHERE api_key = $1
+LIMIT 1
+`
+
+type GetProjectConfigRow struct {
+	AutoPageview   bool `json:"auto_pageview"`
+	TrackTimeSpent bool `json:"track_time_spent"`
+	TrackCampaign  bool `json:"track_campaign"`
+	TrackClicks    bool `json:"track_clicks"`
+}
+
+func (q *Queries) GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error) {
+	row := q.db.QueryRow(ctx, getProjectConfig, apiKey)
+	var i GetProjectConfigRow
+	err := row.Scan(
+		&i.AutoPageview,
+		&i.TrackTimeSpent,
+		&i.TrackCampaign,
+		&i.TrackClicks,
 	)
 	return i, err
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, name, api_key, created_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
 FROM projects
 ORDER BY created_at DESC
 `
@@ -90,9 +131,14 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 		var i Project
 		if err := rows.Scan(
 			&i.ID,
+			&i.OwnerID,
 			&i.Name,
 			&i.ApiKey,
 			&i.CreatedAt,
+			&i.AutoPageview,
+			&i.TrackTimeSpent,
+			&i.TrackCampaign,
+			&i.TrackClicks,
 		); err != nil {
 			return nil, err
 		}

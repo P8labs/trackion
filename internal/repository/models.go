@@ -12,17 +12,46 @@ import (
 )
 
 type Event struct {
-	ID         int64       `json:"id"`
-	ProjectID  uuid.UUID   `json:"project_id"`
-	EventName  string      `json:"event_name"`
-	SessionID  pgtype.Text `json:"session_id"`
-	Properties []byte      `json:"properties"`
-	CreatedAt  time.Time   `json:"created_at"`
+	ID          int64     `json:"id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	EventName   string    `json:"event_name"`
+	SessionID   *string   `json:"session_id"`
+	PagePath    *string   `json:"page_path"`
+	PageTitle   *string   `json:"page_title"`
+	Referrer    *string   `json:"referrer"`
+	UtmSource   *string   `json:"utm_source"`
+	UtmMedium   *string   `json:"utm_medium"`
+	UtmCampaign *string   `json:"utm_campaign"`
+	Properties  []byte    `json:"properties"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type Project struct {
+	ID             uuid.UUID `json:"id"`
+	OwnerID        uuid.UUID `json:"owner_id"`
+	Name           string    `json:"name"`
+	ApiKey         string    `json:"api_key"`
+	CreatedAt      time.Time `json:"created_at"`
+	AutoPageview   bool      `json:"auto_pageview"`
+	TrackTimeSpent bool      `json:"track_time_spent"`
+	TrackCampaign  bool      `json:"track_campaign"`
+	TrackClicks    bool      `json:"track_clicks"`
+}
+
+type Subscription struct {
+	ID                uuid.UUID          `json:"id"`
+	UserID            uuid.UUID          `json:"user_id"`
+	Plan              string             `json:"plan"`
+	MonthlyEventLimit int32              `json:"monthly_event_limit"`
+	Status            string             `json:"status"`
+	CurrentPeriodEnd  pgtype.Timestamptz `json:"current_period_end"`
+	CreatedAt         time.Time          `json:"created_at"`
+}
+
+type User struct {
 	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	ApiKey    string    `json:"api_key"`
+	Email     string    `json:"email"`
+	Name      *string   `json:"name"`
+	GithubID  *string   `json:"github_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
