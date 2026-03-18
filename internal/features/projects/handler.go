@@ -47,5 +47,49 @@ func (h *handler) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.Success(w, project, "Project created successfully.")
+	res.Success(w, ToProjectResponse(project), "Project details fetched successfully.")
+}
+
+func (h *handler) ListUserProjects(w http.ResponseWriter, r *http.Request) {
+	projects, err := h.service.GetUserProjects(r.Context())
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	res.Success(w, ToProjectResponseList(projects), "Projects fetched successfully.")
+}
+
+func (h *handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+	body, err := res.Parse[UpdateProjectParams](r)
+
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	err = h.service.UpdateProject(r.Context(), projectId, body)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	res.Success(w, res.M{}, "Project updated successfully.")
+}
+
+func (h *handler) DeleteProject(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	err := h.service.DeleteProject(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	res.Success(w, res.M{}, "Project deleted successfully.")
 }

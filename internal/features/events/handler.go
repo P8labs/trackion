@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"trackion/internal/res"
 )
 
@@ -21,6 +22,12 @@ func NewHandler(service Service) *handler {
 
 func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := res.Parse[EventParams](r)
+
+	ua := strings.TrimSpace(body.UserAgent)
+	if ua == "" {
+		ua = r.Header.Get("User-Agent")
+	}
+	body.UserAgent = ua
 
 	if err != nil {
 		log.Println(err)
@@ -71,12 +78,12 @@ func (h *handler) ProjectConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "public, max-age=3600")
 	w.Header().Set("ETag", etag)
 
-	res.SuccessRaw(w, projectConfig)
+	res.Success(w, projectConfig, "Project CONFIG")
 
 }
 
 func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
-	body, err := res.Parse[EventParams](r)
+	body, err := res.Parse[BatchEventsParams](r)
 
 	if err != nil {
 		log.Println(err)
@@ -84,7 +91,15 @@ func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := h.service.CreateEvent(r.Context(), body)
+	headerUA := r.Header.Get("User-Agent")
+
+	for i := range body.Events {
+		if body.Events[i].UserAgent == "" {
+			body.Events[i].UserAgent = headerUA
+		}
+	}
+
+	id, err := h.service.CreateBatchEvents(r.Context(), body)
 	if err != nil {
 		log.Println(err)
 		res.Error(w, err.Error(), 400)

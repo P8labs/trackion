@@ -1,5 +1,4 @@
 (function () {
-
   const script = document.currentScript;
   if (!script) return;
 
@@ -7,13 +6,15 @@
   if (!projectKey) return;
 
   const base = script.src.replace(/\/t\.js.*$/, "");
+  const USER_AGENT = navigator.userAgent;
   const ingestURL = base + "/events/batch";
-  const configURL = base + "/events/config?key=" + encodeURIComponent(projectKey);
+  const configURL =
+    base + "/events/config?key=" + encodeURIComponent(projectKey);
 
   const SESSION_KEY = "trackion_session";
   const CONFIG_KEY = "trackion_cfg";
 
-  let MAX_BATCH = 10;
+  let MAX_BATCH = 1;
   let MAX_PAYLOAD_KB = 256;
 
   const FLUSH_INTERVAL = 5000;
@@ -39,7 +40,7 @@
     return {
       source: p.get("utm_source"),
       medium: p.get("utm_medium"),
-      campaign: p.get("utm_campaign")
+      campaign: p.get("utm_campaign"),
     };
   })();
 
@@ -47,22 +48,22 @@
     return {
       event: name,
       sessionId,
-      timestamp: Date.now(),
+      timestamp: new Date().toISOString(),
+      userAgent: USER_AGENT,
       page: {
         path: location.pathname,
-        referrer: document.referrer
+        referrer: document.referrer,
       },
       utm: utmParams,
-      properties: props || {}
+      properties: props || {},
     };
   }
 
   function sendBatch() {
-
     if (!queue.length) return;
 
     const payloadObj = {
-      events: queue.splice(0, queue.length)
+      events: queue.splice(0, queue.length),
     };
 
     const payload = JSON.stringify(payloadObj);
@@ -72,32 +73,30 @@
       return;
     }
 
-    if (navigator.sendBeacon) {
-      navigator.sendBeacon(ingestURL, payload);
-    } else {
-      fetch(ingestURL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "X-Trackion-Key": projectKey },
-        body: payload,
-        keepalive: true
-      }).catch(function () {});
-    }
+    fetch(ingestURL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Trackion-Key": projectKey,
+      },
+      body: payload,
+      keepalive: true,
+    }).catch(function (err) {
+      console.warn("Trackion: Failed to send events", err);
+    });
   }
 
   function track(name, props) {
-
     queue.push(baseEvent(name, props));
 
     if (queue.length >= MAX_BATCH) {
       sendBatch();
     }
-
   }
 
   window.trackion = track;
 
   function loadConfig(cb) {
-
     try {
       const cached = localStorage.getItem(CONFIG_KEY);
 
@@ -110,16 +109,28 @@
       }
     } catch (e) {}
 
-    fetch(configURL)
-      .then(r => r.json())
-      .then(cfg => {
-
+    fetch(configURL, {
+      headers: {
+        "Content-Type": "application/json",
+        "X-Trackion-Key": projectKey,
+      },
+    })
+      .then((r) => r.json())
+      .then((cfg) => {
         try {
-          localStorage.setItem(CONFIG_KEY, JSON.stringify({
-            ts: Date.now(),
-            cfg
-          }));
-        } catch (e) {}
+          if (!cfg.status) {
+            throw Error("Failed to fetch config");
+          }
+          localStorage.setItem(
+            CONFIG_KEY,
+            JSON.stringify({
+              ts: Date.now(),
+              cfg: cfg.data,
+            }),
+          );
+        } catch (e) {
+          localStorage.removeItem(CONFIG_KEY);
+        }
 
         if (cfg.limits) {
           MAX_BATCH = cfg.limits.batch_size || MAX_BATCH;
@@ -127,62 +138,53 @@
         }
 
         cb(cfg);
-
       })
       .catch(() => {
         cb({
           auto_pageview: true,
-          time_spent: true,
-          campaign: true,
-          clicks: false
+          track_time_spent: true,
+          track_campaign: true,
+          track_clicks: false,
         });
       });
   }
 
   loadConfig(function (cfg) {
-
     if (cfg.auto_pageview) {
       track("pageview");
     }
 
-    if (cfg.time_spent) {
+    const start = Date.now();
 
-      const start = Date.now();
-
-      function report() {
+    function report() {
+      if (cfg.track_time_spent) {
         track("time_spent", {
-          duration_ms: Date.now() - start
+          duration_ms: Date.now() - start,
         });
-        sendBatch();
       }
+      track("pageleave");
 
-      window.addEventListener("beforeunload", report);
-
-      document.addEventListener("visibilitychange", function () {
-        if (document.visibilityState === "hidden") report();
-      });
-
+      sendBatch();
     }
+    window.addEventListener("beforeunload", report);
 
-    if (cfg.clicks) {
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") report();
+    });
 
+    if (cfg.track_clicks) {
       document.addEventListener("click", function (e) {
-
         const el = e.target.closest("[data-track]");
         if (!el) return;
 
         track("click", {
           element: el.tagName,
           id: el.id || null,
-          text: (el.innerText || "").slice(0, 50)
+          text: (el.innerText || "").slice(0, 50),
         });
-
       });
-
     }
-
   });
 
   setInterval(sendBatch, FLUSH_INTERVAL);
-
 })();

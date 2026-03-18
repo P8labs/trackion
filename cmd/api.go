@@ -8,6 +8,7 @@ import (
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/features/auth"
+	"trackion/internal/features/dashboard"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
 	"trackion/internal/features/tracker"
@@ -15,7 +16,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func (app *application) mount() http.Handler {
@@ -42,14 +43,13 @@ func (app *application) mount() http.Handler {
 		r.Mount("/auth", auth.Routes(repo))
 	}
 
-	// admin related
-	r.Route("/admin", func(r chi.Router) {
-		mw := auth.NewMiddleware(repo, *app.config)
+	// authenticated APIs
+	mw := auth.NewMiddleware(repo, *app.config)
+
+	r.Route("/api", func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
-		projectsService := projects.NewService(repository.New(app.db))
-		projectsHandler := projects.NewHandler(projectsService)
-		r.Post("/projects", projectsHandler.CreateProject)
-		r.Get("/projects/{id}", projectsHandler.GetProjectDetails)
+		r.Mount("/projects", projects.Routes(repo))
+		r.Mount("/analytics", dashboard.Routes(repo))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -82,5 +82,5 @@ func (app *application) run(h http.Handler) error {
 type application struct {
 	config *config.Config
 	logger *slog.Logger
-	db     *pgx.Conn
+	db     *pgxpool.Pool
 }

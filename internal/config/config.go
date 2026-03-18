@@ -18,6 +18,7 @@ type Config struct {
 	AuthSecret         string
 	EventBodySizeLimit int32
 	EventBatchLimit    int32
+	FrontendURL        string
 }
 
 func Load() *Config {
@@ -34,6 +35,7 @@ func Load() *Config {
 		AuthSecret:         GetEnv("AUTH_SECRET", "random-noise"),
 		EventBodySizeLimit: 256,
 		EventBatchLimit:    100,
+		FrontendURL:        GetEnv("FRONTEND_URL", "http://localhost:5173"),
 	}
 
 	if mode == ModeSelfHost && cfg.AdminToken == "" {

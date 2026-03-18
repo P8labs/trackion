@@ -12,16 +12,21 @@ import (
 )
 
 const createProject = `-- name: CreateProject :one
-INSERT INTO projects (id, name, api_key, owner_id)
-VALUES ($1, $2, $3, $4)
-RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+INSERT INTO projects (id, name, api_key, owner_id, auto_pageview, track_time_spent, track_campaign, track_clicks, domains)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
 `
 
 type CreateProjectParams struct {
-	ID      uuid.UUID `json:"id"`
-	Name    string    `json:"name"`
-	ApiKey  string    `json:"api_key"`
-	OwnerID uuid.UUID `json:"owner_id"`
+	ID             uuid.UUID `json:"id"`
+	Name           string    `json:"name"`
+	ApiKey         string    `json:"api_key"`
+	OwnerID        uuid.UUID `json:"owner_id"`
+	AutoPageview   bool      `json:"auto_pageview"`
+	TrackTimeSpent bool      `json:"track_time_spent"`
+	TrackCampaign  bool      `json:"track_campaign"`
+	TrackClicks    bool      `json:"track_clicks"`
+	Domains        []string  `json:"domains"`
 }
 
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error) {
@@ -30,6 +35,11 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		arg.Name,
 		arg.ApiKey,
 		arg.OwnerID,
+		arg.AutoPageview,
+		arg.TrackTimeSpent,
+		arg.TrackCampaign,
+		arg.TrackClicks,
+		arg.Domains,
 	)
 	var i Project
 	err := row.Scan(
@@ -42,12 +52,24 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.TrackTimeSpent,
 		&i.TrackCampaign,
 		&i.TrackClicks,
+		&i.Domains,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
+const deleteProject = `-- name: DeleteProject :exec
+DELETE FROM projects
+WHERE id = $1
+`
+
+func (q *Queries) DeleteProject(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.Exec(ctx, deleteProject, id)
+	return err
+}
+
 const getProjectByAPIKey = `-- name: GetProjectByAPIKey :one
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
 FROM projects
 WHERE api_key = $1
 LIMIT 1
@@ -66,12 +88,14 @@ func (q *Queries) GetProjectByAPIKey(ctx context.Context, apiKey string) (Projec
 		&i.TrackTimeSpent,
 		&i.TrackCampaign,
 		&i.TrackClicks,
+		&i.Domains,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
 FROM projects
 WHERE id = $1
 LIMIT 1
@@ -90,6 +114,8 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.TrackTimeSpent,
 		&i.TrackCampaign,
 		&i.TrackClicks,
+		&i.Domains,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -121,7 +147,7 @@ func (q *Queries) GetProjectConfig(ctx context.Context, apiKey string) (GetProje
 }
 
 const getUserProjects = `-- name: GetUserProjects :many
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
 FROM projects
 WHERE owner_id = $1
 ORDER BY created_at DESC
@@ -146,6 +172,8 @@ func (q *Queries) GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Pro
 			&i.TrackTimeSpent,
 			&i.TrackCampaign,
 			&i.TrackClicks,
+			&i.Domains,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -158,7 +186,7 @@ func (q *Queries) GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Pro
 }
 
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
 FROM projects
 ORDER BY created_at DESC
 `
@@ -182,6 +210,8 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 			&i.TrackTimeSpent,
 			&i.TrackCampaign,
 			&i.TrackClicks,
+			&i.Domains,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -191,4 +221,31 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const updateProject = `-- name: UpdateProject :exec
+UPDATE projects
+SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6
+WHERE id = $1
+`
+
+type UpdateProjectParams struct {
+	ID             uuid.UUID `json:"id"`
+	Name           string    `json:"name"`
+	AutoPageview   bool      `json:"auto_pageview"`
+	TrackTimeSpent bool      `json:"track_time_spent"`
+	TrackCampaign  bool      `json:"track_campaign"`
+	TrackClicks    bool      `json:"track_clicks"`
+}
+
+func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
+	_, err := q.db.Exec(ctx, updateProject,
+		arg.ID,
+		arg.Name,
+		arg.AutoPageview,
+		arg.TrackTimeSpent,
+		arg.TrackCampaign,
+		arg.TrackClicks,
+	)
+	return err
 }

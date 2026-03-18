@@ -9,13 +9,13 @@ import (
 func Routes(repo repository.Querier) *chi.Mux {
 	r := chi.NewRouter()
 
-	mw := Middleware{repo}
+	mw := NewMiddleware(repo)
 	eventService := NewService(repo)
 	eventHandler := NewHandler(eventService)
 
 	r.Use(mw.ProjectIDValidation)
 	r.Post("/collect", eventHandler.CollectEvent)
-	r.Get("/batch", eventHandler.CollectBatchEvents)
+	r.Post("/batch", eventHandler.CollectBatchEvents)
 	r.Get("/config", eventHandler.ProjectConfig)
 	return r
 }

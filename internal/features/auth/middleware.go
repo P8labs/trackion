@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"trackion/internal/config"
 	"trackion/internal/repository"
@@ -59,6 +60,8 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 		session, err := m.repo.GetSessionByToken(r.Context(), token)
 		if err != nil {
+			fmt.Printf("TOKEN ERROR: %s\n", err.Error())
+
 			res.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

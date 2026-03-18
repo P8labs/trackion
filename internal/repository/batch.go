@@ -22,6 +22,7 @@ INSERT INTO events (
     project_id,
     event_name,
     session_id,
+    user_agent,
     page_path,
     page_title,
     referrer,
@@ -30,7 +31,7 @@ INSERT INTO events (
     utm_campaign,
     properties
 )
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, $11)
 `
 
 type InsertEventsBatchBatchResults struct {
@@ -43,6 +44,7 @@ type InsertEventsBatchParams struct {
 	ProjectID   uuid.UUID `json:"project_id"`
 	EventName   string    `json:"event_name"`
 	SessionID   *string   `json:"session_id"`
+	UserAgent   *string   `json:"user_agent"`
 	PagePath    *string   `json:"page_path"`
 	PageTitle   *string   `json:"page_title"`
 	Referrer    *string   `json:"referrer"`
@@ -59,6 +61,7 @@ func (q *Queries) InsertEventsBatch(ctx context.Context, arg []InsertEventsBatch
 			a.ProjectID,
 			a.EventName,
 			a.SessionID,
+			a.UserAgent,
 			a.PagePath,
 			a.PageTitle,
 			a.Referrer,

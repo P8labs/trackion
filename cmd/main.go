@@ -7,7 +7,7 @@ import (
 	"os"
 	"trackion/internal/config"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
 )
 
@@ -25,17 +25,21 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	conn, err := pgx.Connect(ctx, cfg.DatabaseURL)
+	dbpool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close(ctx)
+	defer dbpool.Close()
 
-	logger.Info("connected to database")
+	if err := dbpool.Ping(ctx); err != nil {
+		panic(err)
+	}
+
+	logger.Info("connected to database with connection pool")
 
 	api := application{
 		config: cfg,
-		db:     conn,
+		db:     dbpool,
 		logger: logger,
 	}
 	if err := api.run(api.mount()); err != nil {

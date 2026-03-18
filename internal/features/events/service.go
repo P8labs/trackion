@@ -20,8 +20,8 @@ type EventParams struct {
 		Path     string `json:"path"`
 		Referrer string `json:"referrer"`
 	} `json:"page"`
-
-	Utm struct {
+	UserAgent string `json:"userAgent"`
+	Utm       struct {
 		Source   string `json:"source"`
 		Medium   string `json:"medium"`
 		Campaign string `json:"campaign"`
@@ -60,6 +60,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 	id, err := s.repo.InsertEvent(ctx, repository.InsertEventParams{
 		ProjectID:   projectId,
 		EventName:   params.Event,
+		UserAgent:   core.StrPtr(params.UserAgent),
 		SessionID:   core.StrPtr(params.SessionID),
 		PagePath:    core.StrPtr(params.Page.Path),
 		PageTitle:   core.StrPtr(params.Page.Title),
@@ -128,6 +129,7 @@ func ToInsertEvent(projectID uuid.UUID, e EventParams) (repository.InsertEventsB
 		ProjectID:   projectID,
 		EventName:   e.Event,
 		SessionID:   core.StrPtr(e.SessionID),
+		UserAgent:   core.StrPtr(e.UserAgent),
 		PagePath:    core.StrPtr(e.Page.Path),
 		PageTitle:   core.StrPtr(e.Page.Title),
 		Referrer:    core.StrPtr(e.Page.Referrer),

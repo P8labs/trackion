@@ -15,18 +15,27 @@ type Querier interface {
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteProject(ctx context.Context, id uuid.UUID) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteUserSessions(ctx context.Context, userID uuid.UUID) error
+	GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
+	GetEventCountByName(ctx context.Context, projectID uuid.UUID) ([]GetEventCountByNameRow, error)
+	GetEventsOverTime(ctx context.Context, projectID uuid.UUID) ([]GetEventsOverTimeRow, error)
+	GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
 	GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error)
+	GetRecentEvents(ctx context.Context, arg GetRecentEventsParams) ([]Event, error)
 	GetSessionByToken(ctx context.Context, token string) (Session, error)
+	GetTimeSpentHours(ctx context.Context, projectID uuid.UUID) (interface{}, error)
+	GetTotalEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByGithubId(ctx context.Context, githubID *string) (User, error)
 	GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error)
 	InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error)
 	InsertEventsBatch(ctx context.Context, arg []InsertEventsBatchParams) *InsertEventsBatchBatchResults
 	ListProjects(ctx context.Context) ([]Project, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) error
 }
 
 var _ Querier = (*Queries)(nil)

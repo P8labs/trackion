@@ -1,6 +1,6 @@
 -- name: CreateProject :one
-INSERT INTO projects (id, name, api_key, owner_id)
-VALUES ($1, $2, $3, $4)
+INSERT INTO projects (id, name, api_key, owner_id, auto_pageview, track_time_spent, track_campaign, track_clicks, domains)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 
@@ -35,3 +35,12 @@ SELECT auto_pageview, track_time_spent, track_campaign, track_clicks
 FROM projects
 WHERE api_key = $1
 LIMIT 1;
+
+-- name: UpdateProject :exec
+UPDATE projects
+SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6
+WHERE id = $1;
+
+-- name: DeleteProject :exec
+DELETE FROM projects
+WHERE id = $1;

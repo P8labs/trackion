@@ -89,15 +89,13 @@ func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "trackion_session",
-		Value:    sessionToken,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-	})
+	redirect := fmt.Sprintf(
+		"%s/auth/callback?token=%s&auth=github",
+		h.cfg.FrontendURL,
+		sessionToken,
+	)
 
-	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 }
 
 func (h *handler) Me(w http.ResponseWriter, r *http.Request) {

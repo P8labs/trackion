@@ -24,18 +24,21 @@ type Event struct {
 	UtmCampaign *string   `json:"utm_campaign"`
 	Properties  []byte    `json:"properties"`
 	CreatedAt   time.Time `json:"created_at"`
+	UserAgent   *string   `json:"user_agent"`
 }
 
 type Project struct {
-	ID             uuid.UUID `json:"id"`
-	OwnerID        uuid.UUID `json:"owner_id"`
-	Name           string    `json:"name"`
-	ApiKey         string    `json:"api_key"`
-	CreatedAt      time.Time `json:"created_at"`
-	AutoPageview   bool      `json:"auto_pageview"`
-	TrackTimeSpent bool      `json:"track_time_spent"`
-	TrackCampaign  bool      `json:"track_campaign"`
-	TrackClicks    bool      `json:"track_clicks"`
+	ID             uuid.UUID          `json:"id"`
+	OwnerID        uuid.UUID          `json:"owner_id"`
+	Name           string             `json:"name"`
+	ApiKey         string             `json:"api_key"`
+	CreatedAt      time.Time          `json:"created_at"`
+	AutoPageview   bool               `json:"auto_pageview"`
+	TrackTimeSpent bool               `json:"track_time_spent"`
+	TrackCampaign  bool               `json:"track_campaign"`
+	TrackClicks    bool               `json:"track_clicks"`
+	Domains        []string           `json:"domains"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
 type Session struct {

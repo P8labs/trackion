@@ -15,6 +15,12 @@ const (
 	ProjectIdContextKey string = "projectId"
 )
 
+func NewMiddleware(repo repository.Querier) *Middleware {
+	return &Middleware{
+		repo: repo,
+	}
+}
+
 func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

@@ -9,13 +9,180 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const getCustomEventCount = `-- name: GetCustomEventCount :one
+SELECT COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND event_name != 'pageview' AND event_name != 'time_spent' AND event_name != 'click'
+`
+
+func (q *Queries) GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getCustomEventCount, projectID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getEventCountByName = `-- name: GetEventCountByName :many
+SELECT event_name, COUNT(*) as count
+FROM events
+WHERE project_id = $1
+GROUP BY event_name
+ORDER BY count DESC
+`
+
+type GetEventCountByNameRow struct {
+	EventName string `json:"event_name"`
+	Count     int64  `json:"count"`
+}
+
+func (q *Queries) GetEventCountByName(ctx context.Context, projectID uuid.UUID) ([]GetEventCountByNameRow, error) {
+	rows, err := q.db.Query(ctx, getEventCountByName, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEventCountByNameRow
+	for rows.Next() {
+		var i GetEventCountByNameRow
+		if err := rows.Scan(&i.EventName, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEventsOverTime = `-- name: GetEventsOverTime :many
+SELECT DATE(created_at) as date, COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND created_at >= NOW() - INTERVAL '14 days'
+GROUP BY DATE(created_at)
+ORDER BY date ASC
+`
+
+type GetEventsOverTimeRow struct {
+	Date  pgtype.Date `json:"date"`
+	Count int64       `json:"count"`
+}
+
+func (q *Queries) GetEventsOverTime(ctx context.Context, projectID uuid.UUID) ([]GetEventsOverTimeRow, error) {
+	rows, err := q.db.Query(ctx, getEventsOverTime, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEventsOverTimeRow
+	for rows.Next() {
+		var i GetEventsOverTimeRow
+		if err := rows.Scan(&i.Date, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPageViewCount = `-- name: GetPageViewCount :one
+SELECT COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND event_name = 'pageview'
+`
+
+func (q *Queries) GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getPageViewCount, projectID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
+const getRecentEvents = `-- name: GetRecentEvents :many
+SELECT id, project_id, event_name, session_id, page_path, page_title, referrer, utm_source, utm_medium, utm_campaign, properties, created_at, user_agent
+FROM events
+WHERE project_id = $1
+ORDER BY created_at DESC
+LIMIT $2
+`
+
+type GetRecentEventsParams struct {
+	ProjectID uuid.UUID `json:"project_id"`
+	Limit     int32     `json:"limit"`
+}
+
+func (q *Queries) GetRecentEvents(ctx context.Context, arg GetRecentEventsParams) ([]Event, error) {
+	rows, err := q.db.Query(ctx, getRecentEvents, arg.ProjectID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Event
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.ProjectID,
+			&i.EventName,
+			&i.SessionID,
+			&i.PagePath,
+			&i.PageTitle,
+			&i.Referrer,
+			&i.UtmSource,
+			&i.UtmMedium,
+			&i.UtmCampaign,
+			&i.Properties,
+			&i.CreatedAt,
+			&i.UserAgent,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTimeSpentHours = `-- name: GetTimeSpentHours :one
+SELECT COALESCE(CAST(SUM(CAST(properties->>'time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
+FROM events
+WHERE project_id = $1 AND event_name = 'time_spent'
+`
+
+func (q *Queries) GetTimeSpentHours(ctx context.Context, projectID uuid.UUID) (interface{}, error) {
+	row := q.db.QueryRow(ctx, getTimeSpentHours, projectID)
+	var total_hours interface{}
+	err := row.Scan(&total_hours)
+	return total_hours, err
+}
+
+const getTotalEventCount = `-- name: GetTotalEventCount :one
+SELECT COUNT(*) as count
+FROM events
+WHERE project_id = $1
+`
+
+func (q *Queries) GetTotalEventCount(ctx context.Context, projectID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getTotalEventCount, projectID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
 
 const insertEvent = `-- name: InsertEvent :one
 INSERT INTO events (
     project_id,
     event_name,
     session_id,
+    user_agent,
     page_path,
     page_title,
     referrer,
@@ -24,7 +191,7 @@ INSERT INTO events (
     utm_campaign,
     properties
 )
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
 RETURNING id
 `
 
@@ -32,6 +199,7 @@ type InsertEventParams struct {
 	ProjectID   uuid.UUID `json:"project_id"`
 	EventName   string    `json:"event_name"`
 	SessionID   *string   `json:"session_id"`
+	UserAgent   *string   `json:"user_agent"`
 	PagePath    *string   `json:"page_path"`
 	PageTitle   *string   `json:"page_title"`
 	Referrer    *string   `json:"referrer"`
@@ -46,6 +214,7 @@ func (q *Queries) InsertEvent(ctx context.Context, arg InsertEventParams) (int64
 		arg.ProjectID,
 		arg.EventName,
 		arg.SessionID,
+		arg.UserAgent,
 		arg.PagePath,
 		arg.PageTitle,
 		arg.Referrer,
