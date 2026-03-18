@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Github } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useStore } from "../store";
 import { loginWithToken, getGithubLoginUrl } from "../lib/api";
@@ -47,9 +46,7 @@ export function AuthPage() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background text-foreground">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-2">
-            Trackion
-          </h1>
+          <h1 className="text-4xl font-bold mb-2">Trackion</h1>
           <p className="text-muted-foreground">Analytics Dashboard</p>
         </div>
 
@@ -93,9 +90,7 @@ export function AuthPage() {
             <>
               <div className="my-6 flex items-center">
                 <div className="grow border-t border-border" />
-                <span className="px-3 text-sm text-muted-foreground">
-                  Or
-                </span>
+                <span className="px-3 text-sm text-muted-foreground">Or</span>
                 <div className="grow border-t border-border" />
               </div>
 
@@ -105,7 +100,6 @@ export function AuthPage() {
                 variant="outline"
                 className="w-full flex items-center justify-center gap-2"
               >
-                <Github size={20} />
                 Login with GitHub
               </Button>
             </>

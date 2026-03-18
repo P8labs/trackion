@@ -1,19 +1,8 @@
-import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { PublicPageLayout } from "../components/PublicPageLayout";
 
 export function TermsPage() {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center">
-          <Link to="/" className="flex items-center space-x-2">
-            <ArrowLeft className="h-4 w-4" />
-            <img src="/trackion_t.png" alt="Trackion" className="w-8 h-8" />
-            <span className="font-bold text-xl">Trackion</span>
-          </Link>
-        </div>
-      </header>
-
+    <PublicPageLayout>
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         <div className="prose prose-lg max-w-none">
           <h1 className="text-3xl font-bold mb-8">Terms of Service</h1>
@@ -140,25 +129,16 @@ export function TermsPage() {
               If you have questions about these Terms of Service, please contact
               us at{" "}
               <a
-                href="mailto:hello@p8labs.dev"
+                href="mailto:hello@p8labs.tech"
                 className="text-[#ff6b35] hover:underline"
               >
-                hello@p8labs.dev
+                hello@p8labs.tech
               </a>
               .
             </p>
           </section>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="border-t py-8 px-4">
-        <div className="container mx-auto text-center">
-          <p className="text-muted-foreground text-sm">
-            Built with ❤️ by P8Labs. Released under the MIT License.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicPageLayout>
   );
 }

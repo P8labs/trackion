@@ -13,6 +13,7 @@ import (
 	"trackion/internal/features/projects"
 	"trackion/internal/features/tracker"
 	"trackion/internal/repository"
+	"trackion/internal/res"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -55,10 +56,19 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("all good"))
+		if err := app.db.Ping(r.Context()); err != nil {
+			res.Error(w, "Database unavailable", 503)
+			return
+		}
+
+		res.Success(w, map[string]string{
+			"status":    "ok",
+			"timestamp": time.Now().Format(time.RFC3339),
+		}, "OK")
 	})
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("OK"))
+		http.Redirect(w, r, app.config.FrontendURL, http.StatusTemporaryRedirect)
 	})
 
 	r.Get("/t.js", tracker.ServeTracker)

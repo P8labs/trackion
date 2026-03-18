@@ -14,7 +14,7 @@
   const SESSION_KEY = "trackion_session";
   const CONFIG_KEY = "trackion_cfg";
 
-  let MAX_BATCH = 1;
+  let MAX_BATCH = 10;
   let MAX_PAYLOAD_KB = 256;
 
   const FLUSH_INTERVAL = 5000;
@@ -44,14 +44,15 @@
     };
   })();
 
-  function baseEvent(name, props) {
+  function baseEvent(name, props, customSessionId) {
     return {
       event: name,
-      sessionId,
+      sessionId: customSessionId || sessionId,
       timestamp: new Date().toISOString(),
       userAgent: USER_AGENT,
       page: {
         path: location.pathname,
+        title: document.title,
         referrer: document.referrer,
       },
       utm: utmParams,
@@ -62,11 +63,8 @@
   function sendBatch() {
     if (!queue.length) return;
 
-    const payloadObj = {
-      events: queue.splice(0, queue.length),
-    };
-
-    const payload = JSON.stringify(payloadObj);
+    const events = queue.splice(0, queue.length);
+    const payload = JSON.stringify(events);
 
     if (payload.length > MAX_PAYLOAD_KB * 1024) {
       console.warn("Trackion payload too large, dropping batch");
@@ -77,7 +75,7 @@
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Trackion-Key": projectKey,
+        "X-Project-Key": projectKey,
       },
       body: payload,
       keepalive: true,
@@ -86,15 +84,39 @@
     });
   }
 
-  function track(name, props) {
-    queue.push(baseEvent(name, props));
+  function track(name, props, customSessionId) {
+    queue.push(baseEvent(name, props, customSessionId));
 
     if (queue.length >= MAX_BATCH) {
       sendBatch();
     }
   }
 
-  window.trackion = track;
+  // Enhanced API object with additional methods
+  const trackionAPI = {
+    track: track,
+    
+    // Convenience methods
+    page: function(properties) {
+      track('page_view', properties);
+    },
+    
+    event: function(eventName, properties) {
+      track(eventName, properties);
+    },
+    
+    // Access to configuration and state
+    config: {},
+    session: sessionId,
+    queue: queue,
+    
+    // Manual batch sending
+    flush: function() {
+      sendBatch();
+    }
+  };
+
+  window.trackion = trackionAPI;
 
   function loadConfig(cb) {
     try {
@@ -112,7 +134,7 @@
     fetch(configURL, {
       headers: {
         "Content-Type": "application/json",
-        "X-Trackion-Key": projectKey,
+        "X-Project-Key": projectKey,
       },
     })
       .then((r) => r.json())
@@ -150,6 +172,9 @@
   }
 
   loadConfig(function (cfg) {
+    // Store config in API object
+    trackionAPI.config = cfg;
+    
     if (cfg.auto_pageview) {
       track("pageview");
     }

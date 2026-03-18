@@ -1,38 +1,11 @@
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
-import { ArrowLeft, Heart, Code, Github } from "lucide-react";
+import { Heart, Code, Github } from "lucide-react";
+import { PublicPageLayout } from "../components/PublicPageLayout";
 
 export function AboutPage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
-            <ArrowLeft className="h-4 w-4" />
-            <img src="/trackion_t.png" alt="Trackion" className="w-8 h-8" />
-            <span className="font-bold text-xl">Trackion</span>
-          </Link>
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link
-              to="/docs"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Docs
-            </Link>
-            <a
-              href="https://github.com/p8labs/trackion"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              GitHub
-            </a>
-            <Link to="/auth">
-              <Button variant="outline">Dashboard</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
-
+    <PublicPageLayout>
       <div className="container mx-auto px-4 py-16 max-w-3xl">
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold mb-4">About Trackion</h1>
@@ -216,15 +189,6 @@ export function AboutPage() {
           </section>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="border-t py-8 px-4">
-        <div className="container mx-auto text-center">
-          <p className="text-muted-foreground text-sm">
-            Built with ❤️ by P8Labs. Released under the MIT License.
-          </p>
-        </div>
-      </footer>
-    </div>
+    </PublicPageLayout>
   );
 }

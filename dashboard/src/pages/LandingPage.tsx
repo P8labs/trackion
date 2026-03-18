@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
+import { ThemeToggle } from "../components/ui/theme-toggle";
 import {
   BarChart3,
   Zap,
@@ -38,7 +39,8 @@ export function LandingPage() {
               Features
             </a>
             <a
-              href="/docs"
+              href="https://github.com/P8labs/trackion/wiki/Introduction"
+              target="_blank"
               className="text-muted-foreground hover:text-foreground"
             >
               Docs
@@ -49,6 +51,7 @@ export function LandingPage() {
             >
               GitHub
             </a>
+            <ThemeToggle />
             <Link to="/auth">
               <Button variant="outline">Sign In</Button>
             </Link>
@@ -324,13 +327,13 @@ export function LandingPage() {
                   About
                 </Link>
                 <a
-                  href="https://p8labs.dev"
+                  href="https://p8labs.tech"
                   className="text-muted-foreground hover:text-foreground block"
                 >
                   P8Labs
                 </a>
                 <a
-                  href="mailto:hello@p8labs.dev"
+                  href="mailto:hello@p8labs.tech"
                   className="text-muted-foreground hover:text-foreground block"
                 >
                   Contact
