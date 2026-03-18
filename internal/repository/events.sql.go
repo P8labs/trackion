@@ -7,10 +7,61 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const getChartDataFlexible = `-- name: GetChartDataFlexible :many
+SELECT
+    DATE_TRUNC($3, created_at)::timestamptz as period,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1
+  AND created_at >= $2
+  AND ($4 = '' OR $4 IS NULL OR event_name = $4)
+GROUP BY DATE_TRUNC($3, created_at)
+ORDER BY period ASC
+`
+
+type GetChartDataFlexibleParams struct {
+	ProjectID uuid.UUID   `json:"project_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	DateTrunc string      `json:"date_trunc"`
+	Column4   interface{} `json:"column_4"`
+}
+
+type GetChartDataFlexibleRow struct {
+	Period time.Time `json:"period"`
+	Count  int64     `json:"count"`
+}
+
+// Chart Data with flexible time range and event filtering
+func (q *Queries) GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error) {
+	rows, err := q.db.Query(ctx, getChartDataFlexible,
+		arg.ProjectID,
+		arg.CreatedAt,
+		arg.DateTrunc,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetChartDataFlexibleRow
+	for rows.Next() {
+		var i GetChartDataFlexibleRow
+		if err := rows.Scan(&i.Period, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const getCustomEventCount = `-- name: GetCustomEventCount :one
 SELECT COUNT(*) as count
@@ -23,6 +74,230 @@ func (q *Queries) GetCustomEventCount(ctx context.Context, projectID uuid.UUID) 
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const getDashboardCounts = `-- name: GetDashboardCounts :one
+SELECT
+    COUNT(*) AS total_events,
+
+    SUM(CASE 
+        WHEN event_name = 'pageview' THEN 1 
+        ELSE 0 
+    END) AS page_views,
+
+    COUNT(DISTINCT CASE 
+        WHEN event_name = 'pageview' THEN session_id 
+    END) AS unique_views,
+
+    -- total time in milliseconds
+    SUM(CASE 
+        WHEN event_name = 'time_spent' THEN 
+            (properties->>'duration_ms')::BIGINT
+        ELSE 0
+    END) AS total_time_ms,
+
+    COUNT(DISTINCT CASE 
+        WHEN event_name = 'time_spent' THEN session_id 
+    END) AS time_spent_sessions
+FROM events
+WHERE project_id = $1
+`
+
+type GetDashboardCountsRow struct {
+	TotalEvents       int64 `json:"total_events"`
+	PageViews         int64 `json:"page_views"`
+	UniqueViews       int64 `json:"unique_views"`
+	TotalTimeMs       int64 `json:"total_time_ms"`
+	TimeSpentSessions int64 `json:"time_spent_sessions"`
+}
+
+// Dashboard Stats API (counts only)
+func (q *Queries) GetDashboardCounts(ctx context.Context, projectID uuid.UUID) (GetDashboardCountsRow, error) {
+	row := q.db.QueryRow(ctx, getDashboardCounts, projectID)
+	var i GetDashboardCountsRow
+	err := row.Scan(
+		&i.TotalEvents,
+		&i.PageViews,
+		&i.UniqueViews,
+		&i.TotalTimeMs,
+		&i.TimeSpentSessions,
+	)
+	return i, err
+}
+
+const getDashboardStats = `-- name: GetDashboardStats :one
+SELECT
+    COUNT(*) AS total_events,
+
+    SUM(CASE 
+        WHEN event_name = 'pageview' THEN 1 
+        ELSE 0 
+    END) AS page_views,
+
+    COUNT(DISTINCT CASE 
+        WHEN event_name = 'pageview' THEN session_id 
+    END) AS unique_views,
+
+    -- total time in milliseconds
+    SUM(CASE 
+        WHEN event_name = 'time_spent' THEN 
+            (properties->>'duration_ms')::BIGINT
+        ELSE 0
+    END) AS total_time_ms,
+
+    COUNT(DISTINCT CASE 
+        WHEN event_name = 'time_spent' THEN session_id 
+    END) AS time_spent_sessions
+
+FROM events
+WHERE project_id = $1
+`
+
+type GetDashboardStatsRow struct {
+	TotalEvents       int64 `json:"total_events"`
+	PageViews         int64 `json:"page_views"`
+	UniqueViews       int64 `json:"unique_views"`
+	TotalTimeMs       int64 `json:"total_time_ms"`
+	TimeSpentSessions int64 `json:"time_spent_sessions"`
+}
+
+func (q *Queries) GetDashboardStats(ctx context.Context, projectID uuid.UUID) (GetDashboardStatsRow, error) {
+	row := q.db.QueryRow(ctx, getDashboardStats, projectID)
+	var i GetDashboardStatsRow
+	err := row.Scan(
+		&i.TotalEvents,
+		&i.PageViews,
+		&i.UniqueViews,
+		&i.TotalTimeMs,
+		&i.TimeSpentSessions,
+	)
+	return i, err
+}
+
+const getDeviceAnalytics = `-- name: GetDeviceAnalytics :many
+WITH user_agents as (
+    SELECT DISTINCT session_id, user_agent
+    FROM events
+    WHERE project_id = $1 AND event_name = 'pageview'
+)
+SELECT
+    CASE
+        WHEN user_agent ILIKE '%windows%' THEN 'Windows'
+        WHEN user_agent ILIKE '%macintosh%' OR user_agent ILIKE '%mac os%' THEN 'macOS'
+        WHEN user_agent ILIKE '%linux%' AND user_agent NOT ILIKE '%android%' THEN 'Linux'
+        WHEN user_agent ILIKE '%iphone%' OR user_agent ILIKE '%ipad%' THEN 'iOS'
+        WHEN user_agent ILIKE '%android%' THEN 'Android'
+        ELSE 'Other'
+    END as device_name,
+    'device' as category,
+    COUNT(*) as count
+FROM user_agents
+GROUP BY device_name
+UNION ALL
+SELECT
+    CASE
+        WHEN user_agent ILIKE '%chrome%' AND user_agent NOT ILIKE '%edge%' THEN 'Chrome'
+        WHEN user_agent ILIKE '%firefox%' THEN 'Firefox'
+        WHEN user_agent ILIKE '%safari%' AND user_agent NOT ILIKE '%chrome%' THEN 'Safari'
+        WHEN user_agent ILIKE '%edge%' THEN 'Edge'
+        WHEN user_agent ILIKE '%opera%' THEN 'Opera'
+        ELSE 'Other'
+    END as device_name,
+    'browser' as category,
+    COUNT(*) as count
+FROM user_agents
+GROUP BY device_name
+ORDER BY category, count DESC
+`
+
+type GetDeviceAnalyticsRow struct {
+	DeviceName string `json:"device_name"`
+	Category   string `json:"category"`
+	Count      int64  `json:"count"`
+}
+
+// Breakdown Data - Device/Browser Analysis
+func (q *Queries) GetDeviceAnalytics(ctx context.Context, projectID uuid.UUID) ([]GetDeviceAnalyticsRow, error) {
+	rows, err := q.db.Query(ctx, getDeviceAnalytics, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDeviceAnalyticsRow
+	for rows.Next() {
+		var i GetDeviceAnalyticsRow
+		if err := rows.Scan(&i.DeviceName, &i.Category, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getDeviceBreakdown = `-- name: GetDeviceBreakdown :many
+WITH parsed_agents as (
+    SELECT
+        CASE
+            WHEN user_agent ILIKE '%windows%' THEN 'Windows'
+            WHEN user_agent ILIKE '%macintosh%' OR user_agent ILIKE '%mac os%' THEN 'Mac'
+            WHEN user_agent ILIKE '%linux%' AND user_agent NOT ILIKE '%android%' THEN 'Linux'
+            WHEN user_agent ILIKE '%iphone%' OR user_agent ILIKE '%ipad%' THEN 'iOS'
+            WHEN user_agent ILIKE '%android%' THEN 'Android'
+            ELSE 'Other'
+        END as device_os,
+        CASE
+            WHEN user_agent ILIKE '%chrome%' AND user_agent NOT ILIKE '%edge%' THEN 'Chrome'
+            WHEN user_agent ILIKE '%firefox%' THEN 'Firefox'
+            WHEN user_agent ILIKE '%safari%' AND user_agent NOT ILIKE '%chrome%' THEN 'Safari'
+            WHEN user_agent ILIKE '%edge%' THEN 'Edge'
+            ELSE 'Other'
+        END as browser
+    FROM events
+    WHERE project_id = $1 AND event_name = 'pageview'
+)
+SELECT
+    device_os as name,
+    COUNT(*) as count,
+    'device' as category
+FROM parsed_agents
+GROUP BY device_os
+UNION ALL
+SELECT
+    browser as name,
+    COUNT(*) as count,
+    'browser' as category
+FROM parsed_agents
+GROUP BY browser
+ORDER BY category, count DESC
+`
+
+type GetDeviceBreakdownRow struct {
+	Name     string `json:"name"`
+	Count    int64  `json:"count"`
+	Category string `json:"category"`
+}
+
+func (q *Queries) GetDeviceBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetDeviceBreakdownRow, error) {
+	rows, err := q.db.Query(ctx, getDeviceBreakdown, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDeviceBreakdownRow
+	for rows.Next() {
+		var i GetDeviceBreakdownRow
+		if err := rows.Scan(&i.Name, &i.Count, &i.Category); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getEventCountByName = `-- name: GetEventCountByName :many
@@ -61,18 +336,24 @@ func (q *Queries) GetEventCountByName(ctx context.Context, projectID uuid.UUID) 
 const getEventsOverTime = `-- name: GetEventsOverTime :many
 SELECT DATE(created_at) as date, COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND created_at >= NOW() - INTERVAL '14 days'
+WHERE project_id = $1
+  AND created_at >= NOW() - ($2 * INTERVAL '1 day')
 GROUP BY DATE(created_at)
 ORDER BY date ASC
 `
+
+type GetEventsOverTimeParams struct {
+	ProjectID uuid.UUID   `json:"project_id"`
+	Column2   interface{} `json:"column_2"`
+}
 
 type GetEventsOverTimeRow struct {
 	Date  pgtype.Date `json:"date"`
 	Count int64       `json:"count"`
 }
 
-func (q *Queries) GetEventsOverTime(ctx context.Context, projectID uuid.UUID) ([]GetEventsOverTimeRow, error) {
-	rows, err := q.db.Query(ctx, getEventsOverTime, projectID)
+func (q *Queries) GetEventsOverTime(ctx context.Context, arg GetEventsOverTimeParams) ([]GetEventsOverTimeRow, error) {
+	rows, err := q.db.Query(ctx, getEventsOverTime, arg.ProjectID, arg.Column2)
 	if err != nil {
 		return nil, err
 	}
@@ -81,6 +362,116 @@ func (q *Queries) GetEventsOverTime(ctx context.Context, projectID uuid.UUID) ([
 	for rows.Next() {
 		var i GetEventsOverTimeRow
 		if err := rows.Scan(&i.Date, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEventsOverTimeFiltered = `-- name: GetEventsOverTimeFiltered :many
+SELECT
+    DATE_TRUNC($3, created_at)::timestamptz as period,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1
+  AND created_at >= $2
+  AND ($4 = '' OR event_name = $4)
+GROUP BY DATE_TRUNC($3, created_at)
+ORDER BY period ASC
+`
+
+type GetEventsOverTimeFilteredParams struct {
+	ProjectID uuid.UUID   `json:"project_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	DateTrunc string      `json:"date_trunc"`
+	Column4   interface{} `json:"column_4"`
+}
+
+type GetEventsOverTimeFilteredRow struct {
+	Period time.Time `json:"period"`
+	Count  int64     `json:"count"`
+}
+
+func (q *Queries) GetEventsOverTimeFiltered(ctx context.Context, arg GetEventsOverTimeFilteredParams) ([]GetEventsOverTimeFilteredRow, error) {
+	rows, err := q.db.Query(ctx, getEventsOverTimeFiltered,
+		arg.ProjectID,
+		arg.CreatedAt,
+		arg.DateTrunc,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEventsOverTimeFilteredRow
+	for rows.Next() {
+		var i GetEventsOverTimeFilteredRow
+		if err := rows.Scan(&i.Period, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getEventsOverTimeFilteredCustomRange = `-- name: GetEventsOverTimeFilteredCustomRange :many
+SELECT
+    (CASE
+        WHEN $4 = 'hour' THEN DATE_TRUNC('hour', created_at)
+        WHEN $4 = 'minute' THEN DATE_TRUNC('minute', created_at)
+        ELSE DATE_TRUNC('day', created_at)
+    END)::timestamptz as period,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1
+  AND created_at >= $2
+  AND created_at <= $3
+  AND ($5 = '' OR event_name = $5)
+GROUP BY
+    CASE
+        WHEN $4 = 'hour' THEN DATE_TRUNC('hour', created_at)
+        WHEN $4 = 'minute' THEN DATE_TRUNC('minute', created_at)
+        ELSE DATE_TRUNC('day', created_at)
+    END
+ORDER BY period ASC
+`
+
+type GetEventsOverTimeFilteredCustomRangeParams struct {
+	ProjectID   uuid.UUID   `json:"project_id"`
+	CreatedAt   time.Time   `json:"created_at"`
+	CreatedAt_2 time.Time   `json:"created_at_2"`
+	Column4     interface{} `json:"column_4"`
+	Column5     interface{} `json:"column_5"`
+}
+
+type GetEventsOverTimeFilteredCustomRangeRow struct {
+	Period time.Time `json:"period"`
+	Count  int64     `json:"count"`
+}
+
+func (q *Queries) GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg GetEventsOverTimeFilteredCustomRangeParams) ([]GetEventsOverTimeFilteredCustomRangeRow, error) {
+	rows, err := q.db.Query(ctx, getEventsOverTimeFilteredCustomRange,
+		arg.ProjectID,
+		arg.CreatedAt,
+		arg.CreatedAt_2,
+		arg.Column4,
+		arg.Column5,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetEventsOverTimeFilteredCustomRangeRow
+	for rows.Next() {
+		var i GetEventsOverTimeFilteredCustomRangeRow
+		if err := rows.Scan(&i.Period, &i.Count); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -151,6 +542,184 @@ func (q *Queries) GetRecentEvents(ctx context.Context, arg GetRecentEventsParams
 	return items, nil
 }
 
+const getRecentEventsFormatted = `-- name: GetRecentEventsFormatted :many
+SELECT
+    id,
+    event_name,
+    session_id,
+    page_path,
+    CASE
+        WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+        ELSE referrer
+    END as referrer_source,
+    properties,
+    created_at
+FROM events
+WHERE project_id = $1
+ORDER BY created_at DESC
+LIMIT $2
+`
+
+type GetRecentEventsFormattedParams struct {
+	ProjectID uuid.UUID `json:"project_id"`
+	Limit     int32     `json:"limit"`
+}
+
+type GetRecentEventsFormattedRow struct {
+	ID             int64       `json:"id"`
+	EventName      string      `json:"event_name"`
+	SessionID      *string     `json:"session_id"`
+	PagePath       *string     `json:"page_path"`
+	ReferrerSource interface{} `json:"referrer_source"`
+	Properties     []byte      `json:"properties"`
+	CreatedAt      time.Time   `json:"created_at"`
+}
+
+// Recent Events with better formatting
+func (q *Queries) GetRecentEventsFormatted(ctx context.Context, arg GetRecentEventsFormattedParams) ([]GetRecentEventsFormattedRow, error) {
+	rows, err := q.db.Query(ctx, getRecentEventsFormatted, arg.ProjectID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecentEventsFormattedRow
+	for rows.Next() {
+		var i GetRecentEventsFormattedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventName,
+			&i.SessionID,
+			&i.PagePath,
+			&i.ReferrerSource,
+			&i.Properties,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getRecentEventsLimited = `-- name: GetRecentEventsLimited :many
+SELECT
+    id,
+    event_name,
+    session_id,
+    page_path,
+    referrer,
+    utm_source,
+    utm_medium,
+    utm_campaign,
+    properties,
+    created_at
+FROM events
+WHERE project_id = $1
+ORDER BY created_at DESC
+LIMIT $2
+`
+
+type GetRecentEventsLimitedParams struct {
+	ProjectID uuid.UUID `json:"project_id"`
+	Limit     int32     `json:"limit"`
+}
+
+type GetRecentEventsLimitedRow struct {
+	ID          int64     `json:"id"`
+	EventName   string    `json:"event_name"`
+	SessionID   *string   `json:"session_id"`
+	PagePath    *string   `json:"page_path"`
+	Referrer    *string   `json:"referrer"`
+	UtmSource   *string   `json:"utm_source"`
+	UtmMedium   *string   `json:"utm_medium"`
+	UtmCampaign *string   `json:"utm_campaign"`
+	Properties  []byte    `json:"properties"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+func (q *Queries) GetRecentEventsLimited(ctx context.Context, arg GetRecentEventsLimitedParams) ([]GetRecentEventsLimitedRow, error) {
+	rows, err := q.db.Query(ctx, getRecentEventsLimited, arg.ProjectID, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetRecentEventsLimitedRow
+	for rows.Next() {
+		var i GetRecentEventsLimitedRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.EventName,
+			&i.SessionID,
+			&i.PagePath,
+			&i.Referrer,
+			&i.UtmSource,
+			&i.UtmMedium,
+			&i.UtmCampaign,
+			&i.Properties,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getReferrerBreakdown = `-- name: GetReferrerBreakdown :many
+WITH referrer_data as (
+    SELECT
+        CASE
+            WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+            WHEN referrer ILIKE '%google%' THEN 'Google'
+            WHEN referrer ILIKE '%youtube%' THEN 'YouTube'
+            WHEN referrer ILIKE '%facebook%' THEN 'Facebook'
+            WHEN referrer ILIKE '%twitter%' OR referrer ILIKE '%x.com%' THEN 'Twitter/X'
+            WHEN referrer ILIKE '%instagram%' THEN 'Instagram'
+            WHEN referrer ILIKE '%linkedin%' THEN 'LinkedIn'
+            ELSE 'Other'
+        END as source
+    FROM events
+    WHERE project_id = $1 AND event_name = 'pageview'
+)
+SELECT
+    source as name,
+    COUNT(*) as count
+FROM referrer_data
+GROUP BY source
+ORDER BY count DESC
+`
+
+type GetReferrerBreakdownRow struct {
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
+func (q *Queries) GetReferrerBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetReferrerBreakdownRow, error) {
+	rows, err := q.db.Query(ctx, getReferrerBreakdown, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetReferrerBreakdownRow
+	for rows.Next() {
+		var i GetReferrerBreakdownRow
+		if err := rows.Scan(&i.Name, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTimeSpentHours = `-- name: GetTimeSpentHours :one
 SELECT COALESCE(CAST(SUM(CAST(properties->>'time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
 FROM events
@@ -164,6 +733,92 @@ func (q *Queries) GetTimeSpentHours(ctx context.Context, projectID uuid.UUID) (i
 	return total_hours, err
 }
 
+const getTopPages = `-- name: GetTopPages :many
+SELECT
+    page_path as path,
+    COUNT(*) as total_views,
+    COUNT(DISTINCT session_id) as unique_visitors,
+    ROUND(AVG(CASE WHEN event_name = 'time_spent' THEN
+        CAST(properties->>'duration_ms' AS NUMERIC) / 1000.0
+    END), 2) as avg_time_seconds
+FROM events
+WHERE project_id = $1 AND page_path IS NOT NULL
+GROUP BY page_path
+ORDER BY total_views DESC
+LIMIT 10
+`
+
+type GetTopPagesRow struct {
+	Path           *string        `json:"path"`
+	TotalViews     int64          `json:"total_views"`
+	UniqueVisitors int64          `json:"unique_visitors"`
+	AvgTimeSeconds pgtype.Numeric `json:"avg_time_seconds"`
+}
+
+// Breakdown Data - Top Pages
+func (q *Queries) GetTopPages(ctx context.Context, projectID uuid.UUID) ([]GetTopPagesRow, error) {
+	rows, err := q.db.Query(ctx, getTopPages, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopPagesRow
+	for rows.Next() {
+		var i GetTopPagesRow
+		if err := rows.Scan(
+			&i.Path,
+			&i.TotalViews,
+			&i.UniqueVisitors,
+			&i.AvgTimeSeconds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTopPagesBreakdown = `-- name: GetTopPagesBreakdown :many
+SELECT
+    page_path as name,
+    COUNT(*) as count,
+    COUNT(DISTINCT session_id) as unique_views
+FROM events
+WHERE project_id = $1 AND event_name = 'pageview'
+GROUP BY page_path
+ORDER BY count DESC
+LIMIT 20
+`
+
+type GetTopPagesBreakdownRow struct {
+	Name        *string `json:"name"`
+	Count       int64   `json:"count"`
+	UniqueViews int64   `json:"unique_views"`
+}
+
+func (q *Queries) GetTopPagesBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetTopPagesBreakdownRow, error) {
+	rows, err := q.db.Query(ctx, getTopPagesBreakdown, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTopPagesBreakdownRow
+	for rows.Next() {
+		var i GetTopPagesBreakdownRow
+		if err := rows.Scan(&i.Name, &i.Count, &i.UniqueViews); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getTotalEventCount = `-- name: GetTotalEventCount :one
 SELECT COUNT(*) as count
 FROM events
@@ -175,6 +830,124 @@ func (q *Queries) GetTotalEventCount(ctx context.Context, projectID uuid.UUID) (
 	var count int64
 	err := row.Scan(&count)
 	return count, err
+}
+
+const getTrafficSources = `-- name: GetTrafficSources :many
+WITH traffic_data as (
+    SELECT DISTINCT
+        session_id,
+        CASE
+            WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+            WHEN referrer ILIKE '%google%' THEN 'Google'
+            WHEN referrer ILIKE '%youtube%' THEN 'YouTube'
+            WHEN referrer ILIKE '%facebook%' THEN 'Facebook'
+            WHEN referrer ILIKE '%twitter%' OR referrer ILIKE '%x.com%' THEN 'X (Twitter)'
+            WHEN referrer ILIKE '%instagram%' THEN 'Instagram'
+            WHEN referrer ILIKE '%linkedin%' THEN 'LinkedIn'
+            WHEN referrer ILIKE '%github%' THEN 'GitHub'
+            ELSE 'Other'
+        END as source,
+        utm_source,
+        utm_medium,
+        utm_campaign
+    FROM events
+    WHERE project_id = $1 AND event_name = 'pageview'
+)
+SELECT
+    source as name,
+    COUNT(*) as count,
+    'referrer' as category
+FROM traffic_data
+GROUP BY source
+UNION ALL
+SELECT
+    COALESCE(utm_source, 'None') as name,
+    COUNT(*) as count,
+    'utm_source' as category
+FROM traffic_data
+WHERE utm_source IS NOT NULL
+GROUP BY utm_source
+UNION ALL
+SELECT
+    COALESCE(utm_medium, 'None') as name,
+    COUNT(*) as count,
+    'utm_medium' as category
+FROM traffic_data
+WHERE utm_medium IS NOT NULL
+GROUP BY utm_medium
+ORDER BY category, count DESC
+`
+
+type GetTrafficSourcesRow struct {
+	Name     string `json:"name"`
+	Count    int64  `json:"count"`
+	Category string `json:"category"`
+}
+
+// Breakdown Data - Traffic Sources
+func (q *Queries) GetTrafficSources(ctx context.Context, projectID uuid.UUID) ([]GetTrafficSourcesRow, error) {
+	rows, err := q.db.Query(ctx, getTrafficSources, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetTrafficSourcesRow
+	for rows.Next() {
+		var i GetTrafficSourcesRow
+		if err := rows.Scan(&i.Name, &i.Count, &i.Category); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getUTMBreakdown = `-- name: GetUTMBreakdown :many
+SELECT
+    COALESCE(utm_source, 'Direct') as utm_source,
+    COALESCE(utm_medium, 'None') as utm_medium,
+    COALESCE(utm_campaign, 'None') as utm_campaign,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND event_name = 'pageview'
+GROUP BY utm_source, utm_medium, utm_campaign
+ORDER BY count DESC
+LIMIT 20
+`
+
+type GetUTMBreakdownRow struct {
+	UtmSource   string `json:"utm_source"`
+	UtmMedium   string `json:"utm_medium"`
+	UtmCampaign string `json:"utm_campaign"`
+	Count       int64  `json:"count"`
+}
+
+func (q *Queries) GetUTMBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetUTMBreakdownRow, error) {
+	rows, err := q.db.Query(ctx, getUTMBreakdown, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetUTMBreakdownRow
+	for rows.Next() {
+		var i GetUTMBreakdownRow
+		if err := rows.Scan(
+			&i.UtmSource,
+			&i.UtmMedium,
+			&i.UtmCampaign,
+			&i.Count,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const insertEvent = `-- name: InsertEvent :one

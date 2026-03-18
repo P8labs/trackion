@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -10,45 +9,27 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { TrendingUp, ArrowUpRight } from "lucide-react";
+import { TrendingUp, ArrowUpRight, RefreshCw } from "lucide-react";
 import { useStore } from "../store";
-import { getDashboardData } from "../lib/api";
+import { useDashboardData } from "../hooks/useApi";
 import {
   getDeviceColors,
   getLocationColors,
   getSemanticColors,
 } from "../lib/chart-colors";
 import { LoadingSpinner } from "../components/LoadingSpinner";
-import type { DashboardData } from "../types";
 import moment from "moment";
 
 export function DashboardPage() {
-  const { currentProject, authToken, serverUrl } = useStore();
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { currentProject } = useStore();
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!currentProject || !authToken) return;
-      setLoading(true);
-      setError(null);
-      try {
-        const dashboardData = await getDashboardData(
-          currentProject.id,
-          serverUrl,
-          authToken,
-        );
-        setData(dashboardData);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-        setError("Failed to load dashboard data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [currentProject, authToken, serverUrl]);
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+    isRefetching,
+  } = useDashboardData(currentProject?.id || "");
 
   if (!currentProject) {
     return (
@@ -78,13 +59,18 @@ export function DashboardPage() {
     return (
       <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
         <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/10 text-destructive text-center">
-          <p className="text-sm">{error}</p>
+          <p className="text-sm">
+            {error instanceof Error
+              ? error.message
+              : "Failed to load dashboard data. Please try again."}
+          </p>
         </div>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => refetch()}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+          disabled={isRefetching}
         >
-          Try Again
+          {isRefetching ? "Refreshing..." : "Try Again"}
         </button>
       </div>
     );
@@ -190,10 +176,24 @@ export function DashboardPage() {
     <div className="space-y-5 pb-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-foreground">Overview</h1>
-        <button className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
-          <span>Today</span>
-          <span className="text-xs">▾</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={isRefetching}
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 px-2 py-1 rounded"
+            title="Refresh dashboard data"
+          >
+            <RefreshCw
+              size={14}
+              className={isRefetching ? "animate-spin" : ""}
+            />
+            {isRefetching ? "Refreshing..." : "Refresh"}
+          </button>
+          <button className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <span>Today</span>
+            <span className="text-xs">▾</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

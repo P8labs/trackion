@@ -18,17 +18,37 @@ type Querier interface {
 	DeleteProject(ctx context.Context, id uuid.UUID) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteUserSessions(ctx context.Context, userID uuid.UUID) error
+	// Chart Data with flexible time range and event filtering
+	GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error)
 	GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
+	// Dashboard Stats API (counts only)
+	GetDashboardCounts(ctx context.Context, projectID uuid.UUID) (GetDashboardCountsRow, error)
+	GetDashboardStats(ctx context.Context, projectID uuid.UUID) (GetDashboardStatsRow, error)
+	// Breakdown Data - Device/Browser Analysis
+	GetDeviceAnalytics(ctx context.Context, projectID uuid.UUID) ([]GetDeviceAnalyticsRow, error)
+	GetDeviceBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetDeviceBreakdownRow, error)
 	GetEventCountByName(ctx context.Context, projectID uuid.UUID) ([]GetEventCountByNameRow, error)
-	GetEventsOverTime(ctx context.Context, projectID uuid.UUID) ([]GetEventsOverTimeRow, error)
+	GetEventsOverTime(ctx context.Context, arg GetEventsOverTimeParams) ([]GetEventsOverTimeRow, error)
+	GetEventsOverTimeFiltered(ctx context.Context, arg GetEventsOverTimeFilteredParams) ([]GetEventsOverTimeFilteredRow, error)
+	GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg GetEventsOverTimeFilteredCustomRangeParams) ([]GetEventsOverTimeFilteredCustomRangeRow, error)
 	GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
 	GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error)
 	GetRecentEvents(ctx context.Context, arg GetRecentEventsParams) ([]Event, error)
+	// Recent Events with better formatting
+	GetRecentEventsFormatted(ctx context.Context, arg GetRecentEventsFormattedParams) ([]GetRecentEventsFormattedRow, error)
+	GetRecentEventsLimited(ctx context.Context, arg GetRecentEventsLimitedParams) ([]GetRecentEventsLimitedRow, error)
+	GetReferrerBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetReferrerBreakdownRow, error)
 	GetSessionByToken(ctx context.Context, token string) (Session, error)
 	GetTimeSpentHours(ctx context.Context, projectID uuid.UUID) (interface{}, error)
+	// Breakdown Data - Top Pages
+	GetTopPages(ctx context.Context, projectID uuid.UUID) ([]GetTopPagesRow, error)
+	GetTopPagesBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetTopPagesBreakdownRow, error)
 	GetTotalEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
+	// Breakdown Data - Traffic Sources
+	GetTrafficSources(ctx context.Context, projectID uuid.UUID) ([]GetTrafficSourcesRow, error)
+	GetUTMBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetUTMBreakdownRow, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByGithubId(ctx context.Context, githubID *string) (User, error)
 	GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error)

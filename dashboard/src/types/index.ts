@@ -65,3 +65,56 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
 }
+
+// New analytics types
+export interface DashboardStats {
+  total_events: number;
+  views: number;
+  unique_views: number;
+  avg_time_spent_seconds: number;
+}
+
+export interface ChartDataPoint {
+  period: string;
+  count: number;
+}
+
+export interface BreakdownData {
+  devices: BreakdownItem[];
+  browsers: BreakdownItem[];
+  referrers: BreakdownItem[];
+  utm: UTMBreakdown[];
+  top_pages: PageBreakdown[];
+}
+
+export interface BreakdownItem {
+  name: string;
+  count: number;
+  color?: string;
+}
+
+export interface UTMBreakdown {
+  source: string;
+  medium: string;
+  campaign: string;
+  count: number;
+}
+
+export interface PageBreakdown {
+  path: string;
+  count: number;
+  unique_views: number;
+}
+
+export interface RecentEventData {
+  id: number;
+  event_name: string;
+  session_id: string;
+  page_path?: string;
+  referrer?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  properties?: any;
+  created_at: string;
+}
