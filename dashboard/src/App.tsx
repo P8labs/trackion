@@ -5,7 +5,7 @@ import { useStore } from "./store";
 import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { AuthPage } from "./pages/AuthPage";
-import { OptimizedDashboardPage } from "./pages/OptimizedDashboardPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -33,7 +33,6 @@ function AuthRoute() {
 function App() {
   const { logout } = useStore();
 
-  // Set up global error handler for authentication errors
   useEffect(() => {
     setGlobalErrorHandler((error) => {
       if (
@@ -61,7 +60,7 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Layout>
-                    <OptimizedDashboardPage />
+                    <DashboardPage />
                   </Layout>
                 </ProtectedRoute>
               }

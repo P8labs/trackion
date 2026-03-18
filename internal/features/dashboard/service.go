@@ -44,6 +44,12 @@ type ChartDataPoint struct {
 	Count  int64  `json:"count"`
 }
 
+type AreaChartDataPoint struct {
+	Period  string `json:"period"`
+	Desktop int64  `json:"desktop"`
+	Mobile  int64  `json:"mobile"`
+}
+
 type BreakdownData struct {
 	Devices   []BreakdownItem `json:"devices"`
 	Browsers  []BreakdownItem `json:"browsers"`
@@ -129,6 +135,7 @@ type Service interface {
 	// New optimized endpoints
 	GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error)
 	GetChartDataFlexible(ctx context.Context, projectId string, request ChartDataRequest) ([]ChartDataPoint, error)
+	GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error)
 	GetDeviceAnalytics(ctx context.Context, projectId string) (*DeviceAnalyticsData, error)
 	GetTrafficSources(ctx context.Context, projectId string) (*TrafficSourcesData, error)
 	GetTopPages(ctx context.Context, projectId string) ([]TopPage, error)
@@ -712,6 +719,36 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 			Referrer:   referrer,
 			Properties: event.Properties,
 			CreatedAt:  event.CreatedAt,
+		}
+	}
+
+	return result, nil
+}
+
+func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error) {
+	projectUUID := uuid.MustParse(projectId)
+
+	// Parse time range and determine appropriate granularity
+	startTime, granularity := parseTimeRange(timeRange)
+
+	params := repository.GetAreaChartDataByDeviceParams{
+		ProjectID: projectUUID,
+		CreatedAt: startTime,
+		DateTrunc: granularity,
+		Column4:   eventFilter,
+	}
+
+	data, err := s.repo.GetAreaChartDataByDevice(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get area chart data: %w", err)
+	}
+
+	result := make([]AreaChartDataPoint, len(data))
+	for i, point := range data {
+		result[i] = AreaChartDataPoint{
+			Period:  formatPeriod(point.Period, granularity),
+			Desktop: point.Desktop,
+			Mobile:  point.Mobile,
 		}
 	}
 

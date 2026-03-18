@@ -1,12 +1,8 @@
 import { TrendingUp, Eye, Users, Clock } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useDashboardCounts } from "../../hooks/useApi";
+import moment from "moment";
 
 interface DashboardCountsProps {
   projectId: string;
@@ -47,15 +43,6 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
     );
   }
 
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return remainingSeconds > 0
-      ? `${minutes}m ${remainingSeconds}s`
-      : `${minutes}m`;
-  };
-
   const counts = [
     {
       title: "Total Events",
@@ -77,7 +64,7 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
     },
     {
       title: "Avg. Time",
-      value: formatTime(data?.avg_time_spent_seconds || 0),
+      value: formatMS(data?.avg_time_spent_seconds || 0),
       description: "Time spent on site",
       icon: Clock,
     },
@@ -106,4 +93,10 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
       })}
     </div>
   );
+}
+
+function formatMS(ms: number) {
+  const d = moment(ms);
+  const formatted = `${Math.floor(d.hours())}h ${d.minutes()}m ${d.seconds()}s`;
+  return formatted;
 }

@@ -79,6 +79,12 @@ export interface ChartDataPoint {
   count: number;
 }
 
+export interface AreaChartDataPoint {
+  period: string;
+  desktop: number;
+  mobile: number;
+}
+
 export interface BreakdownData {
   devices: BreakdownItem[];
   browsers: BreakdownItem[];

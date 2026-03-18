@@ -6,6 +6,7 @@ import type {
   UpdateProject,
   DashboardStats,
   ChartDataPoint,
+  AreaChartDataPoint,
   BreakdownData,
   RecentEventData,
 } from "../types";
@@ -246,6 +247,27 @@ export const getChartDataFlexible = async (
 
   return apiCall<ChartDataPoint[]>(
     `/api/analytics/${projectId}/chart-data?${params.toString()}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getAreaChartData = async (
+  projectId: string,
+  timeRange: string,
+  eventFilter: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<AreaChartDataPoint[]> => {
+  const params = new URLSearchParams();
+  params.append("time_range", timeRange);
+  if (eventFilter) {
+    params.append("event_filter", eventFilter);
+  }
+
+  return apiCall<AreaChartDataPoint[]>(
+    `/api/analytics/${projectId}/area-chart-data?${params.toString()}`,
     {},
     serverUrl,
     authToken,

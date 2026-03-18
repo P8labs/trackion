@@ -88,7 +88,7 @@ export function TopPages({ projectId }: TopPagesProps) {
               {data.map((page, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-medium">
-                    <div className="max-w-[200px] truncate" title={page.path}>
+                    <div className="max-w-50 truncate" title={page.path}>
                       {page.path || "/"}
                     </div>
                   </TableCell>

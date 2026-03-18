@@ -18,6 +18,8 @@ type Querier interface {
 	DeleteProject(ctx context.Context, id uuid.UUID) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteUserSessions(ctx context.Context, userID uuid.UUID) error
+	// Area Chart Data with Device Breakdown (desktop/mobile)
+	GetAreaChartDataByDevice(ctx context.Context, arg GetAreaChartDataByDeviceParams) ([]GetAreaChartDataByDeviceRow, error)
 	// Chart Data with flexible time range and event filtering
 	GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error)
 	GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)

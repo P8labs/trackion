@@ -216,3 +216,22 @@ func (h *handler) GetRecentEventsFormatted(w http.ResponseWriter, r *http.Reques
 
 	res.Success(w, events, "Recent events fetched successfully.")
 }
+
+func (h *handler) GetAreaChartData(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+	timeRange := r.URL.Query().Get("time_range")
+	if timeRange == "" {
+		timeRange = "7d"
+	}
+
+	eventFilter := r.URL.Query().Get("event_filter")
+
+	data, err := h.service.GetAreaChartData(r.Context(), projectId, timeRange, eventFilter)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Area chart data fetched successfully.")
+}

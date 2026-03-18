@@ -1,11 +1,4 @@
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
+import { PieChart, Pie, Cell } from "recharts";
 import { Monitor, Globe } from "lucide-react";
 import {
   Card,
@@ -15,6 +8,14 @@ import {
   CardTitle,
 } from "../ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from "../ui/chart";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useDeviceAnalytics, useTrafficSources } from "../../hooks/useApi";
 
@@ -23,11 +24,11 @@ interface AnalyticsBreakdownProps {
 }
 
 const DEVICE_COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 function DeviceChart({
@@ -40,34 +41,34 @@ function DeviceChart({
     fill: DEVICE_COLORS[index % DEVICE_COLORS.length],
   }));
 
+  const chartConfig = data.reduce((config, item, index) => {
+    config[item.name] = {
+      label: item.name,
+      color: DEVICE_COLORS[index % DEVICE_COLORS.length],
+    };
+    return config;
+  }, {} as ChartConfig);
   return (
-    <div className="h-[250px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <PieChart>
-          <Pie
-            data={chartData}
-            cx="50%"
-            cy="50%"
-            innerRadius={40}
-            outerRadius={80}
-            paddingAngle={5}
-            dataKey="count"
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-          </Pie>
-          <Tooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "6px",
-            }}
-          />
-          <Legend />
-        </PieChart>
-      </ResponsiveContainer>
-    </div>
+    <ChartContainer config={chartConfig} className="min-h-75 w-full">
+      <PieChart>
+        <Pie
+          data={chartData}
+          cx="50%"
+          cy="50%"
+          innerRadius={60}
+          outerRadius={120}
+          paddingAngle={5}
+          dataKey="count"
+          nameKey="name"
+        >
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.fill} />
+          ))}
+        </Pie>
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <ChartLegend content={<ChartLegendContent />} />
+      </PieChart>
+    </ChartContainer>
   );
 }
 
@@ -124,7 +125,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
         </CardHeader>
         <CardContent>
           {deviceLoading ? (
-            <div className="h-[250px] flex items-center justify-center">
+            <div className="h-75 flex items-center justify-center">
               <LoadingSpinner />
             </div>
           ) : (
@@ -137,7 +138,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 {deviceData?.devices && deviceData.devices.length > 0 ? (
                   <DeviceChart data={deviceData.devices} />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No device data available
                   </div>
                 )}
@@ -146,7 +147,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 {deviceData?.browsers && deviceData.browsers.length > 0 ? (
                   <DeviceChart data={deviceData.browsers} />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No browser data available
                   </div>
                 )}
@@ -166,7 +167,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
         </CardHeader>
         <CardContent>
           {trafficLoading ? (
-            <div className="h-[250px] flex items-center justify-center">
+            <div className="h-75 flex items-center justify-center">
               <LoadingSpinner />
             </div>
           ) : (
@@ -180,7 +181,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 {trafficData?.referrers && trafficData.referrers.length > 0 ? (
                   <TrafficSourcesList data={trafficData.referrers} />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No referrer data available
                   </div>
                 )}
@@ -190,7 +191,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 trafficData.utm_sources.length > 0 ? (
                   <TrafficSourcesList data={trafficData.utm_sources} />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No UTM source data available
                   </div>
                 )}
@@ -200,7 +201,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 trafficData.utm_mediums.length > 0 ? (
                   <TrafficSourcesList data={trafficData.utm_mediums} />
                 ) : (
-                  <div className="h-[200px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No UTM medium data available
                   </div>
                 )}

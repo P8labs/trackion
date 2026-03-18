@@ -1,14 +1,6 @@
 import { useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { Calendar, Filter } from "lucide-react";
+
 import {
   Card,
   CardContent,
@@ -23,8 +15,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "../ui/chart";
 import { LoadingSpinner } from "../LoadingSpinner";
-import { useChartDataFlexible } from "../../hooks/useApi";
+import { useAreaChartData } from "../../hooks/useApi";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 interface ChartDataProps {
   projectId: string;
@@ -45,21 +46,25 @@ const EVENT_FILTERS = [
   { value: "click", label: "Click events" },
 ];
 
+const chartConfig = {
+  desktop: {
+    label: "Desktop",
+    color: "var(--chart-1)",
+  },
+  mobile: {
+    label: "Mobile",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
 export function DashboardChart({ projectId }: ChartDataProps) {
   const [timeRange, setTimeRange] = useState("24h");
   const [eventFilter, setEventFilter] = useState("");
 
-  const { data, isLoading, error } = useChartDataFlexible(
+  const { data, isLoading, error } = useAreaChartData(
     projectId,
     timeRange,
     eventFilter,
   );
-
-  const chartData =
-    data?.map((point) => ({
-      time: point.period,
-      events: point.count,
-    })) || [];
 
   return (
     <Card>
@@ -76,7 +81,7 @@ export function DashboardChart({ projectId }: ChartDataProps) {
               value={timeRange}
               onValueChange={(v) => setTimeRange(v || "")}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-35">
                 <Calendar className="h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
@@ -116,43 +121,68 @@ export function DashboardChart({ projectId }: ChartDataProps) {
           <div className="h-75 flex items-center justify-center text-muted-foreground">
             Failed to load chart data
           </div>
-        ) : chartData.length === 0 ? (
+        ) : !data ? (
           <div className="h-75 flex items-center justify-center text-muted-foreground">
             No data available for the selected period
           </div>
         ) : (
-          <div className="h-75">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis
-                  dataKey="time"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="events"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{
-                    r: 4,
-                    fill: "hsl(var(--primary))",
-                  }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+          <ChartContainer config={chartConfig} className="min-h-64 w-full">
+            <AreaChart accessibilityLayer data={data}>
+              <defs>
+                <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-desktop)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-desktop)"
+                    stopOpacity={0.1}
+                  />
+                </linearGradient>
+                <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-mobile)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-mobile)"
+                    stopOpacity={0.1}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="period"
+                tickLine={false}
+                tickMargin={10}
+                axisLine={false}
+              />
+              <YAxis tickLine={false} axisLine={false} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dot" />}
+              />
+              <Area
+                dataKey="mobile"
+                type="natural"
+                fill="url(#fillMobile)"
+                stroke="var(--color-mobile)"
+                stackId="a"
+              />
+              <Area
+                dataKey="desktop"
+                type="natural"
+                fill="url(#fillDesktop)"
+                stroke="var(--color-desktop)"
+                stackId="a"
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+            </AreaChart>
+          </ChartContainer>
         )}
       </CardContent>
     </Card>

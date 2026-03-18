@@ -25,6 +25,7 @@ func Routes(repo repository.Querier) *chi.Mux {
 	// New optimized endpoints
 	r.Get("/{id}/counts", handler.GetDashboardCounts)
 	r.Get("/{id}/chart-data", handler.GetChartDataFlexible)
+	r.Get("/{id}/area-chart-data", handler.GetAreaChartData)
 	r.Get("/{id}/device-analytics", handler.GetDeviceAnalytics)
 	r.Get("/{id}/traffic-sources", handler.GetTrafficSources)
 	r.Get("/{id}/top-pages", handler.GetTopPages)

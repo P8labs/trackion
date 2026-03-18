@@ -14,6 +14,7 @@ import {
   getRecentEvents,
   getDashboardCounts,
   getChartDataFlexible,
+  getAreaChartData,
   getDeviceAnalytics,
   getTrafficSources,
   getTopPages,
@@ -39,6 +40,8 @@ export const queryKeys = {
   counts: (projectId: string) => ["counts", projectId] as const,
   chartData: (projectId: string, timeRange: string, eventFilter: string) =>
     ["chartData", projectId, timeRange, eventFilter] as const,
+  areaChartData: (projectId: string, timeRange: string, eventFilter: string) =>
+    ["areaChartData", projectId, timeRange, eventFilter] as const,
   deviceAnalytics: (projectId: string) =>
     ["deviceAnalytics", projectId] as const,
   trafficSources: (projectId: string) => ["trafficSources", projectId] as const,
@@ -240,7 +243,36 @@ export function useChartDataFlexible(
   return useQuery({
     queryKey: queryKeys.chartData(projectId, timeRange, eventFilter),
     queryFn: () =>
-      getChartDataFlexible(projectId, timeRange, eventFilter, serverUrl, authToken!),
+      getChartDataFlexible(
+        projectId,
+        timeRange,
+        eventFilter,
+        serverUrl,
+        authToken!,
+      ),
+    enabled: !!authToken && !!projectId,
+    staleTime: 1 * 60 * 1000, // 1 minute
+    refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
+  });
+}
+
+export function useAreaChartData(
+  projectId: string,
+  timeRange: string = "7d",
+  eventFilter: string = "",
+) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.areaChartData(projectId, timeRange, eventFilter),
+    queryFn: () =>
+      getAreaChartData(
+        projectId,
+        timeRange,
+        eventFilter,
+        serverUrl,
+        authToken!,
+      ),
     enabled: !!authToken && !!projectId,
     staleTime: 1 * 60 * 1000, // 1 minute
     refetchInterval: 2 * 60 * 1000, // Refetch every 2 minutes
@@ -285,7 +317,8 @@ export function useRecentEventsFormatted(projectId: string, limit = 50) {
 
   return useQuery({
     queryKey: queryKeys.recentEventsFormatted(projectId, limit),
-    queryFn: () => getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
+    queryFn: () =>
+      getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
     enabled: !!authToken && !!projectId,
     refetchInterval: 30 * 1000, // Refetch every 30 seconds
   });

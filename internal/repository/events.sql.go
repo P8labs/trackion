@@ -13,6 +13,75 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAreaChartDataByDevice = `-- name: GetAreaChartDataByDevice :many
+WITH user_agents as (
+    SELECT 
+        session_id, 
+        user_agent,
+        DATE_TRUNC($3, created_at)::timestamptz as period
+    FROM events
+    WHERE project_id = $1
+      AND created_at >= $2
+      AND ($4 = '' OR $4 IS NULL OR event_name = $4)
+      AND event_name = 'pageview'
+)
+SELECT
+    period,
+    SUM(CASE WHEN 
+        user_agent ILIKE '%iphone%' OR 
+        user_agent ILIKE '%ipad%' OR 
+        user_agent ILIKE '%android%' 
+        THEN 1 ELSE 0 END) as mobile,
+    SUM(CASE WHEN 
+        user_agent ILIKE '%windows%' OR 
+        user_agent ILIKE '%macintosh%' OR 
+        user_agent ILIKE '%mac os%' OR 
+        (user_agent ILIKE '%linux%' AND user_agent NOT ILIKE '%android%')
+        THEN 1 ELSE 0 END) as desktop
+FROM user_agents
+GROUP BY period
+ORDER BY period ASC
+`
+
+type GetAreaChartDataByDeviceParams struct {
+	ProjectID uuid.UUID   `json:"project_id"`
+	CreatedAt time.Time   `json:"created_at"`
+	DateTrunc string      `json:"date_trunc"`
+	Column4   interface{} `json:"column_4"`
+}
+
+type GetAreaChartDataByDeviceRow struct {
+	Period  time.Time `json:"period"`
+	Mobile  int64     `json:"mobile"`
+	Desktop int64     `json:"desktop"`
+}
+
+// Area Chart Data with Device Breakdown (desktop/mobile)
+func (q *Queries) GetAreaChartDataByDevice(ctx context.Context, arg GetAreaChartDataByDeviceParams) ([]GetAreaChartDataByDeviceRow, error) {
+	rows, err := q.db.Query(ctx, getAreaChartDataByDevice,
+		arg.ProjectID,
+		arg.CreatedAt,
+		arg.DateTrunc,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAreaChartDataByDeviceRow
+	for rows.Next() {
+		var i GetAreaChartDataByDeviceRow
+		if err := rows.Scan(&i.Period, &i.Mobile, &i.Desktop); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getChartDataFlexible = `-- name: GetChartDataFlexible :many
 SELECT
     DATE_TRUNC($3, created_at)::timestamptz as period,

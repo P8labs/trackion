@@ -1,8 +1,8 @@
 import { useRecentEventsFormatted } from "../../hooks/useApi";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { TrendingUp, Clock, Activity } from "lucide-react";
-import { Badge } from "../ui/badge";
 import moment from "moment";
+import { Badge } from "../ui/badge";
 
 interface RecentEventsProps {
   projectId: string;
@@ -44,7 +44,6 @@ export function RecentEvents({ projectId }: RecentEventsProps) {
         return `Element: ${parsed.element}`;
       }
 
-      // Show first property for other events
       const entries = Object.entries(parsed);
       if (entries.length > 0) {
         const [key, value] = entries[0];
@@ -95,7 +94,7 @@ export function RecentEvents({ projectId }: RecentEventsProps) {
               </div>
             </div>
           ) : (
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="space-y-2 max-h-100 overflow-y-auto">
               {events.map((event) => (
                 <div
                   key={event.id}
