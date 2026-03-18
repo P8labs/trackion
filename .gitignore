@@ -2,3 +2,6 @@ builds/*
 .env
 .env.*
 .local.*
+
+docs/node_modules/*
+docs/.viitepress/*
