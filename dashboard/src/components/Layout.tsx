@@ -58,7 +58,6 @@ export function Layout({ children }: LayoutProps) {
         }
       } catch (error) {
         console.error("Failed to load projects:", error);
-        // Reset to empty array on error
         setProjects([]);
       }
     };
@@ -81,11 +80,11 @@ export function Layout({ children }: LayoutProps) {
       >
         <div className="h-full flex flex-col px-3 py-4">
           <div className="flex items-center gap-2 px-3 py-2">
-            <div className="h-7 w-7 rounded-full bg-linear-to-br from-[#75a5ff] to-[#3fd5ff] text-[#11151d] text-xs font-bold flex items-center justify-center">
-              T
+            <div className="h-7 w-7 rounded-full flex items-center justify-center -mr-5.5 mb-2">
+              <img src="/trackion_t.png" alt="Trackion" />
             </div>
-            <div className="text-sm font-semibold text-sidebar-foreground">
-              Trackion
+            <div className="text-md font-semibold text-sidebar-foreground">
+              rackion
             </div>
           </div>
 
