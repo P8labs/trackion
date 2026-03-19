@@ -30,20 +30,17 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer) // recover from crashes
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   app.config.AllowedOrigins,
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "X-Project-Key"},
-		ExposedHeaders:   []string{"Content-Length"},
-		AllowCredentials: false,
-	})
+	c := cors.AllowAll()
 	r.Use(c.Handler)
 
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	repo := repository.New(app.db)
+	authService := auth.NewService(repo, *app.config)
+	authHandler := auth.NewHandler(authService, *app.config)
 
 	r.Mount("/events", events.Routes(repo, *app.config))
+	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
 	// auth related
 	if app.config.IsSaaS() {

@@ -47,6 +47,9 @@ export const loginWithToken = async (
     {
       method: "POST",
       body: JSON.stringify({ token }),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
     },
     serverUrl,
     null,

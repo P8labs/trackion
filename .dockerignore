@@ -1,0 +1,12 @@
+.git
+.gitignore
+.github
+web/node_modules
+web/dist
+builds
+trackion.wiki
+*.log
+*.tmp
+.env
+.env.*
+!.env.selfhost.example

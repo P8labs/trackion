@@ -20,11 +20,13 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
+var version = "dev"
+
 func main() {
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %s", err)
+		log.Printf("No .env file loaded (%v), falling back to system environment", err)
 	}
 
 	ctx := context.Background()
@@ -33,6 +35,7 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
+	logger.Info("starting trackion server", "version", version)
 
 	dbpool, err := pgxpool.New(ctx, cfg.DatabaseURL)
 	if err != nil {

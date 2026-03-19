@@ -18,6 +18,7 @@ type Service interface {
 	GetUser(ctx context.Context, userID string) (repository.User, error)
 	CreateSession(ctx context.Context, userID string) (string, error)
 	DeleteSession(ctx context.Context, token string) error
+	VerifyToken(ctx context.Context, token string) (repository.User, error)
 }
 
 type service struct {
@@ -112,6 +113,32 @@ func (s *service) CreateSession(ctx context.Context, userID string) (string, err
 
 func (s *service) DeleteSession(ctx context.Context, token string) error {
 	return s.repo.DeleteSession(ctx, token)
+}
+
+func (s *service) VerifyToken(ctx context.Context, token string) (repository.User, error) {
+	if s.cfg.IsSelfHost() {
+		if token != s.cfg.AdminToken {
+			return repository.User{}, errors.New("unauthorized")
+		}
+
+		name := "Self Hosted Admin"
+
+		return repository.User{
+			ID:        uuid.MustParse(SystemUserID),
+			Email:     "admin@trackion.local",
+			Name:      &name,
+			GithubID:  nil,
+			CreatedAt: time.Now(),
+			AvatarUrl: nil,
+		}, nil
+	}
+
+	session, err := s.repo.GetSessionByToken(ctx, token)
+	if err != nil {
+		return repository.User{}, err
+	}
+
+	return s.repo.GetUser(ctx, session.UserID)
 }
 
 func (s *service) createDefaultSubscription(ctx context.Context, userID uuid.UUID) error {

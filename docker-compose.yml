@@ -1,15 +1,56 @@
 services:
-  database:
-    container_name: database
+  db:
+    container_name: trackion-db
     image: postgres:15-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: db
+      POSTGRES_USER: ${POSTGRES_USER:-trackion}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackion}
+      POSTGRES_DB: ${POSTGRES_DB:-trackion}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-trackion} -d ${POSTGRES_DB:-trackion}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+
+  server:
+    container_name: trackion-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VERSION: ${TRACKION_VERSION:-dev}
+    image: trackion/server:${TRACKION_VERSION:-dev}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env.selfhost
+        required: false
+    environment:
+      TRACKION_MODE: selfhost
+      PORT: 8000
+      DATABASE_URL: "postgres://${POSTGRES_USER:-trackion}:${POSTGRES_PASSWORD:-trackion}@db:5432/${POSTGRES_DB:-trackion}?sslmode=disable"
+      BASE_URL: "${BASE_URL:-http://localhost:8000}"
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:4173}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-*}"
+      TRACKION_ADMIN_TOKEN: "${TRACKION_ADMIN_TOKEN:-change-me}"
+      AUTH_SECRET: "${AUTH_SECRET:-change-me}"
+      EVENT_RETENTION_DAYS: "${EVENT_RETENTION_DAYS:-30}"
+      PROJECT_DELETE_AFTER_DAYS: "${PROJECT_DELETE_AFTER_DAYS:-7}"
+      CLEANUP_CRON_SPEC: "${CLEANUP_CRON_SPEC:-@every 1h}"
+      CLEANUP_TIMEOUT_SEC: "${CLEANUP_TIMEOUT_SEC:-300}"
+    ports:
+      - "${SERVER_PORT:-8000}:8000"
 
 volumes:
   db-data:

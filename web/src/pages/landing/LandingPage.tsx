@@ -1,17 +1,10 @@
 import { Link } from "react-router-dom";
-import {
-  BarChart3,
-  Zap,
-  Shield,
-  Github,
-  Code,
-  Globe,
-  Server,
-} from "lucide-react";
+import { BarChart3, Zap, Shield, Code, Globe, Server } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CodeBox from "@/components/CodeBox";
 import { SCRIPT_TAG_CODE } from "@/lib/constants";
 import { PublicPageLayout } from "./components/PublicPageLayout";
+import { Icons } from "@/lib/icons";
 
 export function LandingPage() {
   return (
@@ -23,10 +16,14 @@ export function LandingPage() {
           <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-linear-to-r from-chart-1 to-chart-3 bg-clip-text text-transparent">
             Lightweight Telemetry Infrastructure
           </h1>
+          <div className="inline-flex items-center gap-2 rounded-full border border-chart-2/30 bg-chart-1/10 px-4 py-1.5 text-sm font-semibold text-chart-3 mb-6">
+            <span className="h-2 w-2 rounded-full bg-chart-3" />
+            Open analytics stack for modern teams
+          </div>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             Track, analyze, and understand your application with real-time
-            analytics and custom events. Self-hosted or SaaS - your choice, your
-            data.
+            analytics and custom events. Try the beta cloud tier for demos, then
+            move to self-hosting for full ownership and production control.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Link to="/auth">
@@ -60,43 +57,60 @@ export function LandingPage() {
           <h2 className="text-3xl font-bold text-center mb-12">
             Choose Your Deployment
           </h2>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="bg-card rounded-lg p-6 border">
-              <div className="flex items-center mb-4">
-                <Globe className="h-8 w-8 text-[#ff6b35] mr-3" />
-                <h3 className="text-xl font-semibold">SaaS (Coming Soon)</h3>
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-stretch">
+            <div className="relative overflow-hidden rounded-2xl border border-chart-2/25 bg-card/90 p-6 shadow-lg h-full flex flex-col">
+              <div className="pointer-events-none absolute -top-20 -right-12 h-44 w-44 rounded-full bg-chart-2/25 blur-2xl" />
+              <div className="relative flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Globe className="h-8 w-8 text-theme mr-3" />
+                  <h3 className="text-xl font-semibold">Cloud Beta</h3>
+                </div>
+                <span className="rounded-full border border-chart-2/40 bg-chart-1/20 px-2.5 py-1 text-xs font-semibold text-chart-3">
+                  Free 100K events
+                </span>
               </div>
-              <p className="text-muted-foreground mb-4">
-                Hosted solution for quick setup. Start tracking immediately
-                without any infrastructure setup.
+              <p className="text-muted-foreground mb-5">
+                Hosted beta for quick testing. Great for demos and evaluation
+                before moving to self-hosted production.
               </p>
-              <ul className="text-sm text-muted-foreground space-y-2 mb-6">
+              <ul className="text-sm text-muted-foreground space-y-2 mb-6 flex-1">
                 <li>• No setup required</li>
                 <li>• Managed infrastructure</li>
-                <li>• Automatic updates</li>
-                <li>• Support included</li>
+                <li>• Free tier: up to 100,000 events</li>
+                <li>• Best for demo and trial workloads</li>
               </ul>
-              <Button className="w-full" disabled>
-                Coming Soon
-              </Button>
+              <Link to="/auth" className="block">
+                <Button className="w-full">Try Beta Free</Button>
+              </Link>
             </div>
 
-            <div className="bg-card rounded-lg p-6 border">
-              <div className="flex items-center mb-4">
-                <Server className="h-8 w-8 text-[#ff6b35] mr-3" />
-                <h3 className="text-xl font-semibold">Self-Hosted</h3>
+            <div className="relative overflow-hidden rounded-2xl border border-chart-3/25 bg-card/90 p-6 shadow-lg h-full flex flex-col">
+              <div className="pointer-events-none absolute -bottom-20 -left-10 h-44 w-44 rounded-full bg-chart-3/20 blur-2xl" />
+              <div className="relative flex items-center justify-between mb-4">
+                <div className="flex items-center">
+                  <Server className="h-8 w-8 text-theme mr-3" />
+                  <h3 className="text-xl font-semibold">Self-Hosted</h3>
+                </div>
+                <span className="rounded-full border border-chart-3/30 bg-chart-3/10 px-2.5 py-1 text-xs font-semibold text-chart-3">
+                  Recommended
+                </span>
               </div>
-              <p className="text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-5">
                 Deploy on your infrastructure. Complete control over your data
-                and privacy.
+                and privacy. Recommended for long-term and production use.
               </p>
-              <ul className="text-sm text-muted-foreground space-y-2 mb-6">
+              <ul className="text-sm text-muted-foreground space-y-2 mb-6 flex-1">
                 <li>• Complete data ownership</li>
                 <li>• Deploy anywhere</li>
                 <li>• Open source</li>
-                <li>• No vendor lock-in</li>
+                <li>• Recommended for production</li>
               </ul>
-              <Link to="/docs" className="block">
+              <Link
+                to="https://github.com/P8labs/trackion/wiki"
+                target="_blank"
+                rel="noreferrer"
+                className="block"
+              >
                 <Button className="w-full" variant="outline">
                   View Setup Guide
                 </Button>
@@ -112,9 +126,9 @@ export function LandingPage() {
             Everything You Need
           </h2>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <Zap className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">2-Minute Setup</h3>
               <p className="text-muted-foreground">
@@ -123,9 +137,9 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <BarChart3 className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
                 Real-time Analytics
@@ -136,9 +150,9 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Code className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <Code className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Custom Events</h3>
               <p className="text-muted-foreground">
@@ -147,9 +161,9 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <Shield className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Privacy First</h3>
               <p className="text-muted-foreground">
@@ -158,9 +172,9 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Globe className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <Globe className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Multi-Project</h3>
               <p className="text-muted-foreground">
@@ -169,9 +183,9 @@ export function LandingPage() {
               </p>
             </div>
 
-            <div className="text-center">
-              <div className="w-12 h-12 bg-[#ff6b35]/10 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Github className="h-6 w-6 text-[#ff6b35]" />
+            <div className="text-center rounded-2xl border border-border/60 bg-card/70 p-6 h-full">
+              <div className="w-12 h-12 bg-theme/10 rounded-lg flex items-center justify-center mx-auto mb-4 ring-1 ring-theme/20">
+                <Icons.github className="h-6 w-6 text-theme" />
               </div>
               <h3 className="text-lg font-semibold mb-2">Open Source</h3>
               <p className="text-muted-foreground">
