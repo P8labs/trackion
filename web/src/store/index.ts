@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { AuthState, Project } from "../types";
+import { SERVER_URL } from "@/lib/constants";
 
 interface AppState extends AuthState {
   currentProject: Project | null;
@@ -9,13 +10,11 @@ interface AppState extends AuthState {
   setCurrentProject: (project: Project | null) => void;
 }
 
-const serverUrl = import.meta.env.SERVER_URL || "http://localhost:8000";
-
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
       authToken: null,
-      serverUrl: serverUrl,
+      serverUrl: SERVER_URL,
       user: null,
       isAuthenticated: false,
       currentProject: null,
@@ -32,7 +31,7 @@ export const useStore = create<AppState>()(
           user: null,
           isAuthenticated: false,
           currentProject: null,
-          serverUrl: serverUrl,
+          serverUrl: SERVER_URL,
         }),
       setCurrentProject: (project) => set({ currentProject: project }),
     }),

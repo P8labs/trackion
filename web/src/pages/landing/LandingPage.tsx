@@ -1,7 +1,4 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Button } from "../components/ui/button";
-import { ThemeToggle } from "../components/ui/theme-toggle";
 import {
   BarChart3,
   Zap,
@@ -11,57 +8,19 @@ import {
   Globe,
   Server,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import CodeBox from "@/components/CodeBox";
+import { SCRIPT_TAG_CODE } from "@/lib/constants";
+import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function LandingPage() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-background" />;
-  }
-
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <img src="/trackion_t.png" alt="Trackion" className="w-8 h-8" />
-            <span className="font-bold text-xl">Trackion</span>
-          </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <a
-              href="#features"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Features
-            </a>
-            <a
-              href="https://github.com/P8labs/trackion/wiki/Introduction"
-              target="_blank"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              Docs
-            </a>
-            <a
-              href="https://github.com/p8labs/trackion"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              GitHub
-            </a>
-            <ThemeToggle />
-            <Link to="/auth">
-              <Button variant="outline">Sign In</Button>
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <PublicPageLayout>
+      <BackgroundEffects />
 
       <section className="py-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-linear-to-r from-[#ff6b35] to-[#d73502] bg-clip-text text-transparent">
+          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-linear-to-r from-chart-1 to-chart-3 bg-clip-text text-transparent">
             Lightweight Telemetry Infrastructure
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
@@ -71,7 +30,7 @@ export function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
             <Link to="/auth">
-              <Button size="lg" variant="outline">
+              <Button size="lg" className="p-4 py-5" variant="default">
                 Get Started Free
               </Button>
             </Link>
@@ -242,135 +201,47 @@ export function LandingPage() {
                 <h3 className="text-xl font-semibold mb-4">
                   2. Add Script Tag
                 </h3>
-                <div className="bg-muted rounded p-4 font-mono text-sm overflow-x-auto">
-                  <pre className="text-left whitespace-pre-wrap">
-                    {`<script 
-  src="https://your-server.com/t.js"
-  data-project="your-project-key">
-</script>`}
-                  </pre>
+                <div className="rounded overflow-x-auto">
+                  <CodeBox code={SCRIPT_TAG_CODE} language="html" />
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+    </PublicPageLayout>
+  );
+}
 
-      <footer className="border-t py-12 px-4">
-        <div className="container mx-auto">
-          <div className="grid md:grid-cols-5 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <img src="/trackion_t.png" alt="Trackion" className="w-8 h-8" />
-                <span className="font-bold">Trackion</span>
-              </div>
-              <p className="text-muted-foreground text-sm">
-                Lightweight telemetry infrastructure for developers.
-              </p>
-            </div>
+export function BackgroundEffects() {
+  return (
+    <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="h-150 w-150 rounded-full border border-border opacity-20 animate-spin-slow" />
+        <div className="absolute h-100 w-100 rounded-full border border-border opacity-10 animate-spin-reverse" />
+      </div>
 
-            <div>
-              <h4 className="font-semibold mb-3">Product</h4>
-              <div className="space-y-2 text-sm">
-                <Link
-                  to="/docs"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Documentation
-                </Link>
-                <a
-                  href="https://github.com/p8labs/trackion"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  GitHub
-                </a>
-                <Link
-                  to="/auth"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Dashboard
-                </Link>
-              </div>
-            </div>
+      <div className="absolute inset-0">
+        <div className="signal-dot top-[20%] left-[10%]" />
+        <div className="signal-dot top-[70%] left-[80%]" />
+        <div className="signal-dot top-[50%] left-[40%]" />
+      </div>
 
-            <div>
-              <h4 className="font-semibold mb-3">Resources</h4>
-              <div className="space-y-2 text-sm">
-                <Link
-                  to="/docs/quick-start"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Quick Start
-                </Link>
-                <Link
-                  to="/docs/api"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  API Reference
-                </Link>
-                <Link
-                  to="/docs/self-hosting"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Self-hosting
-                </Link>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-3">Company</h4>
-              <div className="space-y-2 text-sm">
-                <Link
-                  to="/about"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  About
-                </Link>
-                <a
-                  href="https://p8labs.tech"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  P8Labs
-                </a>
-                <a
-                  href="mailto:hello@p8labs.tech"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Contact
-                </a>
-              </div>
-            </div>
-
-            <div>
-              <h4 className="font-semibold mb-3">Legal</h4>
-              <div className="space-y-2 text-sm">
-                <Link
-                  to="/terms"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Terms of Service
-                </Link>
-                <Link
-                  to="/privacy"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  Privacy Policy
-                </Link>
-                <a
-                  href="https://github.com/p8labs/trackion/blob/main/LICENSE"
-                  className="text-muted-foreground hover:text-foreground block"
-                >
-                  MIT License
-                </a>
-              </div>
-            </div>
-          </div>
-
-          <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>&copy; 2026 P8Labs. Released under the MIT License.</p>
-          </div>
-        </div>
-      </footer>
+      <div
+        className="absolute inset-0 opacity-20"
+        style={{
+          background: `
+            linear-gradient(
+              120deg,
+              transparent 40%,
+              var(--color-primary) 50%,
+              transparent 60%
+            )
+          `,
+          backgroundSize: "200% 200%",
+          animation: "beam 6s linear infinite",
+        }}
+      />
     </div>
   );
 }

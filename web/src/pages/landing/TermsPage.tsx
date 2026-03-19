@@ -1,4 +1,4 @@
-import { PublicPageLayout } from "../components/PublicPageLayout";
+import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function TermsPage() {
   return (
@@ -8,7 +8,7 @@ export function TermsPage() {
           <h1 className="text-3xl font-bold mb-8">Terms of Service</h1>
 
           <div className="text-sm text-muted-foreground mb-8">
-            Last updated: January 2025
+            Last updated: March 19, 2026
           </div>
 
           <section className="mb-8">
@@ -16,9 +16,9 @@ export function TermsPage() {
               1. Acceptance of Terms
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              By accessing and using Trackion, you accept and agree to be bound
-              by the terms and provision of this agreement. If you do not agree
-              to abide by the above, please do not use this service.
+              By accessing or using Trackion ("Service"), you agree to be bound
+              by these Terms of Service. If you do not agree to these terms, you
+              must not use the Service.
             </p>
           </section>
 
@@ -27,112 +27,145 @@ export function TermsPage() {
               2. Description of Service
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Trackion is a lightweight telemetry infrastructure that allows you
-              to track, analyze, and understand your applications through
-              real-time analytics and custom events. The service is available in
-              both self-hosted and SaaS configurations.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">
-              3. Open Source License
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              The Trackion software is released under the MIT License. You are
-              free to use, modify, and distribute the software in accordance
-              with the terms of the MIT License. The full license text is
-              available in the project repository.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">
-              4. Self-Hosted Deployments
-            </h2>
-            <p className="text-muted-foreground leading-relaxed">
-              When you deploy Trackion on your own infrastructure (self-hosted),
-              you are responsible for:
+              Trackion is a telemetry and event tracking platform that enables
+              users to collect, process, and analyze application data. The
+              Service is offered in two forms:
             </p>
             <ul className="list-disc list-inside text-muted-foreground mt-4 space-y-2">
-              <li>Security and maintenance of your deployment</li>
+              <li>SaaS (hosted by P8labs)</li>
+              <li>Self-hosted (deployed and managed by you)</li>
+            </ul>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">
+              3. Accounts and Authentication
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              When using Trackion via GitHub OAuth or any authentication method,
+              you are responsible for maintaining the security of your account
+              and credentials. You agree to accept responsibility for all
+              activities that occur under your account.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">
+              4. Open Source License
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              The self-hosted version of Trackion is released under the MIT
+              License. Your use of the open-source components is governed by
+              that license.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">
+              5. Self-Hosted Responsibility
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              If you deploy Trackion on your own infrastructure, you are solely
+              responsible for:
+            </p>
+            <ul className="list-disc list-inside text-muted-foreground mt-4 space-y-2">
+              <li>System security and access control</li>
               <li>Compliance with applicable laws and regulations</li>
-              <li>Data protection and privacy measures</li>
-              <li>Backup and disaster recovery procedures</li>
+              <li>Data protection, storage, and encryption</li>
+              <li>Backups and disaster recovery</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">
-              5. Limitation of Liability
-            </h2>
+            <h2 className="text-2xl font-semibold mb-4">6. Acceptable Use</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Trackion is provided "as is" without warranty of any kind. In no
-              event shall P8Labs or contributors be liable for any direct,
-              indirect, incidental, special, exemplary, or consequential damages
-              arising out of the use of this software.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">6. Data Ownership</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              For self-hosted deployments, you retain complete ownership of all
-              data processed through Trackion. P8Labs does not have access to or
-              ownership of your data when you run Trackion on your own
-              infrastructure.
-            </p>
-          </section>
-
-          <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">7. Acceptable Use</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              You agree not to use Trackion for:
+              You agree not to use the Service:
             </p>
             <ul className="list-disc list-inside text-muted-foreground mt-4 space-y-2">
-              <li>Any unlawful purpose or in violation of applicable laws</li>
-              <li>Collecting personal information without proper consent</li>
-              <li>
-                Activities that could harm the security or performance of
-                systems
-              </li>
-              <li>Any activity that violates the privacy rights of others</li>
+              <li>In violation of any applicable laws or regulations</li>
+              <li>To collect or process personal data without lawful basis</li>
+              <li>To interfere with or disrupt system integrity or security</li>
+              <li>To infringe on the rights of others</li>
             </ul>
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4">8. Changes to Terms</h2>
+            <h2 className="text-2xl font-semibold mb-4">7. Data Ownership</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We reserve the right to modify these terms at any time. Changes
-              will be posted on this page and, where appropriate, communicated
-              through other channels. Your continued use of Trackion after any
-              such changes constitutes your acceptance of the new terms.
+              You retain all rights to the data you collect and process using
+              Trackion. For self-hosted deployments, P8labs has no access to
+              your data. For SaaS usage, data is processed only to provide the
+              Service.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">
-              9. Support and Community
+              8. Service Availability
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              Support is provided on a best-effort basis through GitHub Issues
-              and community channels. For self-hosted deployments, you are
-              responsible for your own support and maintenance.
+              The Trackion cloud (SaaS) offering is currently provided in beta.
+              As such, it may be unstable and is not guaranteed to be available,
+              uninterrupted, or error-free. Features may change or be
+              discontinued at any time without notice.
+            </p>
+
+            <p className="text-muted-foreground leading-relaxed mt-4">
+              For self-hosted deployments, the Service runs on your own
+              infrastructure. Availability and uptime are therefore dependent on
+              your systems, configuration, and operational practices. P8labs
+              does not provide uptime guarantees for self-hosted environments.
+            </p>
+          </section>
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">
+              9. Limitation of Liability
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              To the maximum extent permitted by law, P8labs and contributors
+              shall not be liable for any indirect, incidental, special, or
+              consequential damages, including loss of data, revenue, or
+              profits, arising from your use of the Service.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">10. Termination</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              We reserve the right to suspend or terminate access to the Service
+              at any time, without prior notice, for conduct that we believe
+              violates these Terms.
             </p>
           </section>
 
           <section className="mb-8">
             <h2 className="text-2xl font-semibold mb-4">
-              10. Contact Information
+              11. Changes to Terms
             </h2>
             <p className="text-muted-foreground leading-relaxed">
-              If you have questions about these Terms of Service, please contact
-              us at{" "}
+              We may update these Terms from time to time. Continued use of the
+              Service after changes become effective constitutes acceptance of
+              the revised Terms.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">12. Governing Law</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              These Terms shall be governed by and construed in accordance with
+              the laws of India, without regard to conflict of law principles.
+            </p>
+          </section>
+
+          <section className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">13. Contact</h2>
+            <p className="text-muted-foreground leading-relaxed">
+              For any questions regarding these Terms, contact{" "}
               <a
-                href="mailto:hello@p8labs.tech"
-                className="text-[#ff6b35] hover:underline"
+                href="mailto:hello@P8labs.tech"
+                className="text-primary hover:underline"
               >
-                hello@p8labs.tech
+                hello@P8labs.tech
               </a>
               .
             </p>

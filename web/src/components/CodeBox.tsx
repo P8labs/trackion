@@ -30,14 +30,14 @@ export default function CodeBox({
   }, [code, language]);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(code); // always raw code
+    await navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
     <div className="relative">
-      <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto">
+      <pre className="p-4 rounded-lg text-sm overflow-x-auto bg-[#1c1b1b] text-primary-foreground">
         <code dangerouslySetInnerHTML={{ __html: highlighted }} />
       </pre>
 

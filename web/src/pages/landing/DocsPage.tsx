@@ -1,6 +1,6 @@
+import { PublicPageLayout } from "@/pages/landing/components/PublicPageLayout";
 import { ExternalLink, Github, Construction } from "lucide-react";
 import { useEffect } from "react";
-import { PublicPageLayout } from "../components/PublicPageLayout";
 
 export function DocsPage() {
   useEffect(() => {
@@ -63,7 +63,7 @@ export function DocsPage() {
                 Get up and running with Docker in under 2 minutes
               </p>
               <a
-                href="https://github.com/p8labs/trackion#quick-start"
+                href="https://github.com/P8labs/trackion#quick-start"
                 className="text-sm text-primary hover:underline inline-flex items-center"
               >
                 View Quick Start
@@ -76,7 +76,7 @@ export function DocsPage() {
                 Complete API documentation with examples
               </p>
               <a
-                href="https://github.com/p8labs/trackion#api-reference"
+                href="https://github.com/P8labs/trackion#api-reference"
                 className="text-sm text-primary hover:underline inline-flex items-center"
               >
                 View API Docs
