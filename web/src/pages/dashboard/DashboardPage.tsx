@@ -1,14 +1,14 @@
 import { RefreshCw, Plus, BarChart3 } from "lucide-react";
-import { useStore } from "../store";
-import { Button } from "../components/ui/button";
-import { Card } from "../components/ui/card";
-import { DashboardCounts } from "../components/dashboard/DashboardCounts";
-import { DashboardChart } from "../components/dashboard/DashboardChart";
-import { AnalyticsBreakdown } from "../components/dashboard/AnalyticsBreakdown";
-import { TopPages } from "../components/dashboard/TopPages";
-import { RecentEvents } from "../components/dashboard/RecentEvents";
+import { useStore } from "../../store";
+import { Button } from "../../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { DashboardCounts } from "../../components/dashboard/DashboardCounts";
+import { DashboardChart } from "../../components/dashboard/DashboardChart";
+import { AnalyticsBreakdown } from "../../components/dashboard/AnalyticsBreakdown";
+import { TopPages } from "../../components/dashboard/TopPages";
+import { RecentEvents } from "../../components/dashboard/RecentEvents";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../hooks/useApi";
+import { queryKeys } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
 
 export function DashboardPage() {

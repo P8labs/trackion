@@ -1,18 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Server, Lock, Loader2 } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "../components/ui/card";
-import { Separator } from "../components/ui/separator";
-import { useStore } from "../store";
-import { loginWithToken, getGithubLoginUrl } from "../lib/api";
+} from "../../components/ui/card";
+import { Separator } from "../../components/ui/separator";
+import { useStore } from "../../store";
+import { loginWithToken, getGithubLoginUrl } from "../../lib/api";
+import { flags } from "@/lib/flags";
 
 export function AuthPage() {
   const navigate = useNavigate();
@@ -21,8 +22,6 @@ export function AuthPage() {
   const [adminToken, setAdminToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  const enableGithubLogin = import.meta.env.VITE_ENABLE_GITHUB_LOGIN === "true";
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -120,7 +119,7 @@ export function AuthPage() {
               </Button>
             </form>
 
-            {enableGithubLogin && (
+            {flags.enableGithubLogin && (
               <>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

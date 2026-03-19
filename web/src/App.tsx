@@ -5,18 +5,18 @@ import { useStore } from "./store";
 import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { LandingPage } from "./pages/LandingPage";
-import { DocsPage } from "./pages/DocsPage";
-import { AboutPage } from "./pages/AboutPage";
-import { TermsPage } from "./pages/TermsPage";
-import { PrivacyPage } from "./pages/PrivacyPage";
-import { AuthPage } from "./pages/AuthPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { ProjectsPage } from "./pages/ProjectsPage";
-import { ProjectDetailPage } from "./pages/ProjectDetailPage";
-import { SettingsPage } from "./pages/SettingsPage";
-import { AuthCallbackPage } from "./pages/AuthCallbackPage";
+import { AuthPage } from "./pages/auth/AuthPage";
+import { DashboardPage } from "./pages/dashboard/DashboardPage";
+import { ProjectsPage } from "./pages/dashboard/ProjectsPage";
+import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
+import { SettingsPage } from "./pages/dashboard/SettingsPage";
+import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
 import { queryClient, setGlobalErrorHandler } from "./lib/queryClient";
+import { LandingPage } from "./pages/landing/LandingPage";
+import { DocsPage } from "./pages/landing/DocsPage";
+import { AboutPage } from "./pages/landing/AboutPage";
+import { TermsPage } from "./pages/landing/TermsPage";
+import { PrivacyPage } from "./pages/landing/PrivacyPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, authToken } = useStore();
@@ -55,7 +55,7 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="system">
+      <ThemeProvider defaultTheme="dark">
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <Routes>
@@ -64,8 +64,10 @@ function App() {
               <Route path="/about" element={<AboutPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+
               <Route path="/auth" element={<AuthRoute />} />
               <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
               <Route
                 path="/dashboard"
                 element={

@@ -1,22 +1,22 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, AlertTriangle } from "lucide-react";
-import { Button } from "../components/ui/button";
-import { Skeleton } from "../components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Skeleton } from "../../components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "../../components/ui/card";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../components/ui/tabs";
-import { useProject } from "../hooks/useApi";
-import { useStore } from "../store";
+} from "../../components/ui/tabs";
+import { useProject } from "../../hooks/useApi";
+import { useStore } from "../../store";
 import {
   ProjectIntegrationGuide,
   ProjectInfoCard,
   ProjectSettingsCard,
   ProjectDangerZone,
-} from "../components/project";
+} from "../../components/project";
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();

@@ -8,12 +8,11 @@ import {
   ChevronDown,
   Menu,
   X,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { useStore } from "../store";
 import { getProjects } from "../lib/api";
 import type { Project } from "../types";
+import { ThemeToggle } from "./ui/theme-toggle";
 
 interface LayoutProps {
   children: ReactNode;
@@ -28,15 +27,8 @@ const primaryNav = [
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const {
-    currentProject,
-    setCurrentProject,
-    logout,
-    authToken,
-    serverUrl,
-    theme,
-    setTheme,
-  } = useStore();
+  const { currentProject, setCurrentProject, logout, authToken, serverUrl } =
+    useStore();
   const [projects, setProjects] = useState<Project[]>([]);
   const [showProjectDropdown, setShowProjectDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -179,12 +171,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           <div className="flex items-center gap-3 text-muted-foreground">
-            <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="h-8 w-8 rounded-full flex items-center justify-center transition-colors bg-muted hover:bg-muted/80 text-foreground"
-            >
-              {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
+            <ThemeToggle />
           </div>
         </header>
 

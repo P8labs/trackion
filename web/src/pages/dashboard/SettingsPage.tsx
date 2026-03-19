@@ -1,4 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 
 export function SettingsPage() {
   return (
@@ -6,9 +11,7 @@ export function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">
-          Configure your dashboard
-        </p>
+        <p className="text-muted-foreground">Configure your dashboard</p>
       </div>
 
       {/* General Settings */}

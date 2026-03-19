@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus, Trash2, AlertTriangle } from "lucide-react";
-import { Card } from "../components/ui/card";
-import { Button } from "../components/ui/button";
+import { Card } from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../components/ui/dialog";
+} from "../../components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,17 +21,17 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from "../components/ui/alert-dialog";
-import { Input } from "../components/ui/input";
-import { Label } from "../components/ui/label";
-import { Skeleton } from "../components/ui/skeleton";
-import { Badge } from "../components/ui/badge";
+} from "../../components/ui/alert-dialog";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import { Skeleton } from "../../components/ui/skeleton";
+import { Badge } from "../../components/ui/badge";
 import {
   useProjects,
   useCreateProject,
   useDeleteProject,
-} from "../hooks/useApi";
-import type { ProjectSettings } from "../types";
+} from "../../hooks/useApi";
+import type { ProjectSettings } from "../../types";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
