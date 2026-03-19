@@ -77,7 +77,7 @@ create_tag() {
 
   echo -e "${YELLOW}Creating commit and git tag: $tag${NC}"
 
-  git add "$VERSION_FILE"
+  git add .
   git commit -m "chore: bump version to $version"
   git tag -a "$tag" -m "Release $version"
 
@@ -128,7 +128,7 @@ main() {
   else
     echo -e "${YELLOW}Version bumped without commit/tag.${NC}"
     echo -e "${BLUE}Run when ready:${NC}"
-    echo -e "${YELLOW}  git add $VERSION_FILE${NC}"
+    echo -e "${YELLOW}  git add .${NC}"
     echo -e "${YELLOW}  git commit -m 'chore: bump version to $NEW_VERSION'${NC}"
     echo -e "${YELLOW}  git tag -a v$NEW_VERSION -m 'Release $NEW_VERSION'${NC}"
     echo -e "${YELLOW}  git push origin <branch> && git push origin v$NEW_VERSION${NC}"
