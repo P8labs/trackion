@@ -32,7 +32,7 @@ export function DashboardPage() {
           </p>
           <div className="space-y-3">
             <Button
-              onClick={() => navigate("/projects")}
+              onClick={() => navigate("/projects/new")}
               className="w-full gap-2"
             >
               <Plus className="h-4 w-4" />
