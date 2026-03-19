@@ -1,66 +1,28 @@
 # Trackion
 
-This is a lightweight telementry infrastructure tool.
+Trackion is a lightweight telemetry infrastructure for developers.
 
-## Build Server Locally
+It helps you track events, understand usage, and keep full control over your data without heavy setup.
 
-```bash
-go test ./...
-go build -o builds/trackion-server ./cmd
-```
 
-## Self-Hosting with Docker Compose
+## Getting started
 
-1. Create a self-hosting env file:
+You can use Trackion in two ways:
 
-```bash
-cp .env.selfhost.example .env.selfhost
-```
+- **Cloud (beta)** → quick start, no setup [(trackion.tech)](https://trackion.tech/)
+- **Self-hosted** → run on your own infrastructure  
 
-2. Update at least `TRACKION_ADMIN_TOKEN` and `AUTH_SECRET` in `.env.selfhost`.
+For setup instructions, guides, and everything else: 
+- [SaaS Guide](https://github.com/P8labs/trackion/wiki/SaaS-Guide)
+- Self Host [Quick Start](https://github.com/P8labs/trackion/wiki/Quick-Start)
 
-3. Start the stack:
 
-```bash
-docker compose up -d --build
-```
 
-The server will be available on `http://localhost:8000` by default.
+## Notes
 
-## Docker Image
+* Project is still in early stage, expect some changes
+* If you want full control, self-hosting is recommended
 
-Build the server image locally:
+For detailed documentation:
+[https://github.com/P8labs/trackion/wiki](https://github.com/P8labs/trackion/wiki)
 
-```bash
-docker build --build-arg VERSION=dev -t trackion/server:dev .
-```
-
-## Version Bumping
-
-Server version is tracked in the `VERSION` file.
-
-Use the helper script:
-
-```bash
-./scripts/bump-version.sh patch
-```
-
-Supported bump types: `major`, `minor`, `patch`.
-
-The script can optionally create:
-
-- a commit with the bumped version
-- an annotated git tag (`vX.Y.Z`)
-
-## GitHub Actions
-
-- `.github/workflows/build-go-server.yml`:
-  - runs on push and pull requests
-  - runs `go test ./...`
-  - builds the Go server binary
-  - validates Docker image build
-
-- `.github/workflows/release-go-server.yml`:
-  - runs when a tag like `v1.2.3` is pushed
-  - creates multi-platform server binaries and uploads them to GitHub Releases
-  - builds and publishes Docker image to GHCR (`ghcr.io/<owner>/trackion`)
