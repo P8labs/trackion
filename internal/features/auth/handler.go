@@ -79,7 +79,7 @@ func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if client == "desktop" {
-
+		// Added because I want to build a desktop app also. But let's see when
 		redirect := fmt.Sprintf(
 			"trackion://auth?token=%s",
 			sessionToken,
