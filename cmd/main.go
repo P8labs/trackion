@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"os"
 	"trackion/internal/config"
+	"trackion/internal/repository"
+	"trackion/internal/worker"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -47,6 +49,16 @@ func main() {
 	}
 
 	logger.Info("connected to database with connection pool")
+
+	repo := repository.New(dbpool)
+	workerManager := worker.NewManager(logger)
+
+	if err := workerManager.Register(worker.NewMaintenanceJob(repo, *cfg, logger)); err != nil {
+		panic(err)
+	}
+
+	workerManager.Start()
+	defer worker.StopWithTimeout(workerManager, cfg.CleanupTimeoutSec)
 
 	api := application{
 		config: cfg,

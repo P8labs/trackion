@@ -11,6 +11,7 @@ import (
 	"trackion/internal/features/dashboard"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
 	"trackion/internal/repository"
 	"trackion/internal/res"
@@ -30,7 +31,11 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Recoverer) // recover from crashes
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: app.config.AllowedOrigins,
+		AllowedOrigins:   app.config.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "X-Project-Key"},
+		ExposedHeaders:   []string{"Content-Length"},
+		AllowCredentials: false,
 	})
 	r.Use(c.Handler)
 
@@ -38,7 +43,7 @@ func (app *application) mount() http.Handler {
 
 	repo := repository.New(app.db)
 
-	r.Mount("/events", events.Routes(repo))
+	r.Mount("/events", events.Routes(repo, *app.config))
 
 	// auth related
 	if app.config.IsSaaS() {
@@ -53,6 +58,7 @@ func (app *application) mount() http.Handler {
 		r.Use(mw.AuthMiddleware)
 		r.Mount("/projects", projects.Routes(repo))
 		r.Mount("/analytics", dashboard.Routes(repo))
+		r.Mount("/settings", settings.Routes(repo, *app.config))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

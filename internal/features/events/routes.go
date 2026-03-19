@@ -1,16 +1,17 @@
 package events
 
 import (
+	"trackion/internal/config"
 	"trackion/internal/repository"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func Routes(repo repository.Querier) *chi.Mux {
+func Routes(repo repository.Querier, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
 	mw := NewMiddleware(repo)
-	eventService := NewService(repo)
+	eventService := NewService(repo, cfg)
 	eventHandler := NewHandler(eventService)
 
 	r.Use(mw.ProjectIDValidation)

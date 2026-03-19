@@ -7,22 +7,15 @@ import (
 )
 
 func Routes(repo repository.Querier) *chi.Mux {
-	r := chi.NewRouter()
-
 	service := NewService(repo)
+	return newRouter(service)
+}
+
+func newRouter(service Service) *chi.Mux {
+	r := chi.NewRouter()
 	handler := NewHandler(service)
 
-	// Legacy dashboard endpoint (for backward compatibility)
-	r.Get("/{id}/dashboard", handler.GetDashboardData)
-	r.Get("/{id}/events", handler.GetProjectEvents)
-
-	// Legacy analytics endpoints (keeping for backward compatibility)
-	r.Get("/{id}/stats", handler.GetDashboardStats)
-	r.Get("/{id}/chart", handler.GetChartData)
-	r.Get("/{id}/breakdown", handler.GetBreakdownData)
-	r.Get("/{id}/recent", handler.GetRecentEventsData)
-
-	// New optimized endpoints
+	// Active analytics endpoints
 	r.Get("/{id}/counts", handler.GetDashboardCounts)
 	r.Get("/{id}/chart-data", handler.GetChartDataFlexible)
 	r.Get("/{id}/area-chart-data", handler.GetAreaChartData)

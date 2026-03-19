@@ -48,7 +48,7 @@ function RouteMiddleware({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
+      <ThemeProvider defaultTheme="system">
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <RouteMiddleware>

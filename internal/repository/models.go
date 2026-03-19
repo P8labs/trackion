@@ -39,6 +39,8 @@ type Project struct {
 	TrackClicks    bool               `json:"track_clicks"`
 	Domains        []string           `json:"domains"`
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	Status         string             `json:"status"`
+	DeletedAt      pgtype.Timestamptz `json:"deleted_at"`
 }
 
 type Session struct {
@@ -65,4 +67,5 @@ type User struct {
 	Name      *string   `json:"name"`
 	GithubID  *string   `json:"github_id"`
 	CreatedAt time.Time `json:"created_at"`
+	AvatarUrl *string   `json:"avatar_url"`
 }

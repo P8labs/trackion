@@ -19,19 +19,6 @@ func NewHandler(service Service) *handler {
 	}
 }
 
-func (h *handler) GetDashboardData(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "id")
-
-	data, err := h.service.GetDashboardData(r.Context(), projectId)
-	if err != nil {
-		log.Println(err)
-		res.Error(w, err.Error(), 500)
-		return
-	}
-
-	res.Success(w, data, "Dashboard data fetched successfully.")
-}
-
 func (h *handler) GetProjectEvents(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
 	limitStr := r.URL.Query().Get("limit")
@@ -53,7 +40,6 @@ func (h *handler) GetProjectEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 // New analytics handlers
-
 func (h *handler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
 

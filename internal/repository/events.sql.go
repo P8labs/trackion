@@ -13,17 +13,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const deleteEventsOlderThan = `-- name: DeleteEventsOlderThan :execrows
+DELETE FROM events
+WHERE created_at < $1
+`
+
+func (q *Queries) DeleteEventsOlderThan(ctx context.Context, createdAt time.Time) (int64, error) {
+	result, err := q.db.Exec(ctx, deleteEventsOlderThan, createdAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const getAreaChartDataByDevice = `-- name: GetAreaChartDataByDevice :many
-WITH user_agents as (
+WITH filtered_events AS (
     SELECT 
         session_id, 
         user_agent,
-        DATE_TRUNC($3, created_at)::timestamptz as period
+        DATE_TRUNC($3, created_at)::timestamptz AS period
     FROM events
     WHERE project_id = $1
       AND created_at >= $2
-      AND ($4 = '' OR $4 IS NULL OR event_name = $4)
-      AND event_name = 'pageview'
+      AND ($4::text IS NULL OR $4::text = '' OR event_name = $4::text)
 )
 SELECT
     period,
@@ -31,23 +43,23 @@ SELECT
         user_agent ILIKE '%iphone%' OR 
         user_agent ILIKE '%ipad%' OR 
         user_agent ILIKE '%android%' 
-        THEN 1 ELSE 0 END) as mobile,
+        THEN 1 ELSE 0 END) AS mobile,
     SUM(CASE WHEN 
         user_agent ILIKE '%windows%' OR 
         user_agent ILIKE '%macintosh%' OR 
         user_agent ILIKE '%mac os%' OR 
         (user_agent ILIKE '%linux%' AND user_agent NOT ILIKE '%android%')
-        THEN 1 ELSE 0 END) as desktop
-FROM user_agents
+        THEN 1 ELSE 0 END) AS desktop
+FROM filtered_events
 GROUP BY period
 ORDER BY period ASC
 `
 
 type GetAreaChartDataByDeviceParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	CreatedAt time.Time   `json:"created_at"`
-	DateTrunc string      `json:"date_trunc"`
-	Column4   interface{} `json:"column_4"`
+	ProjectID uuid.UUID `json:"project_id"`
+	CreatedAt time.Time `json:"created_at"`
+	DateTrunc string    `json:"date_trunc"`
+	Column4   string    `json:"column_4"`
 }
 
 type GetAreaChartDataByDeviceRow struct {
@@ -56,7 +68,6 @@ type GetAreaChartDataByDeviceRow struct {
 	Desktop int64     `json:"desktop"`
 }
 
-// Area Chart Data with Device Breakdown (desktop/mobile)
 func (q *Queries) GetAreaChartDataByDevice(ctx context.Context, arg GetAreaChartDataByDeviceParams) ([]GetAreaChartDataByDeviceRow, error) {
 	rows, err := q.db.Query(ctx, getAreaChartDataByDevice,
 		arg.ProjectID,
@@ -106,7 +117,6 @@ type GetChartDataFlexibleRow struct {
 	Count  int64     `json:"count"`
 }
 
-// Chart Data with flexible time range and event filtering
 func (q *Queries) GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error) {
 	rows, err := q.db.Query(ctx, getChartDataFlexible,
 		arg.ProjectID,
@@ -135,7 +145,7 @@ func (q *Queries) GetChartDataFlexible(ctx context.Context, arg GetChartDataFlex
 const getCustomEventCount = `-- name: GetCustomEventCount :one
 SELECT COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name != 'pageview' AND event_name != 'time_spent' AND event_name != 'click'
+WHERE project_id = $1 AND event_name != 'page.view' AND event_name != 'page.time_spent' AND event_name != 'page.click'
 `
 
 func (q *Queries) GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error) {
@@ -150,23 +160,23 @@ SELECT
     COUNT(*) AS total_events,
 
     SUM(CASE 
-        WHEN event_name = 'pageview' THEN 1 
+        WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
     END) AS page_views,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'pageview' THEN session_id 
+        WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
     SUM(CASE 
-        WHEN event_name = 'time_spent' THEN 
+        WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
     END) AS total_time_ms,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'time_spent' THEN session_id 
+        WHEN event_name = 'page.time_spent' THEN session_id 
     END) AS time_spent_sessions
 FROM events
 WHERE project_id = $1
@@ -180,7 +190,6 @@ type GetDashboardCountsRow struct {
 	TimeSpentSessions int64 `json:"time_spent_sessions"`
 }
 
-// Dashboard Stats API (counts only)
 func (q *Queries) GetDashboardCounts(ctx context.Context, projectID uuid.UUID) (GetDashboardCountsRow, error) {
 	row := q.db.QueryRow(ctx, getDashboardCounts, projectID)
 	var i GetDashboardCountsRow
@@ -199,23 +208,23 @@ SELECT
     COUNT(*) AS total_events,
 
     SUM(CASE 
-        WHEN event_name = 'pageview' THEN 1 
+        WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
     END) AS page_views,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'pageview' THEN session_id 
+        WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
     SUM(CASE 
-        WHEN event_name = 'time_spent' THEN 
+        WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
     END) AS total_time_ms,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'time_spent' THEN session_id 
+        WHEN event_name = 'page.time_spent' THEN session_id 
     END) AS time_spent_sessions
 
 FROM events
@@ -247,7 +256,7 @@ const getDeviceAnalytics = `-- name: GetDeviceAnalytics :many
 WITH user_agents as (
     SELECT DISTINCT session_id, user_agent
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     CASE
@@ -285,7 +294,6 @@ type GetDeviceAnalyticsRow struct {
 	Count      int64  `json:"count"`
 }
 
-// Breakdown Data - Device/Browser Analysis
 func (q *Queries) GetDeviceAnalytics(ctx context.Context, projectID uuid.UUID) ([]GetDeviceAnalyticsRow, error) {
 	rows, err := q.db.Query(ctx, getDeviceAnalytics, projectID)
 	if err != nil {
@@ -325,7 +333,7 @@ WITH parsed_agents as (
             ELSE 'Other'
         END as browser
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     device_os as name,
@@ -554,7 +562,7 @@ func (q *Queries) GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg 
 const getPageViewCount = `-- name: GetPageViewCount :one
 SELECT COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview'
+WHERE project_id = $1 AND event_name = 'page.view'
 `
 
 func (q *Queries) GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error) {
@@ -754,7 +762,7 @@ WITH referrer_data as (
             ELSE 'Other'
         END as source
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     source as name,
@@ -790,9 +798,9 @@ func (q *Queries) GetReferrerBreakdown(ctx context.Context, projectID uuid.UUID)
 }
 
 const getTimeSpentHours = `-- name: GetTimeSpentHours :one
-SELECT COALESCE(CAST(SUM(CAST(properties->>'time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
+SELECT COALESCE(CAST(SUM(CAST(properties->>'page.time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
 FROM events
-WHERE project_id = $1 AND event_name = 'time_spent'
+WHERE project_id = $1 AND event_name = 'page.time_spent'
 `
 
 func (q *Queries) GetTimeSpentHours(ctx context.Context, projectID uuid.UUID) (interface{}, error) {
@@ -807,7 +815,7 @@ SELECT
     page_path as path,
     COUNT(*) as total_views,
     COUNT(DISTINCT session_id) as unique_visitors,
-    ROUND(AVG(CASE WHEN event_name = 'time_spent' THEN
+    ROUND(AVG(CASE WHEN event_name = 'page.time_spent' THEN
         CAST(properties->>'duration_ms' AS NUMERIC) / 1000.0
     END), 2) as avg_time_seconds
 FROM events
@@ -856,7 +864,7 @@ SELECT
     COUNT(*) as count,
     COUNT(DISTINCT session_id) as unique_views
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview'
+WHERE project_id = $1 AND event_name = 'page.view'
 GROUP BY page_path
 ORDER BY count DESC
 LIMIT 20
@@ -920,7 +928,7 @@ WITH traffic_data as (
         utm_medium,
         utm_campaign
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     source as name,
@@ -981,7 +989,7 @@ SELECT
     COALESCE(utm_campaign, 'None') as utm_campaign,
     COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview'
+WHERE project_id = $1 AND event_name = 'page.view'
 GROUP BY utm_source, utm_medium, utm_campaign
 ORDER BY count DESC
 LIMIT 20

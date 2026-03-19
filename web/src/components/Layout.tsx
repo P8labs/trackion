@@ -71,12 +71,12 @@ export function Layout({ children }: LayoutProps) {
         } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col px-3 py-4">
-          <div className="flex items-center gap-2 px-3 py-2">
-            <div className="h-7 w-7 rounded-full flex items-center justify-center -mr-5.5 mb-2">
+          <div className="flex items-center px-3 py-2">
+            <div className="h-7 w-7 rounded-full flex items-center justify-center mb-2">
               <img src="/trackion_t.png" alt="Trackion" />
             </div>
             <div className="text-md font-semibold text-sidebar-foreground">
-              rackion
+              Trackion
             </div>
           </div>
 

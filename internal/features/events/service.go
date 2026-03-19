@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"time"
+	"trackion/internal/config"
 	"trackion/internal/core"
 	"trackion/internal/repository"
 
@@ -12,16 +13,17 @@ import (
 )
 
 type EventParams struct {
-	Event     string    `json:"event" validate:"required"`
-	SessionID string    `json:"sessionId" validate:"required"`
-	Timestamp time.Time `json:"timestamp"`
-	Page      struct {
+	ProjectKey string    `json:"project_key"`
+	Event      string    `json:"event" validate:"required"`
+	SessionID  string    `json:"session_Id" validate:"required"`
+	UserAgent  string    `json:"user_agent"`
+	Timestamp  time.Time `json:"timestamp"`
+	Page       struct {
 		Title    string `json:"title"`
 		Path     string `json:"path"`
 		Referrer string `json:"referrer"`
 	} `json:"page"`
-	UserAgent string `json:"userAgent"`
-	Utm       struct {
+	Utm struct {
 		Source   string `json:"source"`
 		Medium   string `json:"medium"`
 		Campaign string `json:"campaign"`
@@ -30,23 +32,27 @@ type EventParams struct {
 }
 
 type BatchEventsParams struct {
-	Events []EventParams `json:"events" validate:"required"`
+	ProjectKey string        `json:"project_key" validate:"required"`
+	Events     []EventParams `json:"events" validate:"required"`
 }
 
 type ProjectConfig = repository.GetProjectConfigRow
 
 type Service interface {
 	CreateEvent(ctx context.Context, params EventParams) (int64, error)
-	GetProjectConfig(ctx context.Context, projectKey string) (ProjectConfig, error)
+	GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error)
 	CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error)
 }
 
 type svc struct {
 	repo repository.Querier
+	cfg  config.Config
 }
 
-func NewService(repo repository.Querier) Service {
-	return &svc{repo: repo}
+var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")
+
+func NewService(repo repository.Querier, cfg config.Config) Service {
+	return &svc{repo: repo, cfg: cfg}
 }
 
 func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error) {
@@ -56,6 +62,12 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 	}
 
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
+
+	if s.cfg.IsSaaS() {
+		if err := s.checkUsageLimit(ctx, projectId, 1); err != nil {
+			return 0, err
+		}
+	}
 
 	id, err := s.repo.InsertEvent(ctx, repository.InsertEventParams{
 		ProjectID:   projectId,
@@ -80,6 +92,13 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 
 func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error) {
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
+
+	if s.cfg.IsSaaS() {
+		if err := s.checkUsageLimit(ctx, projectId, len(params.Events)); err != nil {
+			return 0, err
+		}
+	}
+
 	events, err := ToInsertEvents(projectId, params.Events)
 
 	if err != nil {
@@ -89,15 +108,37 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (
 	err = s.repo.InsertEventsBatch(ctx, events).Close()
 
 	if err != nil {
-		return 0, nil
+		return 0, err
 
 	}
 	return len(events), nil
 
 }
 
-func (s *svc) GetProjectConfig(ctx context.Context, projectKey string) (ProjectConfig, error) {
-	cfg, err := s.repo.GetProjectConfig(ctx, projectKey)
+func (s *svc) checkUsageLimit(ctx context.Context, projectID uuid.UUID, incoming int) error {
+	if incoming <= 0 {
+		return nil
+	}
+
+	limit, err := s.repo.GetActiveSubscriptionLimitByProject(ctx, projectID)
+	if err != nil {
+		return errors.New("subscription not found for project owner")
+	}
+
+	usage, err := s.repo.GetMonthlyUsageByProject(ctx, projectID)
+	if err != nil {
+		return errors.New("unable to verify usage limit")
+	}
+
+	if usage+int64(incoming) > int64(limit) {
+		return ErrMonthlyLimitReached
+	}
+
+	return nil
+}
+
+func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {
+	cfg, err := s.repo.GetProjectConfig(ctx, uuid.MustParse(projectId))
 	if err != nil {
 		return ProjectConfig{}, errors.New("Unable to get project config with this key")
 	}

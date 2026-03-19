@@ -40,9 +40,14 @@ export function LandingPage() {
             <div className="bg-card rounded-lg border shadow-xl p-1">
               <div className="bg-[#1d1816] rounded-md aspect-video flex items-center justify-center">
                 <img
-                  src="/hero.png"
+                  src="/hero_light.png"
                   alt="Dashboard Image"
-                  className="rounded aspect-video"
+                  className="dark:hidden block rounded aspect-video"
+                />
+                <img
+                  src="/hero_dark.png"
+                  alt="Dashboard Image"
+                  className="dark:block hidden rounded aspect-video"
                 />
               </div>
             </div>

@@ -1,41 +1,65 @@
 (function () {
+  if (window.trackion) return;
+
   const script = document.currentScript;
   if (!script) return;
 
-  const projectKey = script.getAttribute("data-project");
-  if (!projectKey) return;
+  const PROJECT_KEY = script.getAttribute("data-api-key");
+  if (!PROJECT_KEY) return;
 
-  const base = script.src.replace(/\/t\.js.*$/, "");
+  const BASE = script.src.replace(/\/t\.js.*$/, "");
+
+  const ENDPOINTS = {
+    ingest: BASE + "/events/batch",
+    config: BASE + "/events/config",
+  };
+
+  const STORAGE = {
+    session: "trackion.session",
+    config: "trackion.config",
+  };
+
+  const LIMITS = {
+    batch: 10,
+    payloadKB: 256,
+    flushInterval: 5000,
+  };
+
+  const EVENTS = {
+    PAGE_VIEW: "page.view",
+    PAGE_LEAVE: "page.leave",
+    TIME_SPENT: "page.time_spent",
+    CLICK: "page.click",
+  };
+
+  let config = {};
+  const queue = [];
   const USER_AGENT = navigator.userAgent;
-  const ingestURL = base + "/events/batch";
-  const configURL =
-    base + "/events/config?key=" + encodeURIComponent(projectKey);
-
-  const SESSION_KEY = "trackion_session";
-  const CONFIG_KEY = "trackion_cfg";
-
-  let MAX_BATCH = 10;
-  let MAX_PAYLOAD_KB = 256;
-
-  const FLUSH_INTERVAL = 5000;
 
   function uuid() {
     return Math.random().toString(36).slice(2) + Date.now();
   }
 
+  function safeJSONParse(v) {
+    try {
+      return JSON.parse(v);
+    } catch {
+      return null;
+    }
+  }
+
   function getSession() {
-    let s = localStorage.getItem(SESSION_KEY);
+    let s = localStorage.getItem(STORAGE.session);
     if (!s) {
       s = uuid();
-      localStorage.setItem(SESSION_KEY, s);
+      localStorage.setItem(STORAGE.session, s);
     }
     return s;
   }
 
   const sessionId = getSession();
-  const queue = [];
 
-  const utmParams = (function () {
+  const utm = (() => {
     const p = new URLSearchParams(location.search);
     return {
       source: p.get("utm_source"),
@@ -44,119 +68,119 @@
     };
   })();
 
-  function baseEvent(name, props, customSessionId) {
+  function buildEvent(name, props, customSessionId) {
     return {
       event: name,
-      sessionId: customSessionId || sessionId,
+      session_id: customSessionId || sessionId,
       timestamp: new Date().toISOString(),
-      userAgent: USER_AGENT,
+      user_agent: USER_AGENT,
       page: {
         path: location.pathname,
         title: document.title,
         referrer: document.referrer,
       },
-      utm: utmParams,
+      utm,
       properties: props || {},
     };
   }
 
-  function sendBatch() {
+  function flush() {
     if (!queue.length) return;
 
-    const events = queue.splice(0, queue.length);
-    const payload = JSON.stringify(events);
+    const batch = queue.splice(0, queue.length);
+    const payload = JSON.stringify({
+      project_key: PROJECT_KEY,
+      events: batch,
+    });
 
-    if (payload.length > MAX_PAYLOAD_KB * 1024) {
-      console.warn("Trackion payload too large, dropping batch");
+    if (payload.length > LIMITS.payloadKB * 1024) {
+      console.warn("[trackion] payload too large, dropped");
       return;
     }
 
-    fetch(ingestURL, {
+    // navigator.sendBeacon?.(
+    //   ENDPOINTS.ingest,
+    //   new Blob([payload], { type: "application/json" }),
+    // ) ||
+    fetch(ENDPOINTS.ingest, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Project-Key": projectKey,
+        "X-Project-Key": PROJECT_KEY,
       },
       body: payload,
       keepalive: true,
-    }).catch(function (err) {
-      console.warn("Trackion: Failed to send events", err);
-    });
+    }).catch(() => {});
   }
 
-  function track(name, props, customSessionId) {
-    queue.push(baseEvent(name, props, customSessionId));
+  function enqueue(event) {
+    if (queue.length > 1000) return;
+    queue.push(event);
 
-    if (queue.length >= MAX_BATCH) {
-      sendBatch();
+    if (queue.length >= LIMITS.batch) {
+      flush();
     }
   }
 
-  // Enhanced API object with additional methods
-  const trackionAPI = {
-    track: track,
-    
-    // Convenience methods
-    page: function(properties) {
-      track('page_view', properties);
+  const api = {
+    track(name, properties, sessionOverride) {
+      if (!name || typeof name !== "string") return;
+
+      enqueue(buildEvent(name, properties, sessionOverride));
     },
-    
-    event: function(eventName, properties) {
-      track(eventName, properties);
+
+    page(properties) {
+      enqueue(buildEvent(EVENTS.PAGE_VIEW, properties));
     },
-    
-    // Access to configuration and state
-    config: {},
-    session: sessionId,
-    queue: queue,
-    
-    // Manual batch sending
-    flush: function() {
-      sendBatch();
-    }
+
+    event(name, properties) {
+      this.track(name, properties);
+    },
+
+    identify(userId, traits) {
+      enqueue(
+        buildEvent("user.identify", {
+          user_id: userId,
+          traits,
+        }),
+      );
+    },
+
+    flush,
+
+    getSession() {
+      return sessionId;
+    },
+
+    _queue: queue,
+    _config: config,
   };
 
-  window.trackion = trackionAPI;
+  window.trackion = api;
 
   function loadConfig(cb) {
-    try {
-      const cached = localStorage.getItem(CONFIG_KEY);
+    const cached = safeJSONParse(localStorage.getItem(STORAGE.config));
 
-      if (cached) {
-        const data = JSON.parse(cached);
-        if (Date.now() - data.ts < 3600000) {
-          cb(data.cfg);
-          return;
-        }
-      }
-    } catch (e) {}
+    if (cached && Date.now() - cached.ts < 3600000) {
+      cb(cached.data);
+      return;
+    }
 
-    fetch(configURL, {
-      headers: {
-        "Content-Type": "application/json",
-        "X-Project-Key": projectKey,
-      },
+    fetch(ENDPOINTS.config, {
+      headers: { "X-Project-Key": PROJECT_KEY },
     })
       .then((r) => r.json())
-      .then((cfg) => {
-        try {
-          if (!cfg.status) {
-            throw Error("Failed to fetch config");
-          }
-          localStorage.setItem(
-            CONFIG_KEY,
-            JSON.stringify({
-              ts: Date.now(),
-              cfg: cfg.data,
-            }),
-          );
-        } catch (e) {
-          localStorage.removeItem(CONFIG_KEY);
-        }
+      .then((res) => {
+        const cfg = res?.data || {};
 
-        if (cfg.limits) {
-          MAX_BATCH = cfg.limits.batch_size || MAX_BATCH;
-          MAX_PAYLOAD_KB = cfg.limits.max_payload_kb || MAX_PAYLOAD_KB;
+        localStorage.setItem(
+          STORAGE.config,
+          JSON.stringify({ ts: Date.now(), data: cfg }),
+        );
+
+        if (res?.limits) {
+          LIMITS.batch = res.limits.batch_size || LIMITS.batch;
+          LIMITS.payloadKB = res.limits.max_payload_kb || LIMITS.payloadKB;
         }
 
         cb(cfg);
@@ -165,45 +189,47 @@
         cb({
           auto_pageview: true,
           track_time_spent: true,
-          track_campaign: true,
           track_clicks: false,
         });
       });
   }
 
   loadConfig(function (cfg) {
-    // Store config in API object
-    trackionAPI.config = cfg;
-    
+    config = cfg;
+    api._config = cfg;
+
     if (cfg.auto_pageview) {
-      track("pageview");
+      api.page();
     }
 
     const start = Date.now();
 
-    function report() {
+    function onLeave() {
       if (cfg.track_time_spent) {
-        track("time_spent", {
+        api.track(EVENTS.TIME_SPENT, {
           duration_ms: Date.now() - start,
         });
       }
-      track("pageleave");
 
-      sendBatch();
+      api.track(EVENTS.PAGE_LEAVE);
+      flush();
     }
-    window.addEventListener("beforeunload", report);
+
+    window.addEventListener("beforeunload", onLeave);
 
     document.addEventListener("visibilitychange", function () {
-      if (document.visibilityState === "hidden") report();
+      if (document.visibilityState === "hidden") {
+        onLeave();
+      }
     });
 
     if (cfg.track_clicks) {
-      document.addEventListener("click", function (e) {
+      document.addEventListener("page.click", function (e) {
         const el = e.target.closest("[data-track]");
         if (!el) return;
 
-        track("click", {
-          element: el.tagName,
+        api.track(EVENTS.CLICK, {
+          tag: el.tagName,
           id: el.id || null,
           text: (el.innerText || "").slice(0, 50),
         });
@@ -211,5 +237,5 @@
     }
   });
 
-  setInterval(sendBatch, FLUSH_INTERVAL);
+  setInterval(flush, LIMITS.flushInterval);
 })();

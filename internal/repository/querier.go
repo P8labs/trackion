@@ -6,37 +6,41 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
 	CleanupExpiredSessions(ctx context.Context) error
 	CreateProject(ctx context.Context, arg CreateProjectParams) (Project, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
+	CreateSubscription(ctx context.Context, arg CreateSubscriptionParams) (Subscription, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DeleteEventsOlderThan(ctx context.Context, createdAt time.Time) (int64, error)
 	DeleteProject(ctx context.Context, id uuid.UUID) error
 	DeleteSession(ctx context.Context, token string) error
 	DeleteUserSessions(ctx context.Context, userID uuid.UUID) error
-	// Area Chart Data with Device Breakdown (desktop/mobile)
+	GetActiveSubscriptionByUser(ctx context.Context, userID uuid.UUID) (Subscription, error)
+	GetActiveSubscriptionLimitByProject(ctx context.Context, id uuid.UUID) (int32, error)
 	GetAreaChartDataByDevice(ctx context.Context, arg GetAreaChartDataByDeviceParams) ([]GetAreaChartDataByDeviceRow, error)
-	// Chart Data with flexible time range and event filtering
 	GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error)
 	GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
-	// Dashboard Stats API (counts only)
 	GetDashboardCounts(ctx context.Context, projectID uuid.UUID) (GetDashboardCountsRow, error)
 	GetDashboardStats(ctx context.Context, projectID uuid.UUID) (GetDashboardStatsRow, error)
-	// Breakdown Data - Device/Browser Analysis
 	GetDeviceAnalytics(ctx context.Context, projectID uuid.UUID) ([]GetDeviceAnalyticsRow, error)
 	GetDeviceBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetDeviceBreakdownRow, error)
 	GetEventCountByName(ctx context.Context, projectID uuid.UUID) ([]GetEventCountByNameRow, error)
 	GetEventsOverTime(ctx context.Context, arg GetEventsOverTimeParams) ([]GetEventsOverTimeRow, error)
 	GetEventsOverTimeFiltered(ctx context.Context, arg GetEventsOverTimeFilteredParams) ([]GetEventsOverTimeFilteredRow, error)
 	GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg GetEventsOverTimeFilteredCustomRangeParams) ([]GetEventsOverTimeFilteredCustomRangeRow, error)
+	GetMonthlyUsageByProject(ctx context.Context, id uuid.UUID) (int64, error)
+	GetMonthlyUsageByUser(ctx context.Context, ownerID uuid.UUID) (int64, error)
 	GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
-	GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error)
+	GetProjectConfig(ctx context.Context, id uuid.UUID) (GetProjectConfigRow, error)
 	GetRecentEvents(ctx context.Context, arg GetRecentEventsParams) ([]Event, error)
 	// Recent Events with better formatting
 	GetRecentEventsFormatted(ctx context.Context, arg GetRecentEventsFormattedParams) ([]GetRecentEventsFormattedRow, error)
@@ -54,10 +58,14 @@ type Querier interface {
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
 	GetUserByGithubId(ctx context.Context, githubID *string) (User, error)
 	GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error)
+	HardDeleteProjectsDeletedBefore(ctx context.Context, deletedAt pgtype.Timestamptz) (int64, error)
 	InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error)
 	InsertEventsBatch(ctx context.Context, arg []InsertEventsBatchParams) *InsertEventsBatchBatchResults
 	ListProjects(ctx context.Context) ([]Project, error)
+	RenewFreeSubscriptionsForNewMonth(ctx context.Context) (int64, error)
+	RenewUserFreeSubscriptionIfNeeded(ctx context.Context, userID uuid.UUID) error
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) error
+	UpdateUserFromGithub(ctx context.Context, arg UpdateUserFromGithubParams) error
 }
 
 var _ Querier = (*Queries)(nil)

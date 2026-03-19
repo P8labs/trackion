@@ -226,8 +226,8 @@ export function ProjectsPage() {
             </AlertDialogMedia>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this project? This action cannot
-              be undone and all analytics data will be permanently removed.
+              Are you sure you want to delete this project? It will be hidden
+              immediately and permanently removed later by scheduled cleanup.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

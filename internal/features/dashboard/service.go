@@ -3,7 +3,6 @@ package dashboard
 import (
 	"context"
 	"fmt"
-	"log"
 	"math"
 	"time"
 	"trackion/internal/repository"
@@ -123,7 +122,6 @@ type TopPage struct {
 }
 
 type Service interface {
-	GetDashboardData(ctx context.Context, projectId string) (*DashboardData, error)
 	GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]repository.Event, error)
 
 	// Legacy analytics endpoints
@@ -151,100 +149,14 @@ func NewService(repo repository.Querier) Service {
 }
 
 var colorMap = map[string]string{
-	"pageview":   "#14b8a6",
-	"time_spent": "#f59e0b",
-	"click":      "#ef4444",
-	"custom":     "#8b5cf6",
+	"page.view":       "#14b8a6",
+	"page.time_spent": "#f59e0b",
+	"page.click":      "#ef4444",
+	"custom":          "#8b5cf6",
 }
 
 var deviceColors = []string{
 	"#14b8a6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#84cc16",
-}
-
-func (s *svc) GetDashboardData(ctx context.Context, projectId string) (*DashboardData, error) {
-	projectUUID := uuid.MustParse(projectId)
-
-	totalCount, err := s.repo.GetTotalEventCount(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get total event count: %w", err)
-	}
-
-	pageViewCount, err := s.repo.GetPageViewCount(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get page view count: %w", err)
-	}
-
-	customEventCount, err := s.repo.GetCustomEventCount(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get custom event count: %w", err)
-	}
-
-	timeSpentInterface, err := s.repo.GetTimeSpentHours(ctx, projectUUID)
-	var timeSpentHours int64 = 0
-	if err == nil && timeSpentInterface != nil {
-		switch v := timeSpentInterface.(type) {
-		case int64:
-			timeSpentHours = v
-		case int32:
-			timeSpentHours = int64(v)
-		case int:
-			timeSpentHours = int64(v)
-		}
-	}
-	avgTimeSpent := formatTimeSpent(timeSpentHours)
-
-	eventsOverTime, err := s.repo.GetEventsOverTime(ctx, repository.GetEventsOverTimeParams{
-		ProjectID: projectUUID,
-		Column2:   14,
-	})
-	if err != nil {
-		eventsOverTime = []repository.GetEventsOverTimeRow{}
-	}
-
-	timeSeriesData := make([]TimeSeriesData, len(eventsOverTime))
-	for i, evt := range eventsOverTime {
-		timeSeriesData[i] = TimeSeriesData{
-			Date:   evt.Date.Time.Format("2006-01-02"),
-			Events: evt.Count,
-		}
-	}
-
-	eventCounts, err := s.repo.GetEventCountByName(ctx, projectUUID)
-	if err != nil {
-		eventCounts = []repository.GetEventCountByNameRow{}
-	}
-
-	eventBreakdown := make([]EventBreakdownItem, 0)
-	for _, ec := range eventCounts {
-		color := colorMap[ec.EventName]
-		if color == "" {
-			color = colorMap["custom"]
-		}
-		eventBreakdown = append(eventBreakdown, EventBreakdownItem{
-			Name:  ec.EventName,
-			Count: ec.Count,
-			Color: color,
-		})
-	}
-
-	recentEvents, err := s.repo.GetRecentEvents(ctx, repository.GetRecentEventsParams{
-		ProjectID: projectUUID,
-		Limit:     50,
-	})
-	if err != nil {
-		log.Printf("RECENT EVENT FETCH ERROR: %s", err.Error())
-		recentEvents = []repository.Event{}
-	}
-
-	return &DashboardData{
-		TotalEvents:    totalCount,
-		PageViews:      pageViewCount,
-		CustomEvents:   customEventCount,
-		AvgTimeSpent:   avgTimeSpent,
-		EventsOverTime: timeSeriesData,
-		EventBreakdown: eventBreakdown,
-		RecentEvents:   recentEvents,
-	}, nil
 }
 
 func formatTimeSpent(hours int64) string {
@@ -503,8 +415,6 @@ func formatPeriod(period time.Time, granularity string) string {
 	}
 }
 
-// New optimized endpoint implementations
-
 func (s *svc) GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error) {
 	projectUUID := uuid.MustParse(projectId)
 
@@ -728,7 +638,6 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	// Parse time range and determine appropriate granularity
 	startTime, granularity := parseTimeRange(timeRange)
 
 	params := repository.GetAreaChartDataByDeviceParams{
@@ -746,7 +655,7 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 	result := make([]AreaChartDataPoint, len(data))
 	for i, point := range data {
 		result[i] = AreaChartDataPoint{
-			Period:  formatPeriod(point.Period, granularity),
+			Period:  point.Period.String(),
 			Desktop: point.Desktop,
 			Mobile:  point.Mobile,
 		}

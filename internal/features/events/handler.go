@@ -3,11 +3,14 @@ package events
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 	"trackion/internal/res"
+
+	"github.com/google/uuid"
 )
 
 type handler struct {
@@ -38,6 +41,10 @@ func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 	id, err := h.service.CreateEvent(r.Context(), body)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, ErrMonthlyLimitReached) {
+			res.Error(w, err.Error(), http.StatusTooManyRequests)
+			return
+		}
 		res.Error(w, err.Error(), 400)
 		return
 	}
@@ -47,15 +54,10 @@ func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) ProjectConfig(w http.ResponseWriter, r *http.Request) {
 
-	projectKey := r.URL.Query().Get("key")
-	if projectKey == "" {
-		res.Error(w, "missing project key", 400)
-		return
-	}
-
 	ctx := r.Context()
+	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
-	projectConfig, err := h.service.GetProjectConfig(ctx, projectKey)
+	projectConfig, err := h.service.GetProjectConfig(ctx, projectId.String())
 	if err != nil {
 		res.Error(w, "invalid project key", 401)
 		return
@@ -102,6 +104,10 @@ func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 	id, err := h.service.CreateBatchEvents(r.Context(), body)
 	if err != nil {
 		log.Println(err)
+		if errors.Is(err, ErrMonthlyLimitReached) {
+			res.Error(w, err.Error(), 429)
+			return
+		}
 		res.Error(w, err.Error(), 400)
 		return
 	}

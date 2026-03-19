@@ -6,12 +6,6 @@ import {
   createProject,
   updateProject,
   deleteProject,
-  getDashboardData,
-  getEvents,
-  getDashboardStats,
-  getChartData,
-  getBreakdownData,
-  getRecentEvents,
   getDashboardCounts,
   getChartDataFlexible,
   getAreaChartData,
@@ -26,17 +20,6 @@ import type { ProjectSettings, UpdateProject } from "../types";
 export const queryKeys = {
   projects: ["projects"] as const,
   project: (id: string) => ["projects", id] as const,
-  dashboard: (projectId: string) => ["dashboard", projectId] as const,
-  events: (projectId: string, limit?: number) =>
-    ["events", projectId, limit] as const,
-  stats: (projectId: string) => ["stats", projectId] as const,
-  chart: (projectId: string, timeRange: string, eventFilter: string) =>
-    ["chart", projectId, timeRange, eventFilter] as const,
-  breakdown: (projectId: string) => ["breakdown", projectId] as const,
-  recentEvents: (projectId: string, limit?: number) =>
-    ["recentEvents", projectId, limit] as const,
-
-  // New optimized endpoints
   counts: (projectId: string) => ["counts", projectId] as const,
   chartData: (projectId: string, timeRange: string, eventFilter: string) =>
     ["chartData", projectId, timeRange, eventFilter] as const,
@@ -71,28 +54,6 @@ export function useProject(id: string) {
   });
 }
 
-export function useDashboardData(projectId: string) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.dashboard(projectId),
-    queryFn: () => getDashboardData(projectId, serverUrl, authToken!),
-    enabled: !!authToken && !!projectId,
-    refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
-  });
-}
-
-export function useEvents(projectId: string, limit = 50) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.events(projectId, limit),
-    queryFn: () => getEvents(projectId, serverUrl, authToken!, limit),
-    enabled: !!authToken && !!projectId,
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds for real-time feel
-  });
-}
-
 // Custom hooks for mutations
 export function useCreateProject() {
   const queryClient = useQueryClient();
@@ -123,9 +84,27 @@ export function useUpdateProject(projectId: string) {
       queryClient.setQueryData(queryKeys.project(projectId), updatedProject);
       // Invalidate projects list to ensure consistency
       queryClient.invalidateQueries({ queryKey: queryKeys.projects });
-      // Invalidate dashboard data as project settings might affect it
+      queryClient.invalidateQueries({ queryKey: queryKeys.counts(projectId) });
       queryClient.invalidateQueries({
-        queryKey: queryKeys.dashboard(projectId),
+        queryKey: queryKeys.chartData(projectId, "24h", ""),
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.areaChartData(projectId, "7d", ""),
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.deviceAnalytics(projectId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.trafficSources(projectId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.topPages(projectId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.recentEventsFormatted(projectId),
+        exact: false,
       });
     },
   });
@@ -141,11 +120,24 @@ export function useDeleteProject() {
     onSuccess: (_, projectId) => {
       // Remove the project from cache
       queryClient.removeQueries({ queryKey: queryKeys.project(projectId) });
-      // Remove dashboard data for this project
-      queryClient.removeQueries({ queryKey: queryKeys.dashboard(projectId) });
-      // Remove events data for this project
+      queryClient.removeQueries({ queryKey: queryKeys.counts(projectId) });
       queryClient.removeQueries({
-        queryKey: ["events", projectId],
+        queryKey: ["chartData", projectId],
+        exact: false,
+      });
+      queryClient.removeQueries({
+        queryKey: ["areaChartData", projectId],
+        exact: false,
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.deviceAnalytics(projectId),
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.trafficSources(projectId),
+      });
+      queryClient.removeQueries({ queryKey: queryKeys.topPages(projectId) });
+      queryClient.removeQueries({
+        queryKey: ["recentEventsFormatted", projectId],
         exact: false,
       });
       // Invalidate projects list to refetch
@@ -160,67 +152,28 @@ export function useInvalidateProjectData() {
 
   return (projectId: string) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.project(projectId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.counts(projectId) });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.dashboard(projectId),
+      queryKey: ["chartData", projectId],
+      exact: false,
     });
     queryClient.invalidateQueries({
-      queryKey: ["events", projectId],
+      queryKey: ["areaChartData", projectId],
+      exact: false,
+    });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.deviceAnalytics(projectId),
+    });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.trafficSources(projectId),
+    });
+    queryClient.invalidateQueries({ queryKey: queryKeys.topPages(projectId) });
+    queryClient.invalidateQueries({
+      queryKey: ["recentEventsFormatted", projectId],
       exact: false,
     });
   };
 }
-
-// New analytics hooks
-export function useDashboardStats(projectId: string) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.stats(projectId),
-    queryFn: () => getDashboardStats(projectId, serverUrl, authToken!),
-    enabled: !!authToken && !!projectId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-}
-
-export function useChartData(
-  projectId: string,
-  timeRange: string,
-  eventFilter: string,
-) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.chart(projectId, timeRange, eventFilter),
-    queryFn: () =>
-      getChartData(projectId, timeRange, eventFilter, serverUrl, authToken!),
-    enabled: !!authToken && !!projectId,
-    staleTime: 1 * 60 * 1000, // 1 minute
-  });
-}
-
-export function useBreakdownData(projectId: string) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.breakdown(projectId),
-    queryFn: () => getBreakdownData(projectId, serverUrl, authToken!),
-    enabled: !!authToken && !!projectId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-}
-
-export function useRecentEventsData(projectId: string, limit = 20) {
-  const { authToken, serverUrl } = useStore();
-
-  return useQuery({
-    queryKey: queryKeys.recentEvents(projectId, limit),
-    queryFn: () => getRecentEvents(projectId, serverUrl, authToken!, limit),
-    enabled: !!authToken && !!projectId,
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
-  });
-}
-
-// New optimized dashboard hooks
 export function useDashboardCounts(projectId: string) {
   const { authToken, serverUrl } = useStore();
 

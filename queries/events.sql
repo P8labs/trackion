@@ -32,6 +32,10 @@ INSERT INTO events (
 )
 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10, $11);
 
+-- name: DeleteEventsOlderThan :execrows
+DELETE FROM events
+WHERE created_at < $1;
+
 -- name: GetRecentEvents :many
 SELECT *
 FROM events
@@ -62,40 +66,40 @@ ORDER BY date ASC;
 -- name: GetPageViewCount :one
 SELECT COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview';
+WHERE project_id = $1 AND event_name = 'page.view';
 
 -- name: GetCustomEventCount :one
 SELECT COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name != 'pageview' AND event_name != 'time_spent' AND event_name != 'click';
+WHERE project_id = $1 AND event_name != 'page.view' AND event_name != 'page.time_spent' AND event_name != 'page.click';
 
 -- name: GetTimeSpentHours :one
-SELECT COALESCE(CAST(SUM(CAST(properties->>'time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
+SELECT COALESCE(CAST(SUM(CAST(properties->>'page.time_spent' AS NUMERIC)) / 3600.0 AS INTEGER), 0) as total_hours
 FROM events
-WHERE project_id = $1 AND event_name = 'time_spent';
+WHERE project_id = $1 AND event_name = 'page.time_spent';
 
 -- name: GetDashboardStats :one
 SELECT
     COUNT(*) AS total_events,
 
     SUM(CASE 
-        WHEN event_name = 'pageview' THEN 1 
+        WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
     END) AS page_views,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'pageview' THEN session_id 
+        WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
     SUM(CASE 
-        WHEN event_name = 'time_spent' THEN 
+        WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
     END) AS total_time_ms,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'time_spent' THEN session_id 
+        WHEN event_name = 'page.time_spent' THEN session_id 
     END) AS time_spent_sessions
 
 FROM events
@@ -152,7 +156,7 @@ WITH parsed_agents as (
             ELSE 'Other'
         END as browser
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     device_os as name,
@@ -183,7 +187,7 @@ WITH referrer_data as (
             ELSE 'Other'
         END as source
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     source as name,
@@ -199,7 +203,7 @@ SELECT
     COALESCE(utm_campaign, 'None') as utm_campaign,
     COUNT(*) as count
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview'
+WHERE project_id = $1 AND event_name = 'page.view'
 GROUP BY utm_source, utm_medium, utm_campaign
 ORDER BY count DESC
 LIMIT 20;
@@ -210,7 +214,7 @@ SELECT
     COUNT(*) as count,
     COUNT(DISTINCT session_id) as unique_views
 FROM events
-WHERE project_id = $1 AND event_name = 'pageview'
+WHERE project_id = $1 AND event_name = 'page.view'
 GROUP BY page_path
 ORDER BY count DESC
 LIMIT 20;
@@ -232,34 +236,32 @@ WHERE project_id = $1
 ORDER BY created_at DESC
 LIMIT $2;
 
--- Dashboard Stats API (counts only)
 -- name: GetDashboardCounts :one
 SELECT
     COUNT(*) AS total_events,
 
     SUM(CASE 
-        WHEN event_name = 'pageview' THEN 1 
+        WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
     END) AS page_views,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'pageview' THEN session_id 
+        WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
     SUM(CASE 
-        WHEN event_name = 'time_spent' THEN 
+        WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
     END) AS total_time_ms,
 
     COUNT(DISTINCT CASE 
-        WHEN event_name = 'time_spent' THEN session_id 
+        WHEN event_name = 'page.time_spent' THEN session_id 
     END) AS time_spent_sessions
 FROM events
 WHERE project_id = $1;    
 
--- Chart Data with flexible time range and event filtering  
 -- name: GetChartDataFlexible :many
 SELECT
     DATE_TRUNC($3, created_at)::timestamptz as period,
@@ -271,12 +273,11 @@ WHERE project_id = $1
 GROUP BY DATE_TRUNC($3, created_at)
 ORDER BY period ASC;
 
--- Breakdown Data - Device/Browser Analysis
 -- name: GetDeviceAnalytics :many
 WITH user_agents as (
     SELECT DISTINCT session_id, user_agent
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     CASE
@@ -327,7 +328,7 @@ WITH traffic_data as (
         utm_medium,
         utm_campaign
     FROM events
-    WHERE project_id = $1 AND event_name = 'pageview'
+    WHERE project_id = $1 AND event_name = 'page.view'
 )
 SELECT
     source as name,
@@ -359,7 +360,7 @@ SELECT
     page_path as path,
     COUNT(*) as total_views,
     COUNT(DISTINCT session_id) as unique_visitors,
-    ROUND(AVG(CASE WHEN event_name = 'time_spent' THEN
+    ROUND(AVG(CASE WHEN event_name = 'page.time_spent' THEN
         CAST(properties->>'duration_ms' AS NUMERIC) / 1000.0
     END), 2) as avg_time_seconds
 FROM events
@@ -386,18 +387,16 @@ WHERE project_id = $1
 ORDER BY created_at DESC
 LIMIT $2;
 
--- Area Chart Data with Device Breakdown (desktop/mobile)
 -- name: GetAreaChartDataByDevice :many
-WITH user_agents as (
+WITH filtered_events AS (
     SELECT 
         session_id, 
         user_agent,
-        DATE_TRUNC($3, created_at)::timestamptz as period
+        DATE_TRUNC($3, created_at)::timestamptz AS period
     FROM events
     WHERE project_id = $1
       AND created_at >= $2
-      AND ($4 = '' OR $4 IS NULL OR event_name = $4)
-      AND event_name = 'pageview'
+      AND ($4::text IS NULL OR $4::text = '' OR event_name = $4::text)
 )
 SELECT
     period,
@@ -405,13 +404,13 @@ SELECT
         user_agent ILIKE '%iphone%' OR 
         user_agent ILIKE '%ipad%' OR 
         user_agent ILIKE '%android%' 
-        THEN 1 ELSE 0 END) as mobile,
+        THEN 1 ELSE 0 END) AS mobile,
     SUM(CASE WHEN 
         user_agent ILIKE '%windows%' OR 
         user_agent ILIKE '%macintosh%' OR 
         user_agent ILIKE '%mac os%' OR 
         (user_agent ILIKE '%linux%' AND user_agent NOT ILIKE '%android%')
-        THEN 1 ELSE 0 END) as desktop
-FROM user_agents
+        THEN 1 ELSE 0 END) AS desktop
+FROM filtered_events
 GROUP BY period
 ORDER BY period ASC;

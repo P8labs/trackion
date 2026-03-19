@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AuthState, Project } from "../types";
+import type { AuthState, Project, User } from "../types";
 import { SERVER_URL } from "@/lib/constants";
 
 interface AppState extends AuthState {
   currentProject: Project | null;
-  setAuth: (token: string, serverUrl: string, user?: any) => void;
+  setAuth: (token: string, serverUrl: string, user?: User) => void;
   logout: () => void;
   setCurrentProject: (project: Project | null) => void;
 }

@@ -169,7 +169,7 @@ The design uses a Pi-hole inspired color scheme:
 
 - Project information
 - API key with copy button
-- Feature toggles (pageview, time spent, campaign, clicks)
+- Feature toggles (page.view, time spent, campaign, clicks)
 - Danger zone with delete
 
 ### 5. Settings
@@ -215,4 +215,3 @@ MIT License - see the LICENSE file for details
 ---
 
 **Trackion v1.0** - Open Source Analytics Platform
-

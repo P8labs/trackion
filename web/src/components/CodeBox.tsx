@@ -46,7 +46,7 @@ export default function CodeBox({
           size="sm"
           variant="outline"
           className="absolute top-2 right-2"
-          onClick={() => handleCopy}
+          onClick={handleCopy}
         >
           {copied ? (
             <>

@@ -20,10 +20,24 @@ func Write(w http.ResponseWriter, status int, data any) {
 }
 
 func Read(r *http.Request, data any) error {
+	if r.Body == nil {
+		return errors.New("empty request body")
+	}
+
+	r.Body = http.MaxBytesReader(nil, r.Body, 1<<20) // 1MB limit
+
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
-	return decoder.Decode(data)
+	if err := decoder.Decode(data); err != nil {
+		return fmt.Errorf("invalid JSON: %w", err)
+	}
+
+	if decoder.More() {
+		return errors.New("invalid JSON: multiple objects")
+	}
+
+	return nil
 }
 
 func Parse[T any](r *http.Request) (T, error) {
@@ -40,7 +54,22 @@ func Parse[T any](r *http.Request) (T, error) {
 		if errors.Is(err, io.EOF) {
 			return body, errors.New("request body is empty")
 		}
-		return body, err
+
+		msg := err.Error()
+
+		switch {
+		case strings.Contains(msg, "Time.UnmarshalJSON"):
+			return body, errors.New("invalid timestamp format: expected ISO string (e.g. 2026-03-19T08:50:37Z)")
+
+		case strings.Contains(msg, "cannot unmarshal"):
+			return body, errors.New("invalid request payload structure")
+
+		case strings.Contains(msg, "unknown field"):
+			return body, fmt.Errorf("request contains unknown fields: %s", err.Error())
+
+		default:
+			return body, errors.New("invalid JSON payload")
+		}
 	}
 
 	if err := validate.Struct(body); err != nil {

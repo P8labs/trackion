@@ -12,16 +12,17 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, email, name, github_id)
-VALUES ($1, $2, $3, $4)
-RETURNING id, email, name, github_id, created_at
+INSERT INTO users (id, email, name, github_id, avatar_url)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, name, github_id, created_at, avatar_url
 `
 
 type CreateUserParams struct {
-	ID       uuid.UUID `json:"id"`
-	Email    string    `json:"email"`
-	Name     *string   `json:"name"`
-	GithubID *string   `json:"github_id"`
+	ID        uuid.UUID `json:"id"`
+	Email     string    `json:"email"`
+	Name      *string   `json:"name"`
+	GithubID  *string   `json:"github_id"`
+	AvatarUrl *string   `json:"avatar_url"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -30,6 +31,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Email,
 		arg.Name,
 		arg.GithubID,
+		arg.AvatarUrl,
 	)
 	var i User
 	err := row.Scan(
@@ -38,12 +40,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Name,
 		&i.GithubID,
 		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, github_id, created_at
+SELECT id, email, name, github_id, created_at, avatar_url
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -58,12 +61,13 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.Name,
 		&i.GithubID,
 		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
 }
 
 const getUserByGithubId = `-- name: GetUserByGithubId :one
-SELECT id, email, name, github_id, created_at
+SELECT id, email, name, github_id, created_at, avatar_url
 FROM users
 WHERE github_id = $1
 LIMIT 1
@@ -78,6 +82,33 @@ func (q *Queries) GetUserByGithubId(ctx context.Context, githubID *string) (User
 		&i.Name,
 		&i.GithubID,
 		&i.CreatedAt,
+		&i.AvatarUrl,
 	)
 	return i, err
+}
+
+const updateUserFromGithub = `-- name: UpdateUserFromGithub :exec
+UPDATE users
+SET
+	email = $1,
+	name = $2,
+	avatar_url = $3
+WHERE github_id = $4
+`
+
+type UpdateUserFromGithubParams struct {
+	Email     string  `json:"email"`
+	Name      *string `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+	GithubID  *string `json:"github_id"`
+}
+
+func (q *Queries) UpdateUserFromGithub(ctx context.Context, arg UpdateUserFromGithubParams) error {
+	_, err := q.db.Exec(ctx, updateUserFromGithub,
+		arg.Email,
+		arg.Name,
+		arg.AvatarUrl,
+		arg.GithubID,
+	)
+	return err
 }

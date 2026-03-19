@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "../ui/table";
 import { useTopPages } from "../../hooks/useApi";
+import { formatTimeSpent } from "@/lib/utils";
 
 interface TopPagesProps {
   projectId: string;
@@ -22,15 +23,6 @@ interface TopPagesProps {
 
 export function TopPages({ projectId }: TopPagesProps) {
   const { data, isLoading, error } = useTopPages(projectId);
-
-  const formatTime = (seconds: number): string => {
-    if (seconds < 60) return `${Math.round(seconds)}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.round(seconds % 60);
-    return remainingSeconds > 0
-      ? `${minutes}m ${remainingSeconds}s`
-      : `${minutes}m`;
-  };
 
   return (
     <Card>
@@ -99,7 +91,7 @@ export function TopPages({ projectId }: TopPagesProps) {
                     {page.unique_visitors.toLocaleString()}
                   </TableCell>
                   <TableCell className="text-center">
-                    {formatTime(page.avg_time_seconds)}
+                    {formatTimeSpent(page.avg_time_seconds)}
                   </TableCell>
                 </TableRow>
               ))}

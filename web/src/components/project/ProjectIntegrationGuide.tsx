@@ -17,20 +17,18 @@ export function ProjectIntegrationGuide({
   const trackingScript = `<script>
 (function() {
   var script = document.createElement('script');
-  script.src = '${serverUrl}/js/trackion.js';
+  script.src = '${serverUrl}/t.js';
   script.async = true;
   script.setAttribute('data-api-key', '${project.api_key}');
-  script.setAttribute('data-server-url', '${serverUrl}');
   document.head.appendChild(script);
 })();
 </script>`;
 
   const basicScript = `<!-- Trackion Analytics -->
-<script src="${serverUrl}/js/trackion.js" 
-        async 
-        data-api-key="${project.api_key}"
-        data-server-url="${serverUrl}">
-</script>`;
+<script 
+  src="${serverUrl}/t.js" 
+  data-api-key="${project.api_key}"
+></script>`;
 
   return (
     <Card>
@@ -70,7 +68,7 @@ export function ProjectIntegrationGuide({
             Track custom events programmatically:
           </p>
           <CodeBox
-            code="trackion.track('button-click', { page: 'homepage', element: 'signup-btn' })"
+            code="trackion.track('button-page.click', { page: 'homepage', element: 'signup-btn' })"
             language="javascript"
           />
         </div>

@@ -9,12 +9,13 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createProject = `-- name: CreateProject :one
 INSERT INTO projects (id, name, api_key, owner_id, auto_pageview, track_time_spent, track_campaign, track_clicks, domains)
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
+RETURNING id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at, status, deleted_at
 `
 
 type CreateProjectParams struct {
@@ -54,12 +55,15 @@ func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (P
 		&i.TrackClicks,
 		&i.Domains,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const deleteProject = `-- name: DeleteProject :exec
-DELETE FROM projects
+UPDATE projects
+SET status = 'deleted', deleted_at = NOW(), updated_at = NOW()
 WHERE id = $1
 `
 
@@ -69,9 +73,9 @@ func (q *Queries) DeleteProject(ctx context.Context, id uuid.UUID) error {
 }
 
 const getProjectByAPIKey = `-- name: GetProjectByAPIKey :one
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at, status, deleted_at
 FROM projects
-WHERE api_key = $1
+WHERE api_key = $1 AND status = 'active'
 LIMIT 1
 `
 
@@ -90,14 +94,16 @@ func (q *Queries) GetProjectByAPIKey(ctx context.Context, apiKey string) (Projec
 		&i.TrackClicks,
 		&i.Domains,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.DeletedAt,
 	)
 	return i, err
 }
 
 const getProjectByID = `-- name: GetProjectByID :one
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at, status, deleted_at
 FROM projects
-WHERE id = $1
+WHERE id = $1 AND status = 'active'
 LIMIT 1
 `
 
@@ -116,6 +122,8 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 		&i.TrackClicks,
 		&i.Domains,
 		&i.UpdatedAt,
+		&i.Status,
+		&i.DeletedAt,
 	)
 	return i, err
 }
@@ -123,7 +131,7 @@ func (q *Queries) GetProjectByID(ctx context.Context, id uuid.UUID) (Project, er
 const getProjectConfig = `-- name: GetProjectConfig :one
 SELECT auto_pageview, track_time_spent, track_campaign, track_clicks
 FROM projects
-WHERE api_key = $1
+WHERE id = $1 AND status = 'active'
 LIMIT 1
 `
 
@@ -134,8 +142,8 @@ type GetProjectConfigRow struct {
 	TrackClicks    bool `json:"track_clicks"`
 }
 
-func (q *Queries) GetProjectConfig(ctx context.Context, apiKey string) (GetProjectConfigRow, error) {
-	row := q.db.QueryRow(ctx, getProjectConfig, apiKey)
+func (q *Queries) GetProjectConfig(ctx context.Context, id uuid.UUID) (GetProjectConfigRow, error) {
+	row := q.db.QueryRow(ctx, getProjectConfig, id)
 	var i GetProjectConfigRow
 	err := row.Scan(
 		&i.AutoPageview,
@@ -147,9 +155,9 @@ func (q *Queries) GetProjectConfig(ctx context.Context, apiKey string) (GetProje
 }
 
 const getUserProjects = `-- name: GetUserProjects :many
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at, status, deleted_at
 FROM projects
-WHERE owner_id = $1
+WHERE owner_id = $1 AND status = 'active'
 ORDER BY created_at DESC
 `
 
@@ -174,6 +182,8 @@ func (q *Queries) GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Pro
 			&i.TrackClicks,
 			&i.Domains,
 			&i.UpdatedAt,
+			&i.Status,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -185,9 +195,25 @@ func (q *Queries) GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Pro
 	return items, nil
 }
 
+const hardDeleteProjectsDeletedBefore = `-- name: HardDeleteProjectsDeletedBefore :execrows
+DELETE FROM projects
+WHERE status = 'deleted'
+	AND deleted_at IS NOT NULL
+	AND deleted_at < $1
+`
+
+func (q *Queries) HardDeleteProjectsDeletedBefore(ctx context.Context, deletedAt pgtype.Timestamptz) (int64, error) {
+	result, err := q.db.Exec(ctx, hardDeleteProjectsDeletedBefore, deletedAt)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 const listProjects = `-- name: ListProjects :many
-SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at
+SELECT id, owner_id, name, api_key, created_at, auto_pageview, track_time_spent, track_campaign, track_clicks, domains, updated_at, status, deleted_at
 FROM projects
+WHERE status = 'active'
 ORDER BY created_at DESC
 `
 
@@ -212,6 +238,8 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 			&i.TrackClicks,
 			&i.Domains,
 			&i.UpdatedAt,
+			&i.Status,
+			&i.DeletedAt,
 		); err != nil {
 			return nil, err
 		}

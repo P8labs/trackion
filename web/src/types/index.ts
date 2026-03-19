@@ -53,8 +53,11 @@ export interface EventBreakdown {
 
 export interface User {
   id: string;
+  github_id?: string;
   email?: string;
   name?: string;
+  avatar_url?: string;
+  created_at?: string;
 }
 
 export interface AuthState {
@@ -64,7 +67,6 @@ export interface AuthState {
   isAuthenticated: boolean;
 }
 
-// New analytics types
 export interface DashboardStats {
   total_events: number;
   views: number;
@@ -121,4 +123,16 @@ export interface RecentEventData {
   utm_campaign?: string;
   properties?: any;
   created_at: string;
+}
+
+export interface UsageSummary {
+  mode: "saas" | "selfhost";
+  is_limited: boolean;
+  plan?: string;
+  status?: string;
+  current_usage: number;
+  monthly_limit: number;
+  remaining: number;
+  retention_days: number;
+  delete_after_days: number;
 }

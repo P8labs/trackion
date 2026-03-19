@@ -65,6 +65,7 @@ func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
 		user.UserID,
 		user.Email,
 		user.Name,
+		user.AvatarURL,
 	)
 
 	if err != nil {
@@ -112,7 +113,7 @@ func (h *handler) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.SuccessRaw(w, user)
+	res.Success(w, user, "User Details")
 }
 
 func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {

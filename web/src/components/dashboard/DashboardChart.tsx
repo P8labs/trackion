@@ -40,10 +40,10 @@ const TIME_RANGES = [
 ];
 
 const EVENT_FILTERS = [
-  { value: "", label: "All events" },
-  { value: "pageview", label: "Page views" },
-  { value: "time_spent", label: "Time spent" },
-  { value: "click", label: "Click events" },
+  { value: "all", label: "All events" },
+  { value: "page.view", label: "Page views" },
+  { value: "page.time_spent", label: "Time spent" },
+  { value: "page.click", label: "Click events" },
 ];
 
 const chartConfig = {
@@ -94,12 +94,18 @@ export function DashboardChart({ projectId }: ChartDataProps) {
               </SelectContent>
             </Select>
             <Select
-              value={eventFilter}
-              onValueChange={(v) => setEventFilter(v || "")}
+              value={eventFilter || "all"}
+              onValueChange={(v) => setEventFilter(v === "all" ? "" : v || "")}
             >
-              <SelectTrigger className="w-30">
+              <SelectTrigger>
                 <Filter className="h-4 w-4" />
-                <SelectValue placeholder="Filter" />
+                <SelectValue>
+                  {
+                    EVENT_FILTERS.find(
+                      (f) => f.value === (eventFilter || "all"),
+                    )?.label
+                  }
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {EVENT_FILTERS.map((filter) => (
@@ -160,10 +166,47 @@ export function DashboardChart({ projectId }: ChartDataProps) {
                 tickLine={false}
                 tickMargin={10}
                 axisLine={false}
+                tickFormatter={(value) => {
+                  const d = new Date(value);
+
+                  if (timeRange === "30m" || timeRange === "1h") {
+                    return d.toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                  }
+
+                  if (timeRange === "24h") {
+                    return d.toLocaleTimeString([], {
+                      hour: "2-digit",
+                    });
+                  }
+
+                  if (timeRange === "7d" || timeRange === "30d") {
+                    return d.toLocaleDateString([], {
+                      month: "short",
+                      day: "numeric",
+                    });
+                  }
+
+                  return d.toLocaleDateString([], {
+                    month: "short",
+                    day: "numeric",
+                  });
+                }}
               />
               <YAxis tickLine={false} axisLine={false} />
               <ChartTooltip
                 cursor={false}
+                labelFormatter={(value) => {
+                  const d = new Date(value);
+
+                  if (timeRange === "30m" || timeRange === "1h") {
+                    return d.toLocaleTimeString();
+                  }
+
+                  return d.toLocaleString();
+                }}
                 content={<ChartTooltipContent indicator="dot" />}
               />
               <Area

@@ -1,14 +1,12 @@
 import type {
   Project,
   ProjectSettings,
-  DashboardData,
-  Event,
   UpdateProject,
-  DashboardStats,
   ChartDataPoint,
   AreaChartDataPoint,
-  BreakdownData,
   RecentEventData,
+  UsageSummary,
+  User,
 } from "../types";
 
 const apiCall = async <T>(
@@ -57,6 +55,13 @@ export const loginWithToken = async (
 
 export const getGithubLoginUrl = (serverUrl: string): string => {
   return `${serverUrl}/auth/login/github?client=web`;
+};
+
+export const getCurrentUser = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<User> => {
+  return apiCall<User>("/auth/me", {}, serverUrl, authToken);
 };
 
 export const getProjects = async (
@@ -124,96 +129,6 @@ export const deleteProject = async (
   );
 };
 
-export const getDashboardData = async (
-  projectId: string,
-  serverUrl: string,
-  authToken: string,
-): Promise<DashboardData> => {
-  return apiCall<DashboardData>(
-    `/api/analytics/${projectId}/dashboard`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-export const getEvents = async (
-  projectId: string,
-  serverUrl: string,
-  authToken: string,
-  limit = 50,
-): Promise<Event[]> => {
-  return apiCall<Event[]>(
-    `/api/analytics/${projectId}/events?limit=${limit}`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-// New analytics API calls
-export const getDashboardStats = async (
-  projectId: string,
-  serverUrl: string,
-  authToken: string,
-): Promise<DashboardStats> => {
-  return apiCall<DashboardStats>(
-    `/api/analytics/${projectId}/stats`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-export const getChartData = async (
-  projectId: string,
-  timeRange: string,
-  eventFilter: string,
-  serverUrl: string,
-  authToken: string,
-): Promise<ChartDataPoint[]> => {
-  const params = new URLSearchParams();
-  params.append("time_range", timeRange);
-  if (eventFilter) {
-    params.append("event_filter", eventFilter);
-  }
-
-  return apiCall<ChartDataPoint[]>(
-    `/api/analytics/${projectId}/chart?${params.toString()}`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-export const getBreakdownData = async (
-  projectId: string,
-  serverUrl: string,
-  authToken: string,
-): Promise<BreakdownData> => {
-  return apiCall<BreakdownData>(
-    `/api/analytics/${projectId}/breakdown`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-export const getRecentEvents = async (
-  projectId: string,
-  serverUrl: string,
-  authToken: string,
-  limit = 20,
-): Promise<RecentEventData[]> => {
-  return apiCall<RecentEventData[]>(
-    `/api/analytics/${projectId}/recent?limit=${limit}`,
-    {},
-    serverUrl,
-    authToken,
-  );
-};
-
-// New optimized API endpoints
 export const getDashboardCounts = async (
   projectId: string,
   serverUrl: string,
@@ -339,4 +254,11 @@ export const getRecentEventsFormatted = async (
     serverUrl,
     authToken,
   );
+};
+
+export const getUsageSummary = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<UsageSummary> => {
+  return apiCall<UsageSummary>("/api/settings/usage", {}, serverUrl, authToken);
 };

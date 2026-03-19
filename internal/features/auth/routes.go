@@ -10,8 +10,8 @@ import (
 func Routes(repo repository.Querier) *chi.Mux {
 	r := chi.NewRouter()
 	cfg := config.Load()
-	mw := NewMiddleware(repo, *config.Load())
-	authService := NewService(repo)
+	mw := NewMiddleware(repo, *cfg)
+	authService := NewService(repo, *cfg)
 	authHandler := NewHandler(authService, *cfg)
 
 	r.Get("/login/github", authHandler.GithubLogin)

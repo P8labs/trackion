@@ -51,8 +51,8 @@ export function ProjectDangerZone({ project }: ProjectDangerZoneProps) {
             <div>
               <h4 className="font-medium mb-1">Delete Project</h4>
               <p className="text-sm text-muted-foreground">
-                Permanently delete this project and all its analytics data. This
-                action cannot be undone.
+                Mark this project as deleted now. It will be removed permanently
+                by background cleanup, including analytics data.
               </p>
             </div>
             <Button
@@ -73,9 +73,9 @@ export function ProjectDangerZone({ project }: ProjectDangerZoneProps) {
             </AlertDialogMedia>
             <AlertDialogTitle>Delete Project</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{project.name}"? This action
-              cannot be undone and all analytics data will be permanently
-              removed.
+              Are you sure you want to delete "{project.name}"? It will be
+              hidden immediately and permanently removed later by scheduled
+              cleanup.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -22,6 +22,10 @@ type Config struct {
 	EventBatchLimit    int32
 	FrontendURL        string
 	AllowedOrigins     []string
+	EventRetentionDays int
+	ProjectDeleteAfter int
+	CleanupCronSpec    string
+	CleanupTimeoutSec  int
 }
 
 func Load() *Config {
@@ -29,7 +33,15 @@ func Load() *Config {
 	mode := Mode(GetEnv("TRACKION_MODE", "saas"))
 	cors := GetEnv("CORS_ORIGINS", "*")
 
-	allowedCors := strings.Split(cors, ",")
+	raw := strings.Split(cors, ",")
+	allowedCors := make([]string, 0, len(raw))
+
+	for _, o := range raw {
+		o = strings.TrimSpace(o)
+		if o != "" {
+			allowedCors = append(allowedCors, o)
+		}
+	}
 
 	cfg := &Config{
 		Mode:               mode,
@@ -44,6 +56,22 @@ func Load() *Config {
 		EventBatchLimit:    100,
 		FrontendURL:        GetEnv("FRONTEND_URL", "http://localhost:5173"),
 		AllowedOrigins:     allowedCors,
+		EventRetentionDays: GetEnvInt("EVENT_RETENTION_DAYS", 30),
+		ProjectDeleteAfter: GetEnvInt("PROJECT_DELETE_AFTER_DAYS", 7),
+		CleanupCronSpec:    GetEnv("CLEANUP_CRON_SPEC", "@every 1h"),
+		CleanupTimeoutSec:  GetEnvInt("CLEANUP_TIMEOUT_SEC", 300),
+	}
+
+	if cfg.EventRetentionDays < 1 {
+		cfg.EventRetentionDays = 30
+	}
+
+	if cfg.ProjectDeleteAfter < 0 {
+		cfg.ProjectDeleteAfter = 7
+	}
+
+	if cfg.CleanupTimeoutSec < 10 {
+		cfg.CleanupTimeoutSec = 300
 	}
 
 	if mode == ModeSelfHost && cfg.AdminToken == "" {
