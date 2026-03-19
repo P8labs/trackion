@@ -28,11 +28,12 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.RealIP)    // import for rate limiting
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer) // recover from crashes
-	r.Use(cors.AllowAll().Handler)
 
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
+	c := cors.New(cors.Options{
+		AllowedOrigins: app.config.AllowedOrigins,
+	})
+	r.Use(c.Handler)
+
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	repo := repository.New(app.db)
@@ -40,7 +41,6 @@ func (app *application) mount() http.Handler {
 	r.Mount("/events", events.Routes(repo))
 
 	// auth related
-
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
 		r.Mount("/auth", auth.Routes(repo))

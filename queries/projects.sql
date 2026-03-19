@@ -38,7 +38,7 @@ LIMIT 1;
 
 -- name: UpdateProject :exec
 UPDATE projects
-SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6
+SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6, domains = $7
 WHERE id = $1;
 
 -- name: DeleteProject :exec

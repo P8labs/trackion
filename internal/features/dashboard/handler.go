@@ -119,8 +119,6 @@ func (h *handler) GetRecentEventsData(w http.ResponseWriter, r *http.Request) {
 	res.Success(w, events, "Recent events fetched successfully.")
 }
 
-// New optimized handlers
-
 func (h *handler) GetDashboardCounts(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
 

@@ -1,6 +1,7 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Plus, BarChart3 } from "lucide-react";
 import { useStore } from "../store";
 import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
 import { DashboardCounts } from "../components/dashboard/DashboardCounts";
 import { DashboardChart } from "../components/dashboard/DashboardChart";
 import { AnalyticsBreakdown } from "../components/dashboard/AnalyticsBreakdown";
@@ -8,20 +9,41 @@ import { TopPages } from "../components/dashboard/TopPages";
 import { RecentEvents } from "../components/dashboard/RecentEvents";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../hooks/useApi";
+import { useNavigate } from "react-router-dom";
 
 export function DashboardPage() {
   const { currentProject } = useStore();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   if (!currentProject) {
     return (
-      <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <div className="text-center">
-          <p className="text-foreground text-lg">No project selected</p>
-          <p className="text-muted-foreground text-sm mt-2">
-            Create a project to get started
+      <div className="flex items-center justify-center h-full min-h-[60vh]">
+        <Card className="p-12 text-center max-w-md">
+          <div className="mx-auto h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-6">
+            <BarChart3 className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h2 className="text-2xl font-semibold tracking-tight mb-3">
+            Welcome to Trackion
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Create your first project to start tracking analytics and gain
+            insights into your website's performance.
           </p>
-        </div>
+          <div className="space-y-3">
+            <Button
+              onClick={() => navigate("/projects")}
+              className="w-full gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Create Your First Project
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Once you create a project, you'll see charts, metrics, and
+              real-time analytics here.
+            </p>
+          </div>
+        </Card>
       </div>
     );
   }

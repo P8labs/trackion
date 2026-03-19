@@ -22,13 +22,29 @@ type CreateProjectSettings struct {
 	TrackClicks    *bool `json:"clicks"`
 }
 
+// UpdateProjectRequest represents the request body for updating a project
+type UpdateProjectRequest struct {
+	Name     *string          `json:"name"`
+	Domains  *[]string        `json:"domains"`
+	Settings *ProjectSettings `json:"settings"`
+}
+
+// ProjectSettings represents the feature settings for update requests
+type ProjectSettings struct {
+	AutoPageview   *bool `json:"auto_pageview"`
+	TrackTimeSpent *bool `json:"time_spent"`
+	TrackCampaign  *bool `json:"campaign"`
+	TrackClicks    *bool `json:"clicks"`
+}
+
+// UpdateProjectParams represents internal service parameters
 type UpdateProjectParams struct {
 	Name           *string   `json:"name"`
 	AutoPageview   *bool     `json:"auto_pageview"`
 	TrackTimeSpent *bool     `json:"time_spent"`
 	TrackCampaign  *bool     `json:"campaign"`
 	TrackClicks    *bool     `json:"clicks"`
-	Domain         *[]string `json:"domains"`
+	Domains        *[]string `json:"domains"`
 }
 
 type Service interface {
@@ -119,13 +135,11 @@ func (s *svc) GetUserProjects(ctx context.Context) ([]repository.Project, error)
 }
 
 func (s *svc) UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error {
-	// First get the existing project
 	existingProject, err := s.repo.GetProjectByID(ctx, uuid.MustParse(projectId))
 	if err != nil {
 		return errors.New("Project not found")
 	}
 
-	// Create update params with existing values as default
 	updateParams := repository.UpdateProjectParams{
 		ID:             uuid.MustParse(projectId),
 		Name:           existingProject.Name,
@@ -133,9 +147,9 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 		TrackTimeSpent: existingProject.TrackTimeSpent,
 		TrackCampaign:  existingProject.TrackCampaign,
 		TrackClicks:    existingProject.TrackClicks,
+		Domains:        existingProject.Domains,
 	}
 
-	// Only update fields that are provided (non-nil pointers)
 	if params.Name != nil {
 		updateParams.Name = *params.Name
 	}
@@ -150,6 +164,9 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 	}
 	if params.TrackClicks != nil {
 		updateParams.TrackClicks = *params.TrackClicks
+	}
+	if params.Domains != nil {
+		updateParams.Domains = *params.Domains
 	}
 
 	// Update the project with merged data

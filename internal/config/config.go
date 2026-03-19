@@ -1,5 +1,7 @@
 package config
 
+import "strings"
+
 type Mode string
 
 const (
@@ -19,11 +21,16 @@ type Config struct {
 	EventBodySizeLimit int32
 	EventBatchLimit    int32
 	FrontendURL        string
+	AllowedOrigins     []string
 }
 
 func Load() *Config {
 
 	mode := Mode(GetEnv("TRACKION_MODE", "saas"))
+	cors := GetEnv("CORS_ORIGINS", "*")
+
+	allowedCors := strings.Split(cors, ",")
+
 	cfg := &Config{
 		Mode:               mode,
 		Port:               GetEnv("PORT", "8000"),
@@ -36,6 +43,7 @@ func Load() *Config {
 		EventBodySizeLimit: 256,
 		EventBatchLimit:    100,
 		FrontendURL:        GetEnv("FRONTEND_URL", "http://localhost:5173"),
+		AllowedOrigins:     allowedCors,
 	}
 
 	if mode == ModeSelfHost && cfg.AdminToken == "" {

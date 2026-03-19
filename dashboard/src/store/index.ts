@@ -11,11 +11,13 @@ interface AppState extends AuthState {
   setTheme: (theme: "light" | "dark") => void;
 }
 
+const serverUrl = import.meta.env.SERVER_URL || "http://localhost:8000";
+
 export const useStore = create<AppState>()(
   persist(
     (set) => ({
       authToken: null,
-      serverUrl: "http://localhost:8000",
+      serverUrl: serverUrl,
       user: null,
       isAuthenticated: false,
       currentProject: null,
@@ -33,6 +35,7 @@ export const useStore = create<AppState>()(
           user: null,
           isAuthenticated: false,
           currentProject: null,
+          serverUrl: serverUrl,
         }),
       setCurrentProject: (project) => set({ currentProject: project }),
       setTheme: (theme) => {

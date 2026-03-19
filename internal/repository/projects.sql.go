@@ -225,7 +225,7 @@ func (q *Queries) ListProjects(ctx context.Context) ([]Project, error) {
 
 const updateProject = `-- name: UpdateProject :exec
 UPDATE projects
-SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6
+SET name = $2, auto_pageview = $3, track_time_spent = $4, track_campaign = $5, track_clicks = $6, domains = $7
 WHERE id = $1
 `
 
@@ -236,6 +236,7 @@ type UpdateProjectParams struct {
 	TrackTimeSpent bool      `json:"track_time_spent"`
 	TrackCampaign  bool      `json:"track_campaign"`
 	TrackClicks    bool      `json:"track_clicks"`
+	Domains        []string  `json:"domains"`
 }
 
 func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) error {
@@ -246,6 +247,7 @@ func (q *Queries) UpdateProject(ctx context.Context, arg UpdateProjectParams) er
 		arg.TrackTimeSpent,
 		arg.TrackCampaign,
 		arg.TrackClicks,
+		arg.Domains,
 	)
 	return err
 }

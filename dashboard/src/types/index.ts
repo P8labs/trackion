@@ -9,11 +9,9 @@ export interface Project {
 }
 
 export interface UpdateProject {
-  name: string;
-  auto_pageview: boolean;
-  time_spent: boolean;
-  campaign: boolean;
-  clicks: boolean;
+  name?: string;
+  domains?: string[];
+  settings?: ProjectSettings;
 }
 
 export interface ProjectSettings {

@@ -63,7 +63,7 @@ func (h *handler) ListUserProjects(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
-	body, err := res.Parse[UpdateProjectParams](r)
+	body, err := res.Parse[UpdateProjectRequest](r)
 
 	if err != nil {
 		log.Println(err)
@@ -71,7 +71,21 @@ func (h *handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.UpdateProject(r.Context(), projectId, body)
+	// Convert request to service parameters
+	params := UpdateProjectParams{
+		Name:    body.Name,
+		Domains: body.Domains,
+	}
+
+	// Handle nested settings structure
+	if body.Settings != nil {
+		params.AutoPageview = body.Settings.AutoPageview
+		params.TrackTimeSpent = body.Settings.TrackTimeSpent
+		params.TrackCampaign = body.Settings.TrackCampaign
+		params.TrackClicks = body.Settings.TrackClicks
+	}
+
+	err = h.service.UpdateProject(r.Context(), projectId, params)
 	if err != nil {
 		log.Println(err)
 		res.Error(w, err.Error(), 400)
