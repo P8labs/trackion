@@ -224,7 +224,7 @@
     });
 
     if (cfg.track_clicks) {
-      document.addEventListener("page.click", function (e) {
+      document.addEventListener("click", function (e) {
         const el = e.target.closest("[data-track]");
         if (!el) return;
 

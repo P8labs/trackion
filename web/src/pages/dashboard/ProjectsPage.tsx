@@ -1,16 +1,16 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, AlertTriangle } from "lucide-react";
-import { Card } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "../../components/ui/dialog";
+  AlertTriangle,
+  FolderKanban,
+  Plus,
+  Search,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Skeleton } from "../../components/ui/skeleton";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,24 +22,15 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "../../components/ui/alert-dialog";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
-import { Skeleton } from "../../components/ui/skeleton";
-import { Badge } from "../../components/ui/badge";
-import {
-  useProjects,
-  useCreateProject,
-  useDeleteProject,
-} from "../../hooks/useApi";
-import type { ProjectSettings } from "../../types";
+import { useProjects, useDeleteProject } from "../../hooks/useApi";
+import { ProjectListCard } from "../../components/project";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
   const { data: projects = [], isLoading, error } = useProjects();
-  const createProjectMutation = useCreateProject();
   const deleteProjectMutation = useDeleteProject();
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     projectId: string | null;
@@ -48,170 +39,153 @@ export function ProjectsPage() {
     projectId: null,
   });
 
-  const handleCreateProject = async (data: {
-    name: string;
-    domains: string[];
-    settings: ProjectSettings;
-  }) => {
-    try {
-      await createProjectMutation.mutateAsync(data);
-      setShowCreateModal(false);
-    } catch (error) {
-      console.error("Failed to create project:", error);
+  const filteredProjects = useMemo(() => {
+    const search = searchTerm.trim().toLowerCase();
+
+    if (!search) {
+      return projects;
     }
-  };
+
+    return projects.filter((project) => {
+      const matchName = project.name.toLowerCase().includes(search);
+      const matchDomain = (project.domains || []).some((domain) =>
+        domain.toLowerCase().includes(search),
+      );
+
+      return matchName || matchDomain;
+    });
+  }, [projects, searchTerm]);
+
+  const uniqueDomainCount = useMemo(
+    () =>
+      new Set(
+        projects.flatMap((project) => (project.domains || []).map((d) => d)),
+      ).size,
+    [projects],
+  );
 
   const handleDeleteProject = async (projectId: string) => {
     try {
       await deleteProjectMutation.mutateAsync(projectId);
       setDeleteModal({ isOpen: false, projectId: null });
-    } catch (error) {
-      console.error("Failed to delete project:", error);
+    } catch (err) {
+      console.error("Failed to delete project:", err);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Skeleton className="h-9 w-32" />
-          </div>
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <Card className="p-6">
-          <div className="space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-32" />
-                  <Skeleton className="h-4 w-48" />
-                </div>
-                <Skeleton className="h-4 w-4" />
-              </div>
-            ))}
-          </div>
+        <Card className="py-0">
+          <CardContent className="space-y-4 py-5">
+            <Skeleton className="h-8 w-52" />
+            <Skeleton className="h-4 w-72" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+          </CardContent>
         </Card>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-56 rounded-xl" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-          <p className="text-muted-foreground">
-            Manage your analytics projects
-          </p>
-        </div>
-        <Button onClick={() => setShowCreateModal(true)} className="gap-2">
-          <Plus className="h-4 w-4" />
-          New Project
-        </Button>
-      </div>
+      <Card className="border-foreground/10 py-0">
+        <CardContent className="space-y-5 py-5">
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5" />
+                Project Workspace
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+              <p className="text-muted-foreground">
+                Manage websites, configure domains, and control tracking.
+              </p>
+            </div>
+            <Button onClick={() => navigate("/projects/new")} className="gap-2">
+              <Plus className="h-4 w-4" />
+              New Project
+            </Button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatCard label="Total Projects" value={String(projects.length)} />
+            <StatCard
+              label="Unique Domains"
+              value={String(uniqueDomainCount)}
+            />
+            <StatCard
+              label="Search Results"
+              value={String(filteredProjects.length)}
+            />
+          </div>
+
+          <div className="relative max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Find by project name or domain"
+              className="pl-9"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {error && (
-        <div className="p-4 rounded-lg border border-destructive/20 bg-destructive/10 text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive">
           <p className="text-sm">Failed to load projects. Please try again.</p>
         </div>
       )}
 
       {projects.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="mx-auto max-w-sm">
-            <div className="mx-auto h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
-              <Plus className="h-6 w-6 text-muted-foreground" />
+        <Card className="py-0">
+          <CardContent className="flex flex-col items-center py-14 text-center">
+            <div className="mb-4 rounded-full bg-muted p-3">
+              <FolderKanban className="h-6 w-6 text-muted-foreground" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Create your first project to start tracking analytics and gain
-              insights into your website's performance.
+            <h3 className="mb-2 text-lg font-semibold">No projects yet</h3>
+            <p className="mb-6 max-w-md text-muted-foreground">
+              Start with one project and add your domains to see real-time
+              analytics, traffic sources, and custom events.
             </p>
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={() => navigate("/projects/new")} className="gap-2">
+              <Plus className="h-4 w-4" />
               Create First Project
             </Button>
-          </div>
+          </CardContent>
+        </Card>
+      ) : filteredProjects.length === 0 ? (
+        <Card className="py-0">
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No projects matched "{searchTerm}". Try a project name or domain.
+            </p>
+          </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Card
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {filteredProjects.map((project) => (
+            <ProjectListCard
               key={project.id}
-              className="cursor-pointer transition-colors hover:bg-muted/50"
-              onClick={() => navigate(`/projects/${project.id}`)}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="space-y-1 flex-1 min-w-0">
-                    <h3 className="font-semibold text-lg leading-none truncate">
-                      {project.name}
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Created {formatDate(project.created_at)}
-                    </p>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeleteModal({
-                        isOpen: true,
-                        projectId: project.id,
-                      });
-                    }}
-                    className="text-muted-foreground hover:text-destructive shrink-0"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="text-sm text-muted-foreground">Domains:</div>
-                  <div className="flex flex-wrap gap-1">
-                    {(project.domains || []).slice(0, 2).map((domain, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {domain}
-                      </Badge>
-                    ))}
-                    {(project.domains || []).length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{(project.domains || []).length - 2} more
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </Card>
+              project={project}
+              onOpen={(projectId) => navigate(`/projects/${projectId}`)}
+              onDelete={(projectId) =>
+                setDeleteModal({ isOpen: true, projectId })
+              }
+            />
           ))}
         </div>
       )}
-
-      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Create New Project</DialogTitle>
-            <DialogDescription>
-              Set up a new project to start tracking analytics.
-            </DialogDescription>
-          </DialogHeader>
-          <CreateProjectForm
-            onSubmit={handleCreateProject}
-            onCancel={() => setShowCreateModal(false)}
-            error={createProjectMutation.error?.message}
-            loading={createProjectMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
 
       <AlertDialog
         open={deleteModal.isOpen}
@@ -252,178 +226,11 @@ export function ProjectsPage() {
   );
 }
 
-interface CreateProjectFormProps {
-  onSubmit: (data: {
-    name: string;
-    domains: string[];
-    settings: ProjectSettings;
-  }) => void;
-  onCancel: () => void;
-  error?: string;
-  loading?: boolean;
-}
-
-function CreateProjectForm({
-  onSubmit,
-  onCancel,
-  error,
-  loading = false,
-}: CreateProjectFormProps) {
-  const [name, setName] = useState("");
-  const [domains, setDomains] = useState("");
-  const [settings, setSettings] = useState<ProjectSettings>({
-    auto_pageview: true,
-    time_spent: true,
-    campaign: true,
-    clicks: true,
-  });
-
-  const handleSubmit = (e: React.SubmitEvent) => {
-    e.preventDefault();
-    const domainList = domains
-      .split(",")
-      .map((d) => d.trim())
-      .filter((d) => d.length > 0);
-
-    onSubmit({
-      name,
-      domains: domainList,
-      settings,
-    });
-
-    setName("");
-    setDomains("");
-    setSettings({
-      auto_pageview: true,
-      time_spent: true,
-      campaign: true,
-      clicks: true,
-    });
-  };
-
+function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 w-full">
-      <div className="space-y-2">
-        <Label htmlFor="projectName" className="text-sm font-medium">
-          Project Name
-        </Label>
-        <Input
-          id="projectName"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="My Website"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="domains" className="text-sm font-medium">
-          Allowed Domains
-        </Label>
-        <Input
-          id="domains"
-          value={domains}
-          onChange={(e) => setDomains(e.target.value)}
-          placeholder="example.com, www.example.com"
-          required
-        />
-        <p className="text-xs text-muted-foreground">
-          Comma-separated list of domains where analytics will be collected
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <Label className="text-sm font-medium">Feature Settings</Label>
-        <div className="grid gap-3">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.auto_pageview}
-              onChange={(e) =>
-                setSettings({ ...settings, auto_pageview: e.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 rounded border-border"
-            />
-            <div className="space-y-1">
-              <div className="text-sm font-medium">Auto Pageview</div>
-              <div className="text-xs text-muted-foreground">
-                Automatically track page views when visitors navigate
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.time_spent}
-              onChange={(e) =>
-                setSettings({ ...settings, time_spent: e.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 rounded border-border"
-            />
-            <div className="space-y-1">
-              <div className="text-sm font-medium">Time Spent Tracking</div>
-              <div className="text-xs text-muted-foreground">
-                Track how long visitors spend on each page
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.campaign}
-              onChange={(e) =>
-                setSettings({ ...settings, campaign: e.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 rounded border-border"
-            />
-            <div className="space-y-1">
-              <div className="text-sm font-medium">Campaign Tracking</div>
-              <div className="text-xs text-muted-foreground">
-                Track UTM parameters and marketing campaigns
-              </div>
-            </div>
-          </label>
-
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={settings.clicks}
-              onChange={(e) =>
-                setSettings({ ...settings, clicks: e.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 rounded border-border"
-            />
-            <div className="space-y-1">
-              <div className="text-sm font-medium">Click Tracking</div>
-              <div className="text-xs text-muted-foreground">
-                Track button clicks and link interactions
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
-
-      {error && (
-        <div className="p-3 rounded-lg border border-destructive/20 bg-destructive/10 text-destructive">
-          <p className="text-sm">{error}</p>
-        </div>
-      )}
-
-      <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Creating..." : "Create Project"}
-        </Button>
-      </DialogFooter>
-    </form>
+    <div className="rounded-lg border bg-muted/20 p-3">
+      <div className="text-xs text-muted-foreground">{label}</div>
+      <div className="text-lg font-semibold">{value}</div>
+    </div>
   );
 }

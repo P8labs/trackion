@@ -1,8 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, AlertTriangle } from "lucide-react";
+import {
+  AlertTriangle,
+  ShieldAlert,
+  SlidersHorizontal,
+  WandSparkles,
+} from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import {
   Tabs,
   TabsContent,
@@ -16,6 +21,7 @@ import {
   ProjectInfoCard,
   ProjectSettingsCard,
   ProjectDangerZone,
+  ProjectDetailHeader,
 } from "../../components/project";
 
 export function ProjectDetailPage() {
@@ -27,22 +33,24 @@ export function ProjectDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 max-w-4xl">
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-4 w-48" />
-        </div>
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <Skeleton className="h-6 w-48" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-8 w-full" />
-              </div>
+      <div className="mx-auto max-w-5xl space-y-6">
+        <Card className="py-0">
+          <CardContent className="space-y-4 py-5">
+            <Skeleton className="h-7 w-36" />
+            <Skeleton className="h-10 w-72" />
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+          </CardContent>
+        </Card>
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i} className="py-0">
+            <CardContent className="space-y-3 py-5">
+              <Skeleton className="h-5 w-40" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-28 w-full" />
             </CardContent>
           </Card>
         ))}
@@ -53,7 +61,7 @@ export function ProjectDetailPage() {
   if (error || !project) {
     return (
       <div className="flex items-center justify-center h-full min-h-[50vh]">
-        <div className="text-center">
+        <div className="text-center max-w-md">
           <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-lg font-semibold mb-2">Project not found</h2>
           <p className="text-muted-foreground mb-4">
@@ -68,31 +76,26 @@ export function ProjectDetailPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
-      <div>
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/projects")}
-          className="mb-4 -ml-2"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Projects
-        </Button>
-        <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-          <p className="text-muted-foreground">
-            Manage your project settings and integration
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-5xl space-y-6">
+      <ProjectDetailHeader
+        project={project}
+        onBack={() => navigate("/projects")}
+      />
 
       <Tabs defaultValue="integration" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="integration" className="gap-2">
+        <TabsList className="grid h-auto w-full grid-cols-3 gap-2 rounded-xl bg-transparent p-1">
+          <TabsTrigger value="integration" className="gap-2 rounded-lg py-2.5">
+            <WandSparkles className="h-4 w-4" />
             Integration
           </TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="danger">Danger Zone</TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2 rounded-lg py-2.5">
+            <SlidersHorizontal className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
+          <TabsTrigger value="danger" className="gap-2 rounded-lg py-2.5">
+            <ShieldAlert className="h-4 w-4" />
+            Danger Zone
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="integration" className="space-y-6">

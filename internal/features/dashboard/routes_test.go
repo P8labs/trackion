@@ -22,10 +22,6 @@ func (m *mockDashboardService) GetProjectEvents(context.Context, string, int32) 
 	return []repository.Event{}, nil
 }
 
-func (m *mockDashboardService) GetDashboardStats(context.Context, string) (*DashboardStats, error) {
-	return &DashboardStats{}, nil
-}
-
 func (m *mockDashboardService) GetChartData(context.Context, string, string, string) ([]ChartDataPoint, error) {
 	return []ChartDataPoint{}, nil
 }

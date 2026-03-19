@@ -100,16 +100,16 @@ SELECT
 FROM events
 WHERE project_id = $1
   AND created_at >= $2
-  AND ($4 = '' OR $4 IS NULL OR event_name = $4)
+    AND ($4::text IS NULL OR $4::text = '' OR event_name = $4::text)
 GROUP BY DATE_TRUNC($3, created_at)
 ORDER BY period ASC
 `
 
 type GetChartDataFlexibleParams struct {
-	ProjectID uuid.UUID   `json:"project_id"`
-	CreatedAt time.Time   `json:"created_at"`
-	DateTrunc string      `json:"date_trunc"`
-	Column4   interface{} `json:"column_4"`
+	ProjectID uuid.UUID `json:"project_id"`
+	CreatedAt time.Time `json:"created_at"`
+	DateTrunc string    `json:"date_trunc"`
+	Column4   string    `json:"column_4"`
 }
 
 type GetChartDataFlexibleRow struct {
@@ -159,21 +159,21 @@ const getDashboardCounts = `-- name: GetDashboardCounts :one
 SELECT
     COUNT(*) AS total_events,
 
-    SUM(CASE 
+    COALESCE(SUM(CASE 
         WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
-    END) AS page_views,
+    END), 0)::BIGINT AS page_views,
 
     COUNT(DISTINCT CASE 
         WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
-    SUM(CASE 
+    COALESCE(SUM(CASE 
         WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
-    END) AS total_time_ms,
+    END), 0)::BIGINT AS total_time_ms,
 
     COUNT(DISTINCT CASE 
         WHEN event_name = 'page.time_spent' THEN session_id 
@@ -207,21 +207,21 @@ const getDashboardStats = `-- name: GetDashboardStats :one
 SELECT
     COUNT(*) AS total_events,
 
-    SUM(CASE 
+    COALESCE(SUM(CASE 
         WHEN event_name = 'page.view' THEN 1 
         ELSE 0 
-    END) AS page_views,
+    END), 0)::BIGINT AS page_views,
 
     COUNT(DISTINCT CASE 
         WHEN event_name = 'page.view' THEN session_id 
     END) AS unique_views,
 
     -- total time in milliseconds
-    SUM(CASE 
+    COALESCE(SUM(CASE 
         WHEN event_name = 'page.time_spent' THEN 
             (properties->>'duration_ms')::BIGINT
         ELSE 0
-    END) AS total_time_ms,
+    END), 0)::BIGINT AS total_time_ms,
 
     COUNT(DISTINCT CASE 
         WHEN event_name = 'page.time_spent' THEN session_id 

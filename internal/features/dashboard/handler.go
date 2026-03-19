@@ -39,20 +39,6 @@ func (h *handler) GetProjectEvents(w http.ResponseWriter, r *http.Request) {
 	res.Success(w, events, "Events fetched successfully.")
 }
 
-// New analytics handlers
-func (h *handler) GetDashboardStats(w http.ResponseWriter, r *http.Request) {
-	projectId := chi.URLParam(r, "id")
-
-	stats, err := h.service.GetDashboardStats(r.Context(), projectId)
-	if err != nil {
-		log.Println(err)
-		res.Error(w, err.Error(), 500)
-		return
-	}
-
-	res.Success(w, stats, "Dashboard stats fetched successfully.")
-}
-
 func (h *handler) GetChartData(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
 	timeRange := r.URL.Query().Get("time_range")

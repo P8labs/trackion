@@ -6,6 +6,7 @@ import (
 	"trackion/internal/res"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type handler struct {
@@ -34,11 +35,17 @@ func (h *handler) CreateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.Success(w, res.M{"projectId": id}, "Project created successfully.")
+	res.Success(w, res.M{"id": id}, "Project created successfully.")
 }
 
 func (h *handler) GetProjectDetails(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
+
+	if _, err := uuid.Parse(projectId); err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 404)
+		return
+	}
 
 	project, err := h.service.GetProject(r.Context(), projectId)
 	if err != nil {

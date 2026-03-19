@@ -12,8 +12,9 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { DashboardPage } from "./pages/dashboard/DashboardPage";
-import { ProjectsPage } from "./pages/dashboard/ProjectsPage";
+import { ProjectsPage } from "./pages/dashboard/ProjectsPage.tsx";
 import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
+import { CreateProjectPage } from "./pages/dashboard/CreateProjectPage";
 import { SettingsPage } from "./pages/dashboard/SettingsPage";
 import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
 import { queryClient } from "./lib/queryClient";
@@ -74,6 +75,14 @@ function App() {
                   element={
                     <Layout>
                       <ProjectsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/projects/new"
+                  element={
+                    <Layout>
+                      <CreateProjectPage />
                     </Layout>
                   }
                 />

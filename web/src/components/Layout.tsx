@@ -64,6 +64,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen flex bg-background text-foreground">
       <aside
+        data-track
         className={`fixed lg:static inset-y-0 left-0 z-50 w-60 bg-sidebar border-sidebar-border border-r ${
           sidebarOpen
             ? "animate-sidebar-in"
@@ -125,6 +126,7 @@ export function Layout({ children }: LayoutProps) {
         <header className="h-17 border-b bg-background border-border px-4 md:px-6 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 md:gap-5 min-w-0">
             <button
+              data-track
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden transition-colors text-muted-foreground hover:text-foreground"
             >
@@ -137,6 +139,7 @@ export function Layout({ children }: LayoutProps) {
 
             <div className="relative hidden sm:block">
               <button
+                data-track
                 onClick={() => setShowProjectDropdown(!showProjectDropdown)}
                 className="h-9 rounded-full border border-border bg-muted text-foreground hover:bg-muted/80 pl-3 pr-2 flex items-center gap-2 text-sm transition-colors"
               >

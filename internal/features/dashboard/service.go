@@ -3,7 +3,6 @@ package dashboard
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 	"trackion/internal/repository"
 
@@ -124,8 +123,6 @@ type TopPage struct {
 type Service interface {
 	GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]repository.Event, error)
 
-	// Legacy analytics endpoints
-	GetDashboardStats(ctx context.Context, projectId string) (*DashboardStats, error)
 	GetChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]ChartDataPoint, error)
 	GetBreakdownData(ctx context.Context, projectId string) (*BreakdownData, error)
 	GetRecentEventsData(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
@@ -185,34 +182,6 @@ func (s *svc) GetProjectEvents(ctx context.Context, projectId string, limit int3
 	}
 
 	return events, nil
-}
-
-// New analytics methods
-
-func (s *svc) GetDashboardStats(ctx context.Context, projectId string) (*DashboardStats, error) {
-	projectUUID := uuid.MustParse(projectId)
-
-	stats, err := s.repo.GetDashboardStats(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get dashboard stats: %w", err)
-	}
-
-	avgTimeSpentSeconds := 0.0
-
-	if stats.TimeSpentSessions > 0 {
-		avgTimeSpentSeconds = float64(stats.TotalTimeMs) /
-			float64(stats.TimeSpentSessions) /
-			1000.0
-	}
-
-	avgTimeSpentSeconds = math.Round(avgTimeSpentSeconds*100) / 100
-
-	return &DashboardStats{
-		TotalEvents:  stats.TotalEvents,
-		Views:        stats.PageViews,
-		UniqueViews:  stats.UniqueViews,
-		AvgTimeSpent: avgTimeSpentSeconds,
-	}, nil
 }
 
 func (s *svc) GetChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]ChartDataPoint, error) {
@@ -447,7 +416,6 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 
 	if request.TimeRange == "custom" && request.StartTime != nil {
 		startTime = *request.StartTime
-		// Determine granularity based on time span
 		if request.EndTime != nil {
 			duration := request.EndTime.Sub(startTime)
 			if duration <= 2*time.Hour {
@@ -468,11 +436,7 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 		ProjectID: projectUUID,
 		CreatedAt: startTime,
 		DateTrunc: granularity,
-		Column4:   nil,
-	}
-
-	if request.EventFilter != "" {
-		params.Column4 = request.EventFilter
+		Column4:   request.EventFilter,
 	}
 
 	data, err := s.repo.GetChartDataFlexible(ctx, params)

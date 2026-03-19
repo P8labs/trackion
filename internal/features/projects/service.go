@@ -72,13 +72,11 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	apiKey := uuid.NewSHA1(id, id.NodeID()).String()
 	userId := ctx.Value(auth.UserIdContextKey).(string)
 
-	// Set defaults for settings if not provided
 	autoPageview := true    // Default to true
 	trackTimeSpent := false // Default to false
 	trackCampaign := false  // Default to false
 	trackClicks := false    // Default to false
 
-	// Override with provided values if they exist
 	if params.Settings.AutoPageview != nil {
 		autoPageview = *params.Settings.AutoPageview
 	}
@@ -92,7 +90,6 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 		trackClicks = *params.Settings.TrackClicks
 	}
 
-	// Handle domains (empty slice if not provided)
 	domains := params.Domains
 	if domains == nil {
 		domains = []string{}

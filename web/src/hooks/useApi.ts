@@ -54,7 +54,6 @@ export function useProject(id: string) {
   });
 }
 
-// Custom hooks for mutations
 export function useCreateProject() {
   const queryClient = useQueryClient();
   const { authToken, serverUrl } = useStore();
@@ -66,7 +65,6 @@ export function useCreateProject() {
       settings: ProjectSettings;
     }) => createProject(data, serverUrl, authToken!),
     onSuccess: () => {
-      // Invalidate projects query to refetch the list
       queryClient.invalidateQueries({ queryKey: queryKeys.projects });
     },
   });

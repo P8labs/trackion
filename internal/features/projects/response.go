@@ -23,11 +23,16 @@ type ProjectSettingsDTO struct {
 }
 
 func ToProjectResponse(p repository.Project) ProjectResponse {
+	updatedAt := p.CreatedAt
+	if p.UpdatedAt.Valid {
+		updatedAt = p.UpdatedAt.Time
+	}
+
 	return ProjectResponse{
 		ID:      p.ID.String(),
 		Name:    p.Name,
 		APIKey:  p.ApiKey,
-		Domains: []string{}, // TODO: Add domains tracking to database
+		Domains: p.Domains,
 		Settings: ProjectSettingsDTO{
 			AutoPageview: p.AutoPageview,
 			TimeSpent:    p.TrackTimeSpent,
@@ -35,7 +40,7 @@ func ToProjectResponse(p repository.Project) ProjectResponse {
 			Clicks:       p.TrackClicks,
 		},
 		CreatedAt: p.CreatedAt,
-		UpdatedAt: p.CreatedAt, // TODO: Add updated_at field to database
+		UpdatedAt: updatedAt,
 	}
 }
 
