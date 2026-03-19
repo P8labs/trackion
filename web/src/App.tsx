@@ -6,22 +6,67 @@ import {
   useLocation,
 } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
 import { useStore } from "./store";
 import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { AuthPage } from "./pages/auth/AuthPage";
-import { DashboardPage } from "./pages/dashboard/DashboardPage";
-import { ProjectsPage } from "./pages/dashboard/ProjectsPage.tsx";
-import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
-import { CreateProjectPage } from "./pages/dashboard/CreateProjectPage";
-import { SettingsPage } from "./pages/dashboard/SettingsPage";
-import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
+import { LoadingSpinner } from "./components/LoadingSpinner";
 import { queryClient } from "./lib/queryClient";
-import { LandingPage } from "./pages/landing/LandingPage";
-import { AboutPage } from "./pages/landing/AboutPage";
-import { TermsPage } from "./pages/landing/TermsPage";
-import { PrivacyPage } from "./pages/landing/PrivacyPage";
+
+const AuthPage = lazy(() =>
+  import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
+);
+const AuthCallbackPage = lazy(() =>
+  import("./pages/auth/AuthCallbackPage").then((m) => ({
+    default: m.AuthCallbackPage,
+  })),
+);
+const DashboardPage = lazy(() =>
+  import("./pages/dashboard/DashboardPage").then((m) => ({
+    default: m.DashboardPage,
+  })),
+);
+const ProjectsPage = lazy(() =>
+  import("./pages/dashboard/ProjectsPage").then((m) => ({
+    default: m.ProjectsPage,
+  })),
+);
+const ProjectDetailPage = lazy(() =>
+  import("./pages/dashboard/ProjectDetailPage").then((m) => ({
+    default: m.ProjectDetailPage,
+  })),
+);
+const CreateProjectPage = lazy(() =>
+  import("./pages/dashboard/CreateProjectPage").then((m) => ({
+    default: m.CreateProjectPage,
+  })),
+);
+const SettingsPage = lazy(() =>
+  import("./pages/dashboard/SettingsPage").then((m) => ({
+    default: m.SettingsPage,
+  })),
+);
+const LandingPage = lazy(() =>
+  import("./pages/landing/LandingPage").then((m) => ({
+    default: m.LandingPage,
+  })),
+);
+const AboutPage = lazy(() =>
+  import("./pages/landing/AboutPage").then((m) => ({
+    default: m.AboutPage,
+  })),
+);
+const TermsPage = lazy(() =>
+  import("./pages/landing/TermsPage").then((m) => ({
+    default: m.TermsPage,
+  })),
+);
+const PrivacyPage = lazy(() =>
+  import("./pages/landing/PrivacyPage").then((m) => ({
+    default: m.PrivacyPage,
+  })),
+);
 
 const protectedRoutePrefixes = ["/dashboard", "/projects", "/settings"];
 const publicOnlyRoutes = new Set(["/auth"]);
@@ -53,60 +98,68 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <RouteMiddleware>
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/privacy" element={<PrivacyPage />} />
+              <Suspense
+                fallback={
+                  <div className="min-h-screen flex items-center justify-center">
+                    <LoadingSpinner size="lg" />
+                  </div>
+                }
+              >
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
 
-                <Route path="/auth" element={<AuthPage />} />
-                <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
-                <Route
-                  path="/dashboard"
-                  element={
-                    <Layout>
-                      <DashboardPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/projects"
-                  element={
-                    <Layout>
-                      <ProjectsPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/projects/new"
-                  element={
-                    <Layout>
-                      <CreateProjectPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/projects/:id"
-                  element={
-                    <Layout>
-                      <ProjectDetailPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <Layout>
-                      <SettingsPage />
-                    </Layout>
-                  }
-                />
-                <Route
-                  path="*"
-                  element={<Navigate to="/dashboard" replace />}
-                />
-              </Routes>
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <Layout>
+                        <DashboardPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/projects"
+                    element={
+                      <Layout>
+                        <ProjectsPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/projects/new"
+                    element={
+                      <Layout>
+                        <CreateProjectPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/projects/:id"
+                    element={
+                      <Layout>
+                        <ProjectDetailPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <Layout>
+                        <SettingsPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="*"
+                    element={<Navigate to="/dashboard" replace />}
+                  />
+                </Routes>
+              </Suspense>
             </RouteMiddleware>
           </BrowserRouter>
         </QueryClientProvider>
