@@ -1,5 +1,5 @@
-import { Footer } from "@/pages/landing/components/Footer";
-import Header from "@/pages/landing/components/Header";
+import { Footer } from "./Footer";
+import Header from "./Header";
 
 interface PublicPageLayoutProps {
   children: React.ReactNode;

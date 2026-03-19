@@ -13,7 +13,6 @@ import { SettingsPage } from "./pages/dashboard/SettingsPage";
 import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
 import { queryClient, setGlobalErrorHandler } from "./lib/queryClient";
 import { LandingPage } from "./pages/landing/LandingPage";
-import { DocsPage } from "./pages/landing/DocsPage";
 import { AboutPage } from "./pages/landing/AboutPage";
 import { TermsPage } from "./pages/landing/TermsPage";
 import { PrivacyPage } from "./pages/landing/PrivacyPage";
@@ -60,7 +59,6 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<LandingPage />} />
-              <Route path="/docs" element={<DocsPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/terms" element={<TermsPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
