@@ -924,6 +924,7 @@ WITH traffic_data as (
             WHEN referrer ILIKE '%github%' THEN 'GitHub'
             ELSE 'Other'
         END as source,
+        COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
         utm_source,
         utm_medium,
         utm_campaign
@@ -936,6 +937,13 @@ SELECT
     'referrer' as category
 FROM traffic_data
 GROUP BY source
+UNION ALL
+SELECT
+    country as name,
+    COUNT(*) as count,
+    'country' as category
+FROM traffic_data
+GROUP BY country
 UNION ALL
 SELECT
     COALESCE(utm_source, 'None') as name,

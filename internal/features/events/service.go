@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/core"
+	"trackion/internal/core/geoip"
 	"trackion/internal/repository"
 
 	"github.com/google/uuid"
@@ -17,6 +19,7 @@ type EventParams struct {
 	Event      string    `json:"event" validate:"required"`
 	SessionID  string    `json:"session_Id" validate:"required"`
 	UserAgent  string    `json:"user_agent"`
+	ClientIP   string    `json:"-"`
 	Timestamp  time.Time `json:"timestamp"`
 	Page       struct {
 		Title    string `json:"title"`
@@ -45,18 +48,24 @@ type Service interface {
 }
 
 type svc struct {
-	repo repository.Querier
-	cfg  config.Config
+	repo        repository.Querier
+	cfg         config.Config
+	geoResolver geoip.Resolver
 }
 
 var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")
 
 func NewService(repo repository.Querier, cfg config.Config) Service {
-	return &svc{repo: repo, cfg: cfg}
+	return &svc{repo: repo, cfg: cfg, geoResolver: geoip.New(cfg)}
 }
 
 func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error) {
-	props, err := json.Marshal(params.Properties)
+	geo, err := s.geoResolver.Resolve(ctx, params.ClientIP)
+	if err != nil {
+		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
+	}
+
+	props, err := json.Marshal(mergeGeoProperties(params.Properties, geo))
 	if err != nil {
 		return 0, err
 	}
@@ -93,13 +102,22 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error
 func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error) {
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
+	var geo *geoip.Location
+	var err error
+	if len(params.Events) > 0 {
+		geo, err = s.geoResolver.Resolve(ctx, params.Events[0].ClientIP)
+		if err != nil {
+			log.Printf("geo lookup failed for ip=%s: %v", params.Events[0].ClientIP, err)
+		}
+	}
+
 	if s.cfg.IsSaaS() {
 		if err := s.checkUsageLimit(ctx, projectId, len(params.Events)); err != nil {
 			return 0, err
 		}
 	}
 
-	events, err := ToInsertEvents(projectId, params.Events)
+	events, err := ToInsertEvents(projectId, params.Events, geo)
 
 	if err != nil {
 		return 0, err
@@ -146,11 +164,11 @@ func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectCo
 
 }
 
-func ToInsertEvents(projectID uuid.UUID, events []EventParams) ([]repository.InsertEventsBatchParams, error) {
+func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Location) ([]repository.InsertEventsBatchParams, error) {
 	out := make([]repository.InsertEventsBatchParams, 0, len(events))
 
 	for _, e := range events {
-		p, err := ToInsertEvent(projectID, e)
+		p, err := ToInsertEvent(projectID, e, geo)
 		if err != nil {
 			return nil, err
 		}
@@ -160,8 +178,8 @@ func ToInsertEvents(projectID uuid.UUID, events []EventParams) ([]repository.Ins
 	return out, nil
 }
 
-func ToInsertEvent(projectID uuid.UUID, e EventParams) (repository.InsertEventsBatchParams, error) {
-	props, err := json.Marshal(e.Properties)
+func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (repository.InsertEventsBatchParams, error) {
+	props, err := json.Marshal(mergeGeoProperties(e.Properties, geo))
 	if err != nil {
 		return repository.InsertEventsBatchParams{}, err
 	}
@@ -179,4 +197,25 @@ func ToInsertEvent(projectID uuid.UUID, e EventParams) (repository.InsertEventsB
 		UtmCampaign: core.StrPtr(e.Utm.Campaign),
 		Properties:  props,
 	}, nil
+}
+
+func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[string]any {
+	if properties == nil {
+		properties = map[string]any{}
+	}
+
+	if geo == nil {
+		return properties
+	}
+
+	properties["geo"] = map[string]any{
+		"country":      geo.Country,
+		"country_code": geo.CountryCode,
+		"region":       geo.Region,
+		"city":         geo.City,
+		"latitude":     geo.Latitude,
+		"longitude":    geo.Longitude,
+	}
+
+	return properties
 }

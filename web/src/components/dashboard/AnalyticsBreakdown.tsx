@@ -172,8 +172,9 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
             </div>
           ) : (
             <Tabs defaultValue="referrers" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="referrers">Referrers</TabsTrigger>
+                <TabsTrigger value="countries">Countries</TabsTrigger>
                 <TabsTrigger value="utm_sources">UTM Source</TabsTrigger>
                 <TabsTrigger value="utm_mediums">UTM Medium</TabsTrigger>
               </TabsList>
@@ -193,6 +194,15 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
                 ) : (
                   <div className="h-62.5 flex items-center justify-center text-muted-foreground">
                     No UTM source data available
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="countries" className="mt-4">
+                {trafficData?.countries && trafficData.countries.length > 0 ? (
+                  <TrafficSourcesList data={trafficData.countries} />
+                ) : (
+                  <div className="h-62.5 flex items-center justify-center text-muted-foreground">
+                    No country data available
                   </div>
                 )}
               </TabsContent>

@@ -13,7 +13,7 @@ export function ProjectDetailHeader({
   project,
   onBack,
 }: ProjectDetailHeaderProps) {
-  const maskedApiKey = `${project.api_key.slice(0, 8)}...${project.api_key.slice(-4)}`;
+  const maskedApiKey = `${project.api_key?.slice(0, 8)}...${project.api_key?.slice(-4)}`;
 
   return (
     <div className="space-y-4">

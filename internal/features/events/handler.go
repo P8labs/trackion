@@ -25,6 +25,7 @@ func NewHandler(service Service) *handler {
 
 func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 	body, err := res.Parse[EventParams](r)
+	body.ClientIP = getClientIP(r)
 
 	ua := strings.TrimSpace(body.UserAgent)
 	if ua == "" {
@@ -86,6 +87,7 @@ func (h *handler) ProjectConfig(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 	body, err := res.Parse[BatchEventsParams](r)
+	clientIP := getClientIP(r)
 
 	if err != nil {
 		log.Println(err)
@@ -96,6 +98,7 @@ func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 	headerUA := r.Header.Get("User-Agent")
 
 	for i := range body.Events {
+		body.Events[i].ClientIP = clientIP
 		if body.Events[i].UserAgent == "" {
 			body.Events[i].UserAgent = headerUA
 		}
