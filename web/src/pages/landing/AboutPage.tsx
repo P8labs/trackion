@@ -131,9 +131,9 @@ export function AboutPage() {
             </p>
 
             <div className="flex justify-center gap-4">
-              <Link to="/docs">
+              <a href="/docs/" target="_blank" rel="noreferrer">
                 <Button variant="secondary">Read Docs</Button>
-              </Link>
+              </a>
               <Link to="/auth">
                 <Button>Open Dashboard</Button>
               </Link>

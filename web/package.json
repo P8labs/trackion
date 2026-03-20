@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && pnpm run build:docs",
+    "build:docs": "pnpm -C ../docs install --no-frozen-lockfile && pnpm -C ../docs run build && rm -rf dist/docs && mkdir -p dist/docs && cp -R ../docs/.vitepress/dist/. dist/docs/",
     "lint": "eslint .",
     "preview": "vite preview"
   },

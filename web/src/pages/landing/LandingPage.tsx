@@ -105,8 +105,8 @@ export function LandingPage() {
                 <li>• Open source</li>
                 <li>• Recommended for production</li>
               </ul>
-              <Link
-                to="https://github.com/P8labs/trackion/wiki"
+              <a
+                href="/docs/"
                 target="_blank"
                 rel="noreferrer"
                 className="block"
@@ -114,7 +114,7 @@ export function LandingPage() {
                 <Button className="w-full" variant="outline">
                   View Setup Guide
                 </Button>
-              </Link>
+              </a>
             </div>
           </div>
         </div>
