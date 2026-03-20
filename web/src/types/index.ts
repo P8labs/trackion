@@ -137,3 +137,9 @@ export interface UsageSummary {
   retention_days: number;
   delete_after_days: number;
 }
+
+export interface ServerHealth {
+  status: string;
+  timestamp: string;
+  server_version: string;
+}

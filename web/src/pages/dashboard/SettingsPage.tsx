@@ -6,13 +6,19 @@ import {
 } from "../../components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../../store";
-import { getCurrentUser, getUsageSummary } from "../../lib/api";
+import {
+  getCurrentUser,
+  getServerHealth,
+  getUsageSummary,
+} from "../../lib/api";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "../../components/ui/avatar";
+import { Badge } from "../../components/ui/badge";
 import moment from "moment";
+import { WEB_VERSION } from "../../lib/constants";
 
 export function SettingsPage() {
   const { serverUrl, authToken, user: storedUser } = useStore();
@@ -32,6 +38,17 @@ export function SettingsPage() {
     queryFn: () => getCurrentUser(serverUrl, authToken!),
     enabled: !!authToken && usage?.mode === "saas",
     retry: false,
+  });
+
+  const {
+    data: health,
+    isLoading: healthLoading,
+    isError: healthError,
+  } = useQuery({
+    queryKey: ["server-health", serverUrl],
+    queryFn: () => getServerHealth(serverUrl),
+    retry: 1,
+    refetchInterval: 30000,
   });
 
   const currentUser = profile ?? storedUser;
@@ -109,8 +126,28 @@ export function SettingsPage() {
         <CardContent>
           <div className="space-y-4 text-sm text-muted-foreground">
             <div>
-              <p className="font-medium mb-1 text-foreground">Version</p>
-              <p>Trackion v1.0</p>
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <p className="font-medium text-foreground">Server Status</p>
+                <Badge
+                  variant={healthError ? "destructive" : "secondary"}
+                  className="capitalize"
+                >
+                  {healthLoading ? "Checking" : healthError ? "Down" : "Up"}
+                </Badge>
+              </div>
+              <p>
+                {healthError
+                  ? "Unable to reach server health endpoint"
+                  : `Last checked ${health?.timestamp ? moment(health.timestamp).fromNow() : "just now"}`}
+              </p>
+            </div>
+            <div>
+              <p className="font-medium mb-1 text-foreground">Server Version</p>
+              <p>{health?.server_version || "Unknown"}</p>
+            </div>
+            <div>
+              <p className="font-medium mb-1 text-foreground">Web Version</p>
+              <p>{WEB_VERSION}</p>
             </div>
             <div>
               <p className="font-medium mb-1 text-foreground">Built with</p>

@@ -9,11 +9,39 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 VERSION_FILE="VERSION"
+WEB_PACKAGE_FILE="web/package.json"
+DOCS_PACKAGE_FILE="docs/package.json"
 
 usage() {
-  echo -e "${RED}Usage: $0 <major|minor|patch>${NC}"
-  echo -e "Example: $0 patch"
+  echo -e "${RED}Usage: $0 <major|minor|patch> [--update-web|-w] [--sync-packages|-s]${NC}"
+  echo -e "Example: $0 patch --sync-packages"
   exit 1
+}
+
+update_web_version() {
+  local new_version=$1
+
+  if [[ ! -f "$WEB_PACKAGE_FILE" ]]; then
+    echo -e "${RED}Missing $WEB_PACKAGE_FILE${NC}"
+    exit 1
+  fi
+
+  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$WEB_PACKAGE_FILE"
+
+  echo -e "${GREEN}Updated $WEB_PACKAGE_FILE version to $new_version${NC}"
+}
+
+update_docs_version() {
+  local new_version=$1
+
+  if [[ ! -f "$DOCS_PACKAGE_FILE" ]]; then
+    echo -e "${RED}Missing $DOCS_PACKAGE_FILE${NC}"
+    exit 1
+  fi
+
+  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DOCS_PACKAGE_FILE"
+
+  echo -e "${GREEN}Updated $DOCS_PACKAGE_FILE version to $new_version${NC}"
 }
 
 get_version() {
@@ -99,11 +127,29 @@ show_info() {
 }
 
 main() {
-  if [[ $# -ne 1 ]]; then
+  if [[ $# -lt 1 || $# -gt 2 ]]; then
     usage
   fi
 
   local bump_type=$1
+  local update_web=false
+  local sync_packages=false
+
+  if [[ $# -eq 2 ]]; then
+    case "$2" in
+      --update-web|-w)
+        update_web=true
+        ;;
+      --sync-packages|-s)
+        update_web=true
+        sync_packages=true
+        ;;
+      *)
+        usage
+        ;;
+    esac
+  fi
+
   CURRENT_VERSION=$(get_version)
 
   echo -e "${BLUE}Current version:${NC} $CURRENT_VERSION"
@@ -119,6 +165,14 @@ main() {
 
   update_version_file "$NEW_VERSION"
   echo -e "${GREEN}Updated $VERSION_FILE${NC}"
+
+  if [[ "$update_web" == true ]]; then
+    update_web_version "$NEW_VERSION"
+
+    if [[ "$sync_packages" == true ]]; then
+      update_docs_version "$NEW_VERSION"
+    fi
+  fi
 
   show_info "$NEW_VERSION"
 

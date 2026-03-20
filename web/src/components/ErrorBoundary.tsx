@@ -1,4 +1,6 @@
 import { Component, type ReactNode } from "react";
+import { AlertTriangle, RotateCcw } from "lucide-react";
+import { Button } from "./ui/button";
 
 interface Props {
   children: ReactNode;
@@ -31,18 +33,43 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="flex flex-col items-center justify-center h-full min-h-[50vh] space-y-4">
-          <div className="p-6 rounded-lg border border-destructive/20 bg-destructive/10 text-destructive text-center max-w-md">
-            <h2 className="text-lg font-semibold mb-2">Something went wrong</h2>
-            <p className="text-sm mb-4">
-              {this.state.error?.message || "An unexpected error occurred"}
-            </p>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
-            >
-              Reload Page
-            </button>
+        <div className="min-h-screen bg-background px-6 py-10 text-foreground">
+          <div className="mx-auto flex min-h-[70vh] w-full max-w-xl items-center justify-center">
+            <div className="w-full rounded-2xl border border-destructive/20 bg-linear-to-b from-destructive/8 to-background p-6 shadow-sm">
+              <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <h2 className="text-xl font-semibold tracking-tight">
+                Something went wrong
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                The app hit an unexpected error. Reload to try again.
+              </p>
+
+              {this.state.error?.message && (
+                <div className="mt-4 rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+                  {this.state.error.message}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Button
+                  onClick={() => window.location.reload()}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reload Page
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    window.location.href = "/dashboard";
+                  }}
+                >
+                  Back to Dashboard
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       );
