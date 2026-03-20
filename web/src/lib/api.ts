@@ -7,6 +7,7 @@ import type {
   RecentEventData,
   UsageSummary,
   User,
+  ServerHealth,
 } from "../types";
 
 const apiCall = async <T>(
@@ -265,4 +266,10 @@ export const getUsageSummary = async (
   authToken: string,
 ): Promise<UsageSummary> => {
   return apiCall<UsageSummary>("/api/settings/usage", {}, serverUrl, authToken);
+};
+
+export const getServerHealth = async (
+  serverUrl: string,
+): Promise<ServerHealth> => {
+  return apiCall<ServerHealth>("/health", {}, serverUrl, null);
 };

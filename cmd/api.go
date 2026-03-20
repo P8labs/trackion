@@ -65,8 +65,9 @@ func (app *application) mount() http.Handler {
 		}
 
 		res.Success(w, map[string]string{
-			"status":    "ok",
-			"timestamp": time.Now().Format(time.RFC3339),
+			"status":         "ok",
+			"timestamp":      time.Now().Format(time.RFC3339),
+			"server_version": version,
 		}, "OK")
 	})
 
