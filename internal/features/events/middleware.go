@@ -11,10 +11,12 @@ import (
 	"net"
 	"net/http"
 	"net/netip"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 	"trackion/internal/config"
+	"trackion/internal/core/domain"
 	"trackion/internal/core/ratelimit"
 	"trackion/internal/repository"
 	"trackion/internal/res"
@@ -29,7 +31,8 @@ type Middleware struct {
 }
 
 const (
-	ProjectIdContextKey string = "projectId"
+	ProjectIdContextKey      string = "projectId"
+	ProjectDomainsContextKey string = "projectDomains"
 )
 
 func NewMiddleware(repo repository.Querier) *Middleware {
@@ -82,6 +85,7 @@ func (m Middleware) AttachProjectContext(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), ProjectIdContextKey, project.ID)
+		ctx = context.WithValue(ctx, ProjectDomainsContextKey, project.Domains)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -107,7 +111,33 @@ func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
 		}
 
 		ctx := context.WithValue(r.Context(), ProjectIdContextKey, project.ID)
+		ctx = context.WithValue(ctx, ProjectDomainsContextKey, project.Domains)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (m Middleware) OriginDomainValidation(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawDomains, _ := r.Context().Value(ProjectDomainsContextKey).([]string)
+		if len(rawDomains) == 0 {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		requestDomain := extractRequestDomain(r)
+		if requestDomain == "" {
+			// Native SDK clients (mobile/game/server) typically do not send Origin/Referer.
+			// If no domain metadata is present, allow the request after project-key validation.
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		if !domain.IsAllowed(rawDomains, requestDomain) {
+			res.Error(w, "Origin domain is not allowed for this project", http.StatusForbidden)
+			return
+		}
+
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -216,6 +246,30 @@ func getClientIP(r *http.Request) string {
 
 			return addr.String()
 		}
+	}
+
+	return ""
+}
+
+func extractRequestDomain(r *http.Request) string {
+	candidates := []string{
+		strings.TrimSpace(r.Header.Get("Origin")),
+		strings.TrimSpace(r.Header.Get("Referer")),
+		strings.TrimSpace(r.Header.Get("X-Trackion-Origin")),
+		strings.TrimSpace(r.Header.Get("X-Trackion-Domain")),
+	}
+
+	for _, c := range candidates {
+		if c == "" {
+			continue
+		}
+
+		u, err := url.Parse(c)
+		if err != nil || u.Host == "" {
+			continue
+		}
+
+		return u.Host
 	}
 
 	return ""

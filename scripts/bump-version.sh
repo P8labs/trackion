@@ -83,7 +83,7 @@ create_tag() {
 
   echo -e "${GREEN}Tag created: $tag${NC}\n"
   echo -e "${BLUE}To push and trigger release workflow:${NC}"
-  echo -e "${YELLOW}  git push origin <branch> && git push origin $tag${NC}\n"
+  echo -e "${YELLOW}  git push origin master && git push origin $tag${NC}\n"
 }
 
 show_info() {

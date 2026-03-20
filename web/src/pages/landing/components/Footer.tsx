@@ -22,13 +22,14 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-3">Product</h4>
             <div className="space-y-2 text-sm">
-              <Link
-                to="https://github.com/P8labs/trackion/wiki"
+              <a
+                href="/docs/"
                 target="_blank"
+                rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground block"
               >
                 Documentation
-              </Link>
+              </a>
               <a
                 href="https://github.com/P8labs/trackion"
                 className="text-muted-foreground hover:text-foreground block"
@@ -47,27 +48,30 @@ export function Footer() {
           <div>
             <h4 className="font-semibold mb-3">Resources</h4>
             <div className="space-y-2 text-sm">
-              <Link
-                to="https://github.com/P8labs/trackion/wiki/Quick-Start"
+              <a
+                href="/docs/quick-start/"
                 target="_blank"
+                rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground block"
               >
                 Quick Start
-              </Link>
-              <Link
-                to="https://github.com/P8labs/trackion/wiki/API-Reference"
+              </a>
+              <a
+                href="/docs/api-reference/"
                 target="_blank"
+                rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground block"
               >
                 API Reference
-              </Link>
-              <Link
-                to="https://github.com/P8labs/trackion/wiki/Self-Hosting"
+              </a>
+              <a
+                href="/docs/self-hosting/"
                 target="_blank"
+                rel="noreferrer"
                 className="text-muted-foreground hover:text-foreground block"
               >
                 Self-hosting
-              </Link>
+              </a>
             </div>
           </div>
 

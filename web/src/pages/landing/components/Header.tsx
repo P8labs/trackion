@@ -13,7 +13,7 @@ export default function Header() {
         </Link>
         <nav className="hidden md:flex items-center space-x-6">
           <a
-            href="https://github.com/P8labs/trackion/wiki/Introduction"
+            href="/docs/"
             target="_blank"
             className="text-muted-foreground hover:text-foreground"
           >

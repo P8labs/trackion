@@ -4,5 +4,6 @@ builds/*
 .local.*
 
 docs/node_modules/*
-docs/.viitepress/*
+docs/.vitepress/dist
+docs/.vitepress/cache
 trackion.wiki/*

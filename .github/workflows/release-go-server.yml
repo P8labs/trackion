@@ -70,7 +70,7 @@ jobs:
             ```
 
             ### Notes
-            See the [documentation](https://github.com/P8labs/trackion/wiki) for more information.
+            See the [documentation](https://trackion.tech/docs/) for more information.
             Auto-generated changelog entries are included below.
 
   release-docker-image:

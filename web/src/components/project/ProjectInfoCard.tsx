@@ -7,6 +7,7 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { useUpdateProject } from "../../hooks/useApi";
 import type { Project } from "../../types";
+import { parseDomainsInput } from "../../lib/domain";
 
 interface ProjectInfoCardProps {
   project: Project;
@@ -22,6 +23,9 @@ export function ProjectInfoCard({ project }: ProjectInfoCardProps) {
   );
   const [hasInfoChanges, setHasInfoChanges] = useState(false);
 
+  const { domains: parsedDomains, invalidDomains } =
+    parseDomainsInput(editDomains);
+
   const handleCopy = (text: string, type: string) => {
     navigator.clipboard.writeText(text);
     setCopied(type);
@@ -30,14 +34,13 @@ export function ProjectInfoCard({ project }: ProjectInfoCardProps) {
 
   const handleUpdateProjectInfo = async () => {
     try {
-      const domainList = editDomains
-        .split(",")
-        .map((d) => d.trim())
-        .filter((d) => d.length > 0);
+      if (invalidDomains.length > 0) {
+        return;
+      }
 
       await updateProjectMutation.mutateAsync({
         name: editName,
-        domains: domainList,
+        domains: parsedDomains,
       });
       setIsEditingInfo(false);
       setHasInfoChanges(false);
@@ -97,7 +100,11 @@ export function ProjectInfoCard({ project }: ProjectInfoCardProps) {
               <Button
                 size="sm"
                 onClick={handleUpdateProjectInfo}
-                disabled={!hasInfoChanges || updateProjectMutation.isPending}
+                disabled={
+                  !hasInfoChanges ||
+                  updateProjectMutation.isPending ||
+                  invalidDomains.length > 0
+                }
                 className="gap-2"
               >
                 <Save className="h-4 w-4" />
@@ -153,6 +160,11 @@ export function ProjectInfoCard({ project }: ProjectInfoCardProps) {
                 Comma-separated list of domains where analytics will be
                 collected
               </p>
+              {invalidDomains.length > 0 && (
+                <p className="text-xs text-destructive">
+                  Fix invalid domains: {invalidDomains.join(", ")}
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
