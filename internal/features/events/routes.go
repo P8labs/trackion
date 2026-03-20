@@ -10,13 +10,12 @@ import (
 func Routes(repo repository.Querier, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	mw := NewMiddleware(repo)
+	mw := NewMiddlewareWithConfig(repo, cfg)
 	eventService := NewService(repo, cfg)
 	eventHandler := NewHandler(eventService)
 
-	r.Use(mw.ProjectIDValidation)
-	r.Post("/collect", eventHandler.CollectEvent)
-	r.Post("/batch", eventHandler.CollectBatchEvents)
-	r.Get("/config", eventHandler.ProjectConfig)
+	r.With(mw.ProjectIDValidation).Post("/collect", eventHandler.CollectEvent)
+	r.With(mw.AttachProjectContext, mw.BatchRateLimit, mw.ProjectIDValidation).Post("/batch", eventHandler.CollectBatchEvents)
+	r.With(mw.ProjectIDValidation).Get("/config", eventHandler.ProjectConfig)
 	return r
 }

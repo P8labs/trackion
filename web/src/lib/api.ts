@@ -214,6 +214,7 @@ export const getTrafficSources = async (
   authToken: string,
 ): Promise<{
   referrers: Array<{ name: string; count: number; color?: string }>;
+  countries: Array<{ name: string; count: number; color?: string }>;
   utm_sources: Array<{ name: string; count: number; color?: string }>;
   utm_mediums: Array<{ name: string; count: number; color?: string }>;
 }> => {

@@ -109,6 +109,7 @@ type DeviceAnalyticsData struct {
 
 type TrafficSourcesData struct {
 	Referrers  []BreakdownItem `json:"referrers"`
+	Countries  []BreakdownItem `json:"countries"`
 	UTMSources []BreakdownItem `json:"utm_sources"`
 	UTMMediums []BreakdownItem `json:"utm_mediums"`
 }
@@ -497,6 +498,7 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 	}
 
 	referrers := []BreakdownItem{}
+	countries := []BreakdownItem{}
 	utmSources := []BreakdownItem{}
 	utmMediums := []BreakdownItem{}
 	colorIndex := 0
@@ -511,6 +513,8 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 		switch item.Category {
 		case "referrer":
 			referrers = append(referrers, breakdownItem)
+		case "country":
+			countries = append(countries, breakdownItem)
 		case "utm_source":
 			utmSources = append(utmSources, breakdownItem)
 		case "utm_medium":
@@ -521,6 +525,7 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 
 	return &TrafficSourcesData{
 		Referrers:  referrers,
+		Countries:  countries,
 		UTMSources: utmSources,
 		UTMMediums: utmMediums,
 	}, nil

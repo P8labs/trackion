@@ -20,7 +20,7 @@
   };
 
   const LIMITS = {
-    batch: 10,
+    batch: 20,
     payloadKB: 256,
     flushInterval: 5000,
   };

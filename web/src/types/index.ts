@@ -89,6 +89,7 @@ export interface BreakdownData {
   devices: BreakdownItem[];
   browsers: BreakdownItem[];
   referrers: BreakdownItem[];
+  countries: BreakdownItem[];
   utm: UTMBreakdown[];
   top_pages: PageBreakdown[];
 }
