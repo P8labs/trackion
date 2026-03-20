@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+:root {
+  --vp-font-family-base: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --vp-font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --vp-c-brand-1: #df5c27;
+  --vp-c-brand-2: #c84f20;
+  --vp-c-brand-3: #b3461b;
+
+  --vp-c-bg: #fffdf9;
+  --vp-c-bg-soft: #fff7ef;
+  --vp-c-bg-mute: #fff1e4;
+
+  --vp-c-divider: #f0dfd2;
+  --vp-c-gutter: #f5e7dc;
+
+  --vp-c-text-1: #2d1a10;
+  --vp-c-text-2: #5f3d2a;
+  --vp-c-text-3: #8c6a57;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(
+    120deg,
+    #f1ad3d 0%,
+    #df5c27 45%,
+    #b3461b 100%
+  );
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 50% 35%,
+    rgba(223, 92, 39, 0.35) 0%,
+    rgba(241, 173, 61, 0.16) 35%,
+    rgba(255, 255, 255, 0) 72%
+  );
+  --vp-home-hero-image-filter: blur(44px);
+
+  --vp-button-brand-bg: #df5c27;
+  --vp-button-brand-hover-bg: #c84f20;
+  --vp-button-brand-active-bg: #b3461b;
+}
+
+.dark {
+  --vp-c-bg: #1b120d;
+  --vp-c-bg-soft: #2a1b13;
+  --vp-c-bg-mute: #362318;
+
+  --vp-c-divider: #4b3022;
+  --vp-c-gutter: #4b3022;
+
+  --vp-c-text-1: #fbeee3;
+  --vp-c-text-2: #e6c6ad;
+  --vp-c-text-3: #c69f81;
+
+  --vp-c-brand-1: #f1ad3d;
+  --vp-c-brand-2: #e69621;
+  --vp-c-brand-3: #df5c27;
+
+  --vp-home-hero-image-background-image: radial-gradient(
+    circle at 50% 35%,
+    rgba(241, 173, 61, 0.28) 0%,
+    rgba(223, 92, 39, 0.14) 38%,
+    rgba(0, 0, 0, 0) 74%
+  );
+}
+
+.VPNavBar .title,
+.VPDoc h1,
+.VPDoc h2,
+.VPDoc h3 {
+  letter-spacing: 0.01em;
+}
+
+.VPFeature {
+  border-radius: 12px;
+}

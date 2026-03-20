@@ -3,6 +3,8 @@ package projects
 import (
 	"context"
 	"errors"
+	"strings"
+	"trackion/internal/core/domain"
 	"trackion/internal/features/auth"
 	"trackion/internal/repository"
 
@@ -68,6 +70,11 @@ var (
 )
 
 func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (string, error) {
+	name := strings.TrimSpace(params.Name)
+	if len(name) < 2 {
+		return "", errors.New("project name must be at least 2 characters")
+	}
+
 	id := uuid.New()
 	apiKey := uuid.NewSHA1(id, id.NodeID()).String()
 	userId := ctx.Value(auth.UserIdContextKey).(string)
@@ -90,13 +97,13 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 		trackClicks = *params.Settings.TrackClicks
 	}
 
-	domains := params.Domains
-	if domains == nil {
-		domains = []string{}
+	domains, err := domain.NormalizeDomains(params.Domains)
+	if err != nil {
+		return "", errors.New("invalid domains list")
 	}
 
 	project, err := s.repo.CreateProject(ctx, repository.CreateProjectParams{
-		Name:           params.Name,
+		Name:           name,
 		ID:             id,
 		OwnerID:        uuid.MustParse(userId),
 		ApiKey:         apiKey,
@@ -148,7 +155,11 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 	}
 
 	if params.Name != nil {
-		updateParams.Name = *params.Name
+		name := strings.TrimSpace(*params.Name)
+		if len(name) < 2 {
+			return errors.New("project name must be at least 2 characters")
+		}
+		updateParams.Name = name
 	}
 	if params.AutoPageview != nil {
 		updateParams.AutoPageview = *params.AutoPageview
@@ -163,7 +174,11 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 		updateParams.TrackClicks = *params.TrackClicks
 	}
 	if params.Domains != nil {
-		updateParams.Domains = *params.Domains
+		normalizedDomains, err := domain.NormalizeDomains(*params.Domains)
+		if err != nil {
+			return errors.New("invalid domains list")
+		}
+		updateParams.Domains = normalizedDomains
 	}
 
 	// Update the project with merged data

@@ -14,8 +14,8 @@ func Routes(repo repository.Querier, cfg config.Config) *chi.Mux {
 	eventService := NewService(repo, cfg)
 	eventHandler := NewHandler(eventService)
 
-	r.With(mw.ProjectIDValidation).Post("/collect", eventHandler.CollectEvent)
-	r.With(mw.AttachProjectContext, mw.BatchRateLimit, mw.ProjectIDValidation).Post("/batch", eventHandler.CollectBatchEvents)
+	r.With(mw.ProjectIDValidation, mw.OriginDomainValidation).Post("/collect", eventHandler.CollectEvent)
+	r.With(mw.AttachProjectContext, mw.BatchRateLimit, mw.ProjectIDValidation, mw.OriginDomainValidation).Post("/batch", eventHandler.CollectBatchEvents)
 	r.With(mw.ProjectIDValidation).Get("/config", eventHandler.ProjectConfig)
 	return r
 }

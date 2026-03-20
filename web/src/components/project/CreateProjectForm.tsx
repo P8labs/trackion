@@ -7,6 +7,7 @@ import { Badge } from "../ui/badge";
 import { Checkbox } from "../ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { ProjectSettings } from "../../types";
+import { parseDomainsInput } from "../../lib/domain";
 
 interface CreateProjectFormProps {
   onSubmit: (data: {
@@ -27,8 +28,6 @@ const defaultSettings: ProjectSettings = {
   clicks: true,
 };
 
-const domainPattern = /^(localhost|([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(:\d+)?$/;
-
 export function CreateProjectForm({
   onSubmit,
   onCancel,
@@ -40,18 +39,9 @@ export function CreateProjectForm({
   const [domainsInput, setDomainsInput] = useState("");
   const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
 
-  const parsedDomains = useMemo(
-    () =>
-      domainsInput
-        .split(",")
-        .map((domain) => domain.trim().toLowerCase())
-        .filter(Boolean),
+  const { domains: parsedDomains, invalidDomains } = useMemo(
+    () => parseDomainsInput(domainsInput),
     [domainsInput],
-  );
-
-  const invalidDomains = useMemo(
-    () => parsedDomains.filter((domain) => !domainPattern.test(domain)),
-    [parsedDomains],
   );
 
   const canSubmit =
