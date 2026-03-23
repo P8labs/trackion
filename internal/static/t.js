@@ -30,6 +30,7 @@
     PAGE_LEAVE: "page.leave",
     TIME_SPENT: "page.time_spent",
     CLICK: "page.click",
+    HEARTBEAT: "session.active",
   };
 
   let config = {};
@@ -235,6 +236,18 @@
         });
       });
     }
+
+    // Send heartbeat every 30 seconds to track as online user
+    const heartbeatInterval = setInterval(function () {
+      if (document.visibilityState !== "hidden") {
+        api.track(EVENTS.HEARTBEAT);
+      }
+    }, 30000);
+
+    // Cleanup on unload
+    window.addEventListener("beforeunload", function () {
+      clearInterval(heartbeatInterval);
+    });
   });
 
   setInterval(flush, LIMITS.flushInterval);

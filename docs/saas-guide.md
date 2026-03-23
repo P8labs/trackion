@@ -10,13 +10,13 @@ Use this guide to try Trackion quickly on hosted infrastructure before deciding 
 
 ## What You Need
 
-- A GitHub account (for OAuth login)
+- A GitHub or Google account (for OAuth login)
 - A browser and your app/site where you want to add tracking
 
 ## Option A: Use Hosted Dashboard (Recommended)
 
 1. Open the hosted Trackion dashboard URL provided by the Trackion team.
-2. Click GitHub login.
+2. Click GitHub or Google login.
 3. Create a project.
 4. Copy the project API key.
 5. Add tracker script to your app.
@@ -37,16 +37,16 @@ Example script tag:
 
 If you want to test the current web code in this repository against SaaS API:
 
-1. Run web with GitHub login enabled:
+1. Run web with OAuth login enabled:
 
 ```bash
 cd web
-VITE_ENABLE_GITHUB_LOGIN=true VITE_SERVER_URL=https://api.trackion.tech pnpm dev
+VITE_ENABLE_GITHUB_LOGIN=true VITE_ENABLE_GOOGLE_LOGIN=true VITE_SERVER_URL=https://api.trackion.tech VITE_TRACKION_MODE=saas pnpm dev
 ```
 
 2. Open http://localhost:5173.
 3. Keep Server URL as https://api.trackion.tech.
-4. Click GitHub login.
+4. Click Google or GitHub login.
 5. Complete OAuth and return to dashboard.
 
 ## Verify Tracking Works
@@ -59,9 +59,12 @@ After adding your script tag, verify:
 
 ## Common SaaS Trial Issues
 
-### GitHub button not visible in local web
+### OAuth buttons not visible in local web
 
-Set VITE_ENABLE_GITHUB_LOGIN=true.
+Set `VITE_TRACKION_MODE=saas`, then enable one or both:
+
+- `VITE_ENABLE_GITHUB_LOGIN=true`
+- `VITE_ENABLE_GOOGLE_LOGIN=true`
 
 ### OAuth callback fails
 

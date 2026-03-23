@@ -136,6 +136,8 @@ type Service interface {
 	GetTrafficSources(ctx context.Context, projectId string) (*TrafficSourcesData, error)
 	GetTopPages(ctx context.Context, projectId string) ([]TopPage, error)
 	GetRecentEventsFormatted(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
+	GetOnlineUsers(ctx context.Context, projectId string) (int64, error)
+	GetCountryData(ctx context.Context, projectId string) ([]BreakdownItem, error)
 }
 
 type svc struct {
@@ -627,6 +629,42 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 			Period:  point.Period.String(),
 			Desktop: point.Desktop,
 			Mobile:  point.Mobile,
+		}
+	}
+
+	return result, nil
+}
+
+func (s *svc) GetOnlineUsers(ctx context.Context, projectId string) (int64, error) {
+	projectUUID := uuid.MustParse(projectId)
+
+	count, err := s.repo.GetOnlineUsers(ctx, projectUUID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get online users: %w", err)
+	}
+
+	return count, nil
+}
+
+func (s *svc) GetCountryData(ctx context.Context, projectId string) ([]BreakdownItem, error) {
+	projectUUID := uuid.MustParse(projectId)
+
+	data, err := s.repo.GetCountryData(ctx, projectUUID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get country data: %w", err)
+	}
+
+	result := make([]BreakdownItem, len(data))
+	for i, country := range data {
+		countryName := "Unknown"
+		if country.Country != nil {
+			if str, ok := country.Country.(string); ok {
+				countryName = str
+			}
+		}
+		result[i] = BreakdownItem{
+			Name:  countryName,
+			Count: country.Count,
 		}
 	}
 

@@ -63,7 +63,7 @@ export function AuthCallbackPage() {
               <div>
                 <p className="text-sm font-medium">Verifying your session</p>
                 <p className="text-sm text-muted-foreground">
-                  Please wait while we complete your GitHub authentication.
+                  Please wait while we complete your OAuth authentication.
                 </p>
               </div>
             </div>

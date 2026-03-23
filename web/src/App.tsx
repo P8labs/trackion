@@ -23,8 +23,8 @@ const AuthCallbackPage = lazy(() =>
   })),
 );
 const DashboardPage = lazy(() =>
-  import("./pages/dashboard/DashboardPage").then((m) => ({
-    default: m.DashboardPage,
+  import("./pages/dashboard/OverviewPage").then((m) => ({
+    default: m.OverviewPage,
   })),
 );
 const ProjectsPage = lazy(() =>

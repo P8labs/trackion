@@ -25,6 +25,14 @@ func NewHandler(service Service, cfg config.Config) *handler {
 }
 
 func (h *handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
+	h.oauthLogin(w, r, "github")
+}
+
+func (h *handler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+	h.oauthLogin(w, r, "google")
+}
+
+func (h *handler) oauthLogin(w http.ResponseWriter, r *http.Request, provider string) {
 	client := r.URL.Query().Get("client")
 	if client == "" {
 		client = "web"
@@ -38,13 +46,21 @@ func (h *handler) GithubLogin(w http.ResponseWriter, r *http.Request) {
 
 	q := r.URL.Query()
 	q.Set("state", state)
-	q.Set("provider", "github")
+	q.Set("provider", provider)
 	r.URL.RawQuery = q.Encode()
 
 	gothic.BeginAuthHandler(w, r)
 }
 
 func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
+	h.oauthCallback(w, r, "github")
+}
+
+func (h *handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	h.oauthCallback(w, r, "google")
+}
+
+func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider string) {
 
 	state := r.URL.Query().Get("state")
 
@@ -62,8 +78,9 @@ func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 
-	userID, err := h.service.UpsertGithubUser(
+	userID, err := h.service.UpsertOAuthUser(
 		ctx,
+		provider,
 		user.UserID,
 		user.Email,
 		user.Name,
@@ -93,9 +110,10 @@ func (h *handler) GithubCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	redirect := fmt.Sprintf(
-		"%s/auth/callback?token=%s&auth=github",
+		"%s/auth/callback?token=%s&auth=%s",
 		h.cfg.FrontendURL,
 		sessionToken,
+		provider,
 	)
 
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)

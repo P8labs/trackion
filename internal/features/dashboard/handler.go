@@ -205,3 +205,29 @@ func (h *handler) GetAreaChartData(w http.ResponseWriter, r *http.Request) {
 
 	res.Success(w, data, "Area chart data fetched successfully.")
 }
+
+func (h *handler) GetOnlineUsers(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	count, err := h.service.GetOnlineUsers(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, map[string]int64{"online_users": count}, "Online users fetched successfully.")
+}
+
+func (h *handler) GetCountryData(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	data, err := h.service.GetCountryData(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Country data fetched successfully.")
+}

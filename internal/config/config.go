@@ -15,6 +15,8 @@ type Config struct {
 	DatabaseURL        string
 	GithubClientID     string
 	GithubClientSecret string
+	GoogleClientID     string
+	GoogleClientSecret string
 	AdminToken         string
 	BaseURL            string
 	AuthSecret         string
@@ -59,6 +61,8 @@ func Load() *Config {
 		DatabaseURL:        MustEnv("DATABASE_URL"),
 		GithubClientID:     GetEnv("GITHUB_CLIENT_ID", ""),
 		GithubClientSecret: GetEnv("GITHUB_CLIENT_SECRET", ""),
+		GoogleClientID:     GetEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret: GetEnv("GOOGLE_CLIENT_SECRET", ""),
 		AdminToken:         GetEnv("TRACKION_ADMIN_TOKEN", ""),
 		BaseURL:            GetEnv("BASE_URL", "http://localhost:8000"),
 		AuthSecret:         GetEnv("AUTH_SECRET", "random-noise"),

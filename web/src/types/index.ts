@@ -54,6 +54,7 @@ export interface EventBreakdown {
 export interface User {
   id: string;
   github_id?: string;
+  google_id?: string;
   email?: string;
   name?: string;
   avatar_url?: string;

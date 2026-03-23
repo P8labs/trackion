@@ -142,6 +142,42 @@ func (q *Queries) GetChartDataFlexible(ctx context.Context, arg GetChartDataFlex
 	return items, nil
 }
 
+const getCountryData = `-- name: GetCountryData :many
+SELECT
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND event_name = 'page.view'
+GROUP BY country
+ORDER BY count DESC
+LIMIT 50
+`
+
+type GetCountryDataRow struct {
+	Country interface{} `json:"country"`
+	Count   int64       `json:"count"`
+}
+
+func (q *Queries) GetCountryData(ctx context.Context, projectID uuid.UUID) ([]GetCountryDataRow, error) {
+	rows, err := q.db.Query(ctx, getCountryData, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetCountryDataRow
+	for rows.Next() {
+		var i GetCountryDataRow
+		if err := rows.Scan(&i.Country, &i.Count); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getCustomEventCount = `-- name: GetCustomEventCount :one
 SELECT COUNT(*) as count
 FROM events
@@ -557,6 +593,20 @@ func (q *Queries) GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg 
 		return nil, err
 	}
 	return items, nil
+}
+
+const getOnlineUsers = `-- name: GetOnlineUsers :one
+SELECT COUNT(DISTINCT session_id) as count
+FROM events
+WHERE project_id = $1
+  AND created_at >= NOW() - INTERVAL '5 minutes'
+`
+
+func (q *Queries) GetOnlineUsers(ctx context.Context, projectID uuid.UUID) (int64, error) {
+	row := q.db.QueryRow(ctx, getOnlineUsers, projectID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }
 
 const getPageViewCount = `-- name: GetPageViewCount :one

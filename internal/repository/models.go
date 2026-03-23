@@ -68,4 +68,5 @@ type User struct {
 	GithubID  *string   `json:"github_id"`
 	CreatedAt time.Time `json:"created_at"`
 	AvatarUrl *string   `json:"avatar_url"`
+	GoogleID  *string   `json:"google_id"`
 }

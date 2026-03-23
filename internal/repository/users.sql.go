@@ -12,9 +12,9 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (id, email, name, github_id, avatar_url)
-VALUES ($1, $2, $3, $4, $5)
-RETURNING id, email, name, github_id, created_at, avatar_url
+INSERT INTO users (id, email, name, github_id, google_id, avatar_url)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, email, name, github_id, created_at, avatar_url, google_id
 `
 
 type CreateUserParams struct {
@@ -22,6 +22,7 @@ type CreateUserParams struct {
 	Email     string    `json:"email"`
 	Name      *string   `json:"name"`
 	GithubID  *string   `json:"github_id"`
+	GoogleID  *string   `json:"google_id"`
 	AvatarUrl *string   `json:"avatar_url"`
 }
 
@@ -31,6 +32,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Email,
 		arg.Name,
 		arg.GithubID,
+		arg.GoogleID,
 		arg.AvatarUrl,
 	)
 	var i User
@@ -41,12 +43,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.GithubID,
 		&i.CreatedAt,
 		&i.AvatarUrl,
+		&i.GoogleID,
 	)
 	return i, err
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, email, name, github_id, created_at, avatar_url
+SELECT id, email, name, github_id, created_at, avatar_url, google_id
 FROM users
 WHERE id = $1
 LIMIT 1
@@ -62,12 +65,35 @@ func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
 		&i.GithubID,
 		&i.CreatedAt,
 		&i.AvatarUrl,
+		&i.GoogleID,
+	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, email, name, github_id, created_at, avatar_url, google_id
+FROM users
+WHERE email = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.GithubID,
+		&i.CreatedAt,
+		&i.AvatarUrl,
+		&i.GoogleID,
 	)
 	return i, err
 }
 
 const getUserByGithubId = `-- name: GetUserByGithubId :one
-SELECT id, email, name, github_id, created_at, avatar_url
+SELECT id, email, name, github_id, created_at, avatar_url, google_id
 FROM users
 WHERE github_id = $1
 LIMIT 1
@@ -83,8 +109,63 @@ func (q *Queries) GetUserByGithubId(ctx context.Context, githubID *string) (User
 		&i.GithubID,
 		&i.CreatedAt,
 		&i.AvatarUrl,
+		&i.GoogleID,
 	)
 	return i, err
+}
+
+const getUserByGoogleId = `-- name: GetUserByGoogleId :one
+SELECT id, email, name, github_id, created_at, avatar_url, google_id
+FROM users
+WHERE google_id = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByGoogleId(ctx context.Context, googleID *string) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByGoogleId, googleID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.GithubID,
+		&i.CreatedAt,
+		&i.AvatarUrl,
+		&i.GoogleID,
+	)
+	return i, err
+}
+
+const linkGithubIDToUser = `-- name: LinkGithubIDToUser :exec
+UPDATE users
+SET github_id = $1
+WHERE id = $2
+`
+
+type LinkGithubIDToUserParams struct {
+	GithubID *string   `json:"github_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) LinkGithubIDToUser(ctx context.Context, arg LinkGithubIDToUserParams) error {
+	_, err := q.db.Exec(ctx, linkGithubIDToUser, arg.GithubID, arg.ID)
+	return err
+}
+
+const linkGoogleIDToUser = `-- name: LinkGoogleIDToUser :exec
+UPDATE users
+SET google_id = $1
+WHERE id = $2
+`
+
+type LinkGoogleIDToUserParams struct {
+	GoogleID *string   `json:"google_id"`
+	ID       uuid.UUID `json:"id"`
+}
+
+func (q *Queries) LinkGoogleIDToUser(ctx context.Context, arg LinkGoogleIDToUserParams) error {
+	_, err := q.db.Exec(ctx, linkGoogleIDToUser, arg.GoogleID, arg.ID)
+	return err
 }
 
 const updateUserFromGithub = `-- name: UpdateUserFromGithub :exec
@@ -109,6 +190,32 @@ func (q *Queries) UpdateUserFromGithub(ctx context.Context, arg UpdateUserFromGi
 		arg.Name,
 		arg.AvatarUrl,
 		arg.GithubID,
+	)
+	return err
+}
+
+const updateUserFromGoogle = `-- name: UpdateUserFromGoogle :exec
+UPDATE users
+SET
+	email = $1,
+	name = $2,
+	avatar_url = $3
+WHERE google_id = $4
+`
+
+type UpdateUserFromGoogleParams struct {
+	Email     string  `json:"email"`
+	Name      *string `json:"name"`
+	AvatarUrl *string `json:"avatar_url"`
+	GoogleID  *string `json:"google_id"`
+}
+
+func (q *Queries) UpdateUserFromGoogle(ctx context.Context, arg UpdateUserFromGoogleParams) error {
+	_, err := q.db.Exec(ctx, updateUserFromGoogle,
+		arg.Email,
+		arg.Name,
+		arg.AvatarUrl,
+		arg.GoogleID,
 	)
 	return err
 }

@@ -26,6 +26,7 @@ type Querier interface {
 	GetActiveSubscriptionLimitByProject(ctx context.Context, id uuid.UUID) (int32, error)
 	GetAreaChartDataByDevice(ctx context.Context, arg GetAreaChartDataByDeviceParams) ([]GetAreaChartDataByDeviceRow, error)
 	GetChartDataFlexible(ctx context.Context, arg GetChartDataFlexibleParams) ([]GetChartDataFlexibleRow, error)
+	GetCountryData(ctx context.Context, projectID uuid.UUID) ([]GetCountryDataRow, error)
 	GetCustomEventCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetDashboardCounts(ctx context.Context, projectID uuid.UUID) (GetDashboardCountsRow, error)
 	GetDashboardStats(ctx context.Context, projectID uuid.UUID) (GetDashboardStatsRow, error)
@@ -37,6 +38,7 @@ type Querier interface {
 	GetEventsOverTimeFilteredCustomRange(ctx context.Context, arg GetEventsOverTimeFilteredCustomRangeParams) ([]GetEventsOverTimeFilteredCustomRangeRow, error)
 	GetMonthlyUsageByProject(ctx context.Context, id uuid.UUID) (int64, error)
 	GetMonthlyUsageByUser(ctx context.Context, ownerID uuid.UUID) (int64, error)
+	GetOnlineUsers(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetPageViewCount(ctx context.Context, projectID uuid.UUID) (int64, error)
 	GetProjectByAPIKey(ctx context.Context, apiKey string) (Project, error)
 	GetProjectByID(ctx context.Context, id uuid.UUID) (Project, error)
@@ -56,16 +58,21 @@ type Querier interface {
 	GetTrafficSources(ctx context.Context, projectID uuid.UUID) ([]GetTrafficSourcesRow, error)
 	GetUTMBreakdown(ctx context.Context, projectID uuid.UUID) ([]GetUTMBreakdownRow, error)
 	GetUser(ctx context.Context, id uuid.UUID) (User, error)
+	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByGithubId(ctx context.Context, githubID *string) (User, error)
+	GetUserByGoogleId(ctx context.Context, googleID *string) (User, error)
 	GetUserProjects(ctx context.Context, ownerID uuid.UUID) ([]Project, error)
 	HardDeleteProjectsDeletedBefore(ctx context.Context, deletedAt pgtype.Timestamptz) (int64, error)
 	InsertEvent(ctx context.Context, arg InsertEventParams) (int64, error)
 	InsertEventsBatch(ctx context.Context, arg []InsertEventsBatchParams) *InsertEventsBatchBatchResults
+	LinkGithubIDToUser(ctx context.Context, arg LinkGithubIDToUserParams) error
+	LinkGoogleIDToUser(ctx context.Context, arg LinkGoogleIDToUserParams) error
 	ListProjects(ctx context.Context) ([]Project, error)
 	RenewFreeSubscriptionsForNewMonth(ctx context.Context) (int64, error)
 	RenewUserFreeSubscriptionIfNeeded(ctx context.Context, userID uuid.UUID) error
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) error
 	UpdateUserFromGithub(ctx context.Context, arg UpdateUserFromGithubParams) error
+	UpdateUserFromGoogle(ctx context.Context, arg UpdateUserFromGoogleParams) error
 }
 
 var _ Querier = (*Queries)(nil)

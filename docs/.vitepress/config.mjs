@@ -9,6 +9,9 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   ignoreDeadLinks: [/^https?:\/\/localhost/, /^http:\/\/127\.0\.0\.1/],
+  head: [
+    ["link", { rel: "icon", type: "image/png", href: "/docs/trackion.png" }],
+  ],
   themeConfig: {
     siteTitle: "Trackion Docs",
     nav: [
