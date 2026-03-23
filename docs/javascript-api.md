@@ -53,16 +53,23 @@ curl -X POST https://your-trackion-server.com/events/batch \
   -H "Content-Type: application/json" \
   -H "X-Project-Key: your-project-api-key" \
   -d '{
+    "project_key": "your-project-api-key",
     "events": [
       {
-        "eventName": "order_created",
-        "sessionId": "system-session",
-        "pagePath": "/orders",
+        "event": "order_created",
+        "session_Id": "system-session",
+        "page": {
+          "path": "/orders",
+          "title": "Orders",
+          "referrer": "https://example.com"
+        },
         "properties": {"orderId": "ord_123"}
       }
     ]
   }'
 ```
+
+Note: use `session_Id` (capital `I`) in ingestion payloads.
 
 ## Validation Checklist
 

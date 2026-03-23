@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Calendar, Filter } from "lucide-react";
 
 import {
@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
+import { Button } from "../ui/button";
 import {
   ChartContainer,
   ChartLegend,
@@ -41,9 +42,9 @@ const TIME_RANGES = [
 
 const EVENT_FILTERS = [
   { value: "all", label: "All events" },
-  { value: "page.view", label: "Page views" },
-  { value: "page.time_spent", label: "Time spent" },
-  { value: "page.click", label: "Click events" },
+  { value: "page.view", label: "Views" },
+  { value: "page.time_spent", label: "Time" },
+  { value: "page.click", label: "Clicks" },
 ];
 
 const chartConfig = {
@@ -66,10 +67,28 @@ export function DashboardChart({ projectId }: ChartDataProps) {
     eventFilter,
   );
 
+  const chartSummary = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { total: 0, peak: 0, latest: 0 };
+    }
+
+    let total = 0;
+    let peak = 0;
+
+    for (const row of data) {
+      const rowTotal = row.desktop + row.mobile;
+      total += rowTotal;
+      peak = Math.max(peak, rowTotal);
+    }
+
+    const latest = data[data.length - 1].desktop + data[data.length - 1].mobile;
+    return { total, peak, latest };
+  }, [data]);
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle>Events Over Time</CardTitle>
             <CardDescription>
@@ -81,7 +100,7 @@ export function DashboardChart({ projectId }: ChartDataProps) {
               value={timeRange}
               onValueChange={(v) => setTimeRange(v || "")}
             >
-              <SelectTrigger className="w-35">
+              <SelectTrigger className="h-8 w-34 text-xs">
                 <Calendar className="h-4 w-4" />
                 <SelectValue />
               </SelectTrigger>
@@ -93,32 +112,53 @@ export function DashboardChart({ projectId }: ChartDataProps) {
                 ))}
               </SelectContent>
             </Select>
-            <Select
-              value={eventFilter || "all"}
-              onValueChange={(v) => setEventFilter(v === "all" ? "" : v || "")}
-            >
-              <SelectTrigger>
-                <Filter className="h-4 w-4" />
-                <SelectValue>
-                  {
-                    EVENT_FILTERS.find(
-                      (f) => f.value === (eventFilter || "all"),
-                    )?.label
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {EVENT_FILTERS.map((filter) => (
-                  <SelectItem key={filter.value} value={filter.value}>
-                    {filter.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 flex flex-wrap items-center gap-1.5">
+          <span className="mr-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
+            <Filter className="h-3.5 w-3.5" />
+            Group
+          </span>
+          {EVENT_FILTERS.map((filter) => {
+            const selected = (eventFilter || "all") === filter.value;
+            return (
+              <Button
+                key={filter.value}
+                type="button"
+                size="sm"
+                variant={selected ? "default" : "outline"}
+                className="h-7 cursor-pointer rounded-full px-2.5 text-[11px]"
+                onClick={() =>
+                  setEventFilter(filter.value === "all" ? "" : filter.value)
+                }
+              >
+                {filter.label}
+              </Button>
+            );
+          })}
+        </div>
+
+        <div className="mb-4 grid grid-cols-3 gap-2 text-xs">
+          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
+            <p className="text-muted-foreground">Total</p>
+            <p className="font-semibold text-foreground">
+              {chartSummary.total}
+            </p>
+          </div>
+          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
+            <p className="text-muted-foreground">Peak</p>
+            <p className="font-semibold text-foreground">{chartSummary.peak}</p>
+          </div>
+          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
+            <p className="text-muted-foreground">Latest</p>
+            <p className="font-semibold text-foreground">
+              {chartSummary.latest}
+            </p>
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="h-75 flex items-center justify-center">
             <LoadingSpinner />

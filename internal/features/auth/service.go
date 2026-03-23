@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/core"
@@ -14,7 +16,7 @@ import (
 )
 
 type Service interface {
-	UpsertGithubUser(ctx context.Context, githubID, email, name, avatarURL string) (string, error)
+	UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error)
 	GetUser(ctx context.Context, userID string) (repository.User, error)
 	CreateSession(ctx context.Context, userID string) (string, error)
 	DeleteSession(ctx context.Context, token string) error
@@ -26,7 +28,7 @@ type service struct {
 	cfg  config.Config
 }
 
-const defaultMonthlyEventLimit int32 = 100000
+const defaultMonthlyEventLimit int32 = 10000
 
 func NewService(repo repository.Querier, cfg config.Config) Service {
 	return &service{
@@ -35,16 +37,22 @@ func NewService(repo repository.Querier, cfg config.Config) Service {
 	}
 }
 
-func (s *service) UpsertGithubUser(ctx context.Context, githubID, email, name, avatarURL string) (string, error) {
+func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error) {
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	externalID = strings.TrimSpace(externalID)
+	email = strings.ToLower(strings.TrimSpace(email))
 
-	user, err := s.repo.GetUserByGithubId(ctx, core.StrPtr(githubID))
+	if externalID == "" {
+		return "", errors.New("oauth external id is required")
+	}
+
+	if email == "" {
+		email = fmt.Sprintf("%s-%s@oauth.trackion.local", provider, externalID)
+	}
+
+	user, err := s.findUserByProvider(ctx, provider, externalID)
 	if err == nil {
-		if err := s.repo.UpdateUserFromGithub(ctx, repository.UpdateUserFromGithubParams{
-			Email:     email,
-			Name:      core.StrPtr(name),
-			AvatarUrl: core.StrPtr(avatarURL),
-			GithubID:  core.StrPtr(githubID),
-		}); err != nil {
+		if err := s.updateUserFromProvider(ctx, provider, externalID, email, name, avatarURL); err != nil {
 			return "", err
 		}
 
@@ -60,9 +68,42 @@ func (s *service) UpsertGithubUser(ctx context.Context, githubID, email, name, a
 		return "", err
 	}
 
+	emailUser, err := s.repo.GetUserByEmail(ctx, email)
+	if err == nil {
+		if err := s.linkProviderToUser(ctx, provider, externalID, emailUser.ID); err != nil {
+			return "", err
+		}
+
+		if err := s.updateUserFromProvider(ctx, provider, externalID, email, name, avatarURL); err != nil {
+			return "", err
+		}
+
+		if s.cfg.IsSaaS() {
+			if err := s.ensureActiveSubscription(ctx, emailUser.ID); err != nil {
+				return "", err
+			}
+		}
+
+		return emailUser.ID.String(), nil
+	}
+
+	if !errors.Is(err, pgx.ErrNoRows) {
+		return "", err
+	}
+
+	var githubID *string
+	var googleID *string
+	if provider == "github" {
+		githubID = core.StrPtr(externalID)
+	}
+	if provider == "google" {
+		googleID = core.StrPtr(externalID)
+	}
+
 	u, err := s.repo.CreateUser(ctx, repository.CreateUserParams{
 		ID:        uuid.New(),
-		GithubID:  core.StrPtr(githubID),
+		GithubID:  githubID,
+		GoogleID:  googleID,
 		Email:     email,
 		Name:      core.StrPtr(name),
 		AvatarUrl: core.StrPtr(avatarURL),
@@ -79,6 +120,55 @@ func (s *service) UpsertGithubUser(ctx context.Context, githubID, email, name, a
 	}
 
 	return u.ID.String(), nil
+}
+
+func (s *service) findUserByProvider(ctx context.Context, provider, externalID string) (repository.User, error) {
+	switch provider {
+	case "github":
+		return s.repo.GetUserByGithubId(ctx, core.StrPtr(externalID))
+	case "google":
+		return s.repo.GetUserByGoogleId(ctx, core.StrPtr(externalID))
+	default:
+		return repository.User{}, errors.New("unsupported oauth provider")
+	}
+}
+
+func (s *service) updateUserFromProvider(ctx context.Context, provider, externalID, email, name, avatarURL string) error {
+	switch provider {
+	case "github":
+		return s.repo.UpdateUserFromGithub(ctx, repository.UpdateUserFromGithubParams{
+			Email:     email,
+			Name:      core.StrPtr(name),
+			AvatarUrl: core.StrPtr(avatarURL),
+			GithubID:  core.StrPtr(externalID),
+		})
+	case "google":
+		return s.repo.UpdateUserFromGoogle(ctx, repository.UpdateUserFromGoogleParams{
+			Email:     email,
+			Name:      core.StrPtr(name),
+			AvatarUrl: core.StrPtr(avatarURL),
+			GoogleID:  core.StrPtr(externalID),
+		})
+	default:
+		return errors.New("unsupported oauth provider")
+	}
+}
+
+func (s *service) linkProviderToUser(ctx context.Context, provider, externalID string, userID uuid.UUID) error {
+	switch provider {
+	case "github":
+		return s.repo.LinkGithubIDToUser(ctx, repository.LinkGithubIDToUserParams{
+			GithubID: core.StrPtr(externalID),
+			ID:       userID,
+		})
+	case "google":
+		return s.repo.LinkGoogleIDToUser(ctx, repository.LinkGoogleIDToUserParams{
+			GoogleID: core.StrPtr(externalID),
+			ID:       userID,
+		})
+	default:
+		return errors.New("unsupported oauth provider")
+	}
 }
 
 func (s *service) GetUser(ctx context.Context, userID string) (repository.User, error) {
@@ -128,6 +218,7 @@ func (s *service) VerifyToken(ctx context.Context, token string) (repository.Use
 			Email:     "admin@trackion.local",
 			Name:      &name,
 			GithubID:  nil,
+			GoogleID:  nil,
 			CreatedAt: time.Now(),
 			AvatarUrl: nil,
 		}, nil

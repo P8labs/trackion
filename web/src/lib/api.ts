@@ -61,6 +61,10 @@ export const getGithubLoginUrl = (serverUrl: string): string => {
   return `${serverUrl}/auth/login/github?client=web`;
 };
 
+export const getGoogleLoginUrl = (serverUrl: string): string => {
+  return `${serverUrl}/auth/login/google?client=web`;
+};
+
 export const getCurrentUser = async (
   serverUrl: string,
   authToken: string,
@@ -272,4 +276,30 @@ export const getServerHealth = async (
   serverUrl: string,
 ): Promise<ServerHealth> => {
   return apiCall<ServerHealth>("/health", {}, serverUrl, null);
+};
+
+export const getOnlineUsers = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<{ online_users: number }> => {
+  return apiCall(
+    `/api/analytics/${projectId}/online-users`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getCountryData = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<Array<{ name: string; count: number }>> => {
+  return apiCall(
+    `/api/analytics/${projectId}/country-data`,
+    {},
+    serverUrl,
+    authToken,
+  );
 };

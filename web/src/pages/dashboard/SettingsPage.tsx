@@ -149,10 +149,6 @@ export function SettingsPage() {
               <p className="font-medium mb-1 text-foreground">Web Version</p>
               <p>{WEB_VERSION}</p>
             </div>
-            <div>
-              <p className="font-medium mb-1 text-foreground">Built with</p>
-              <p>React • TypeScript • Tailwind CSS</p>
-            </div>
           </div>
         </CardContent>
       </Card>

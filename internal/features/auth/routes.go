@@ -15,7 +15,9 @@ func Routes(repo repository.Querier) *chi.Mux {
 	authHandler := NewHandler(authService, *cfg)
 
 	r.Get("/login/github", authHandler.GithubLogin)
+	r.Get("/login/google", authHandler.GoogleLogin)
 	r.Get("/callback/github", authHandler.GithubCallback)
+	r.Get("/callback/google", authHandler.GoogleCallback)
 
 	r.Group(func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)

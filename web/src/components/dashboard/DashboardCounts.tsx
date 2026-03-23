@@ -80,7 +80,7 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
               <CardTitle className="text-sm font-medium">
                 {stat.title}
               </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" />
+              <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stat.value}</div>

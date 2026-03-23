@@ -13,10 +13,11 @@ import {
   getTrafficSources,
   getTopPages,
   getRecentEventsFormatted,
+  getOnlineUsers,
+  getCountryData,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
-// Query Keys
 export const queryKeys = {
   projects: ["projects"] as const,
   project: (id: string) => ["projects", id] as const,
@@ -31,6 +32,8 @@ export const queryKeys = {
   topPages: (projectId: string) => ["topPages", projectId] as const,
   recentEventsFormatted: (projectId: string, limit?: number) =>
     ["recentEventsFormatted", projectId, limit] as const,
+  onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
+  countryData: (projectId: string) => ["countryData", projectId] as const,
 };
 
 // Custom hooks for queries
@@ -272,5 +275,28 @@ export function useRecentEventsFormatted(projectId: string, limit = 50) {
       getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
     enabled: !!authToken && !!projectId,
     refetchInterval: 30 * 1000, // Refetch every 30 seconds
+  });
+}
+
+export function useOnlineUsers(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.onlineUsers(projectId),
+    queryFn: () => getOnlineUsers(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 30 * 1000, // 30 seconds
+    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+  });
+}
+
+export function useCountryData(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.countryData(projectId),
+    queryFn: () => getCountryData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 }

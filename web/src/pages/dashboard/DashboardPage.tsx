@@ -7,6 +7,8 @@ import { DashboardChart } from "../../components/dashboard/DashboardChart";
 import { AnalyticsBreakdown } from "../../components/dashboard/AnalyticsBreakdown";
 import { TopPages } from "../../components/dashboard/TopPages";
 import { RecentEvents } from "../../components/dashboard/RecentEvents";
+import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
+import { WorldMap } from "../../components/dashboard/WorldMap";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../hooks/useApi";
 import { useNavigate } from "react-router-dom";
@@ -69,10 +71,16 @@ export function DashboardPage() {
       queryKey: queryKeys.recentEventsFormatted(currentProject.id),
       exact: false,
     });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.onlineUsers(currentProject.id),
+    });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.countryData(currentProject.id),
+    });
   };
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-4 p-4 md:p-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -93,13 +101,20 @@ export function DashboardPage() {
         </Button>
       </div>
 
+      {/* Online Users - Live Indicator */}
+      <OnlineUsers projectId={currentProject.id} />
+
       <DashboardCounts projectId={currentProject.id} />
 
-      <DashboardChart projectId={currentProject.id} />
+      {/* Main Chart and World Map */}
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+        <DashboardChart projectId={currentProject.id} />
+        <WorldMap projectId={currentProject.id} />
+      </div>
 
       <AnalyticsBreakdown projectId={currentProject.id} />
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <TopPages projectId={currentProject.id} />
         <RecentEvents projectId={currentProject.id} />
       </div>

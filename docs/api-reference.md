@@ -75,16 +75,26 @@ Example single event body:
 
 ```json
 {
-  "eventName": "button_click",
-  "sessionId": "session-1",
-  "pagePath": "/pricing",
-  "pageTitle": "Pricing",
-  "referrer": "https://google.com",
+  "event": "button_click",
+  "session_Id": "session-1",
+  "user_agent": "Mozilla/5.0",
+  "page": {
+    "path": "/pricing",
+    "title": "Pricing",
+    "referrer": "https://google.com"
+  },
+  "utm": {
+    "source": "newsletter",
+    "medium": "email",
+    "campaign": "spring-launch"
+  },
   "properties": {
     "cta": "start_trial"
   }
 }
 ```
+
+Note: ingestion payloads currently require `session_Id` (capital `I`).
 
 ## Projects API
 

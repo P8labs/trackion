@@ -62,7 +62,11 @@ WHERE project_id = $1
   AND created_at >= NOW() - ($2 * INTERVAL '1 day')
 GROUP BY DATE(created_at)
 ORDER BY date ASC;
-
+-- name: GetOnlineUsers :one
+SELECT COUNT(DISTINCT session_id) as count
+FROM events
+WHERE project_id = $1
+  AND created_at >= NOW() - INTERVAL '5 minutes';
 -- name: GetPageViewCount :one
 SELECT COUNT(*) as count
 FROM events
@@ -307,6 +311,16 @@ SELECT
 FROM user_agents
 GROUP BY device_name
 ORDER BY category, count DESC;
+
+-- name: GetCountryData :many
+SELECT
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
+    COUNT(*) as count
+FROM events
+WHERE project_id = $1 AND event_name = 'page.view'
+GROUP BY country
+ORDER BY count DESC
+LIMIT 50;
 
 -- Breakdown Data - Traffic Sources
 -- name: GetTrafficSources :many

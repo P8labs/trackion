@@ -68,6 +68,14 @@ func (m *mockDashboardService) GetRecentEventsFormatted(_ context.Context, _ str
 	return []RecentEventData{}, nil
 }
 
+func (m *mockDashboardService) GetOnlineUsers(context.Context, string) (int64, error) {
+	return 0, nil
+}
+
+func (m *mockDashboardService) GetCountryData(context.Context, string) ([]BreakdownItem, error) {
+	return []BreakdownItem{}, nil
+}
+
 func TestRoutes_LegacyEndpointsRemoved(t *testing.T) {
 	r := newRouter(&mockDashboardService{})
 	projectID := uuid.NewString()

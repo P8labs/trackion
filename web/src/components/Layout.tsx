@@ -2,16 +2,20 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
+  Activity,
   LogOut,
   Settings,
   LayoutDashboard,
   FolderKanban,
   ChevronDown,
+  ChevronRight,
   Menu,
   X,
   Plus,
   Check,
   CircleDot,
+  PieChart,
+  Radio,
   ShieldAlert,
 } from "lucide-react";
 import { useStore } from "../store";
@@ -45,9 +49,15 @@ interface LayoutProps {
 }
 
 const primaryNav = [
-  { name: "Overview", path: "/dashboard", icon: LayoutDashboard },
   { name: "Projects", path: "/projects", icon: FolderKanban },
   { name: "Settings", path: "/settings", icon: Settings },
+];
+
+const overviewSubmenu = [
+  { name: "Overview", section: "overview", icon: LayoutDashboard },
+  { name: "Events", section: "events", icon: Activity },
+  { name: "Breakdown", section: "breakdown", icon: PieChart },
+  { name: "Realtime", section: "realtime", icon: Radio },
 ];
 
 export function Layout({ children }: LayoutProps) {
@@ -57,6 +67,9 @@ export function Layout({ children }: LayoutProps) {
     useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [overviewMenuOpen, setOverviewMenuOpen] = useState(
+    location.pathname.startsWith("/dashboard"),
+  );
 
   const { data: projectsData, isLoading: projectsLoading } = useQuery({
     queryKey: ["projects", serverUrl, authToken],
@@ -123,6 +136,9 @@ export function Layout({ children }: LayoutProps) {
       ? "Down"
       : "Up";
 
+  const currentSection =
+    new URLSearchParams(location.search).get("section") || "overview";
+
   return (
     <div className="min-h-screen flex bg-background text-foreground">
       <aside
@@ -134,16 +150,81 @@ export function Layout({ children }: LayoutProps) {
         } lg:translate-x-0`}
       >
         <div className="h-full flex flex-col px-3 py-4">
-          <div className="flex items-center px-3 py-2">
-            <div className="h-7 w-7 rounded-full flex items-center justify-center mb-2">
-              <img src="/trackion_t.png" alt="Trackion" />
+          <Link to="/dashboard">
+            <div className="flex items-center px-3 py-2">
+              <div className="h-7 w-7 rounded-full flex items-center justify-center mb-2">
+                <img src="/trackion_t.png" alt="Trackion" />
+              </div>
+              <div className="text-md font-semibold text-sidebar-foreground">
+                Trackion
+              </div>
             </div>
-            <div className="text-md font-semibold text-sidebar-foreground">
-              Trackion
-            </div>
-          </div>
+          </Link>
 
           <nav className="mt-8 px-1 space-y-1 flex-1">
+            <div className="space-y-1">
+              <div
+                className={`w-full flex items-center justify-between gap-2 rounded-xl pr-1 transition-colors ${
+                  location.pathname.startsWith("/dashboard")
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+                }`}
+              >
+                <Link
+                  to="/dashboard?section=overview"
+                  onClick={() => setSidebarOpen(false)}
+                  className="min-w-0 flex-1 flex items-center gap-2.5 px-3 py-2 rounded-l-xl text-sm"
+                >
+                  <LayoutDashboard size={16} />
+                  <span>Overview</span>
+                </Link>
+
+                <button
+                  type="button"
+                  aria-label={
+                    overviewMenuOpen
+                      ? "Collapse overview menu"
+                      : "Expand overview menu"
+                  }
+                  onClick={() => setOverviewMenuOpen((prev) => !prev)}
+                  className="h-7 w-7 inline-flex items-center justify-center rounded-md hover:bg-sidebar-accent/70"
+                >
+                  {overviewMenuOpen ? (
+                    <ChevronDown size={14} />
+                  ) : (
+                    <ChevronRight size={14} />
+                  )}
+                </button>
+              </div>
+
+              {overviewMenuOpen && (
+                <div className="ml-3 pl-3 border-l border-sidebar-border space-y-1">
+                  {overviewSubmenu.map((item) => {
+                    const Icon = item.icon;
+                    const isActive =
+                      location.pathname === "/dashboard" &&
+                      currentSection === item.section;
+
+                    return (
+                      <Link
+                        key={item.section}
+                        to={`/dashboard?section=${item.section}`}
+                        onClick={() => setSidebarOpen(false)}
+                        className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
+                          isActive
+                            ? "bg-sidebar-accent/80 text-sidebar-accent-foreground"
+                            : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40 hover:text-sidebar-accent-foreground"
+                        }`}
+                      >
+                        <Icon size={13} />
+                        <span>{item.name}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
             {primaryNav.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;

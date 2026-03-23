@@ -11,7 +11,7 @@ CREATE TABLE subscriptions (
     id UUID PRIMARY KEY,
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     plan TEXT NOT NULL DEFAULT 'free',
-    monthly_event_limit INTEGER NOT NULL DEFAULT 100000,
+    monthly_event_limit INTEGER NOT NULL DEFAULT 10000,
     status TEXT NOT NULL DEFAULT 'active',
     current_period_end TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
