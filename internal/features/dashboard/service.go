@@ -3,6 +3,9 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"sort"
+	"strings"
 	"time"
 	"trackion/internal/repository"
 
@@ -57,9 +60,11 @@ type BreakdownData struct {
 }
 
 type BreakdownItem struct {
-	Name  string `json:"name"`
-	Count int64  `json:"count"`
-	Color string `json:"color,omitempty"`
+	Name        string `json:"name"`
+	Count       int64  `json:"count"`
+	Color       string `json:"color,omitempty"`
+	CountryCode string `json:"country_code,omitempty"`
+	Emoji       string `json:"emoji,omitempty"`
 }
 
 type UTMBreakdown struct {
@@ -499,31 +504,38 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 		return nil, fmt.Errorf("failed to get traffic sources: %w", err)
 	}
 
-	referrers := []BreakdownItem{}
-	countries := []BreakdownItem{}
-	utmSources := []BreakdownItem{}
-	utmMediums := []BreakdownItem{}
-	colorIndex := 0
+	referrerCounts := map[string]int64{}
+	countryCounts := map[string]int64{}
+	utmSourceCounts := map[string]int64{}
+	utmMediumCounts := map[string]int64{}
 
 	for _, item := range data {
-		breakdownItem := BreakdownItem{
-			Name:  item.Name,
-			Count: item.Count,
-			Color: deviceColors[colorIndex%len(deviceColors)],
-		}
+		source := classifyReferrer(item.Referrer)
+		referrerCounts[source]++
 
-		switch item.Category {
-		case "referrer":
-			referrers = append(referrers, breakdownItem)
-		case "country":
-			countries = append(countries, breakdownItem)
-		case "utm_source":
-			utmSources = append(utmSources, breakdownItem)
-		case "utm_medium":
-			utmMediums = append(utmMediums, breakdownItem)
+		country := strings.TrimSpace(item.Country)
+		if country == "" {
+			country = "Unknown"
 		}
-		colorIndex++
+		countryCounts[country]++
+
+		utmSource := strings.TrimSpace(item.UtmSource)
+		if utmSource == "" {
+			utmSource = "None"
+		}
+		utmSourceCounts[utmSource]++
+
+		utmMedium := strings.TrimSpace(item.UtmMedium)
+		if utmMedium == "" {
+			utmMedium = "None"
+		}
+		utmMediumCounts[utmMedium]++
 	}
+
+	referrers := toBreakdownItems(referrerCounts)
+	countries := toBreakdownItems(countryCounts)
+	utmSources := toBreakdownItems(utmSourceCounts)
+	utmMediums := toBreakdownItems(utmMediumCounts)
 
 	return &TrafficSourcesData{
 		Referrers:  referrers,
@@ -531,6 +543,84 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 		UTMSources: utmSources,
 		UTMMediums: utmMediums,
 	}, nil
+}
+
+func classifyReferrer(raw string) string {
+	host := normalizeReferrerHost(raw)
+	if host == "" {
+		return "Direct"
+	}
+
+	known := map[string]string{
+		"google.":     "Google",
+		"bing.":       "Bing",
+		"duckduckgo.": "DuckDuckGo",
+		"yahoo.":      "Yahoo",
+		"baidu.":      "Baidu",
+		"yandex.":     "Yandex",
+		"youtube.":    "YouTube",
+		"facebook.":   "Facebook",
+		"instagram.":  "Instagram",
+		"linkedin.":   "LinkedIn",
+		"reddit.":     "Reddit",
+		"github.":     "GitHub",
+		"whatsapp.":   "WhatsApp",
+		"telegram.":   "Telegram",
+		"discord.":    "Discord",
+		"slack.":      "Slack",
+		"peerlist.":   "Peerlist",
+	}
+
+	if host == "t.co" || strings.Contains(host, "twitter.") || strings.Contains(host, "x.com") {
+		return "X (Twitter)"
+	}
+
+	for needle, label := range known {
+		if strings.Contains(host, needle) {
+			return label
+		}
+	}
+
+	return host
+}
+
+func normalizeReferrerHost(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+
+	parsed, err := url.Parse(value)
+	if err != nil || parsed.Host == "" {
+		parsed, err = url.Parse("https://" + value)
+		if err != nil {
+			return ""
+		}
+	}
+
+	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
+	host = strings.TrimPrefix(host, "www.")
+	return host
+}
+
+func toBreakdownItems(counts map[string]int64) []BreakdownItem {
+	items := make([]BreakdownItem, 0, len(counts))
+	for name, count := range counts {
+		items = append(items, BreakdownItem{Name: name, Count: count})
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		if items[i].Count == items[j].Count {
+			return items[i].Name < items[j].Name
+		}
+		return items[i].Count > items[j].Count
+	})
+
+	for i := range items {
+		items[i].Color = deviceColors[i%len(deviceColors)]
+	}
+
+	return items
 }
 
 func (s *svc) GetTopPages(ctx context.Context, projectId string) ([]TopPage, error) {
@@ -656,17 +746,41 @@ func (s *svc) GetCountryData(ctx context.Context, projectId string) ([]Breakdown
 
 	result := make([]BreakdownItem, len(data))
 	for i, country := range data {
-		countryName := "Unknown"
-		if country.Country != nil {
-			if str, ok := country.Country.(string); ok {
-				countryName = str
-			}
+		countryName := stringValue(country.Country)
+		if countryName == "" {
+			countryName = "Unknown"
 		}
+		countryCode := stringValue(any(country.CountryCode))
+		emoji := stringValue(country.Emoji)
+
 		result[i] = BreakdownItem{
-			Name:  countryName,
-			Count: country.Count,
+			Name:        countryName,
+			Count:       country.Count,
+			CountryCode: countryCode,
+			Emoji:       emoji,
 		}
 	}
 
 	return result, nil
+}
+
+func stringValue(v any) string {
+	switch x := v.(type) {
+	case string:
+		return x
+	case *string:
+		if x == nil {
+			return ""
+		}
+		return *x
+	case []byte:
+		return string(x)
+	case bool:
+		if x {
+			return "true"
+		}
+		return ""
+	default:
+		return ""
+	}
 }

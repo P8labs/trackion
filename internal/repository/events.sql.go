@@ -144,18 +144,22 @@ func (q *Queries) GetChartDataFlexible(ctx context.Context, arg GetChartDataFlex
 
 const getCountryData = `-- name: GetCountryData :many
 SELECT
-    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
-    COUNT(*) as count
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') AS country,
+    COALESCE(NULLIF(UPPER(properties->'geo'->>'country_code'), ''), '')::TEXT AS country_code,
+    COALESCE(NULLIF(MAX(properties->'geo'->>'emoji'), ''), '')::TEXT AS emoji,
+    COUNT(*) AS count
 FROM events
 WHERE project_id = $1 AND event_name = 'page.view'
-GROUP BY country
+GROUP BY country, country_code
 ORDER BY count DESC
 LIMIT 50
 `
 
 type GetCountryDataRow struct {
-	Country interface{} `json:"country"`
-	Count   int64       `json:"count"`
+	Country     interface{} `json:"country"`
+	CountryCode string      `json:"country_code"`
+	Emoji       string      `json:"emoji"`
+	Count       int64       `json:"count"`
 }
 
 func (q *Queries) GetCountryData(ctx context.Context, projectID uuid.UUID) ([]GetCountryDataRow, error) {
@@ -167,7 +171,12 @@ func (q *Queries) GetCountryData(ctx context.Context, projectID uuid.UUID) ([]Ge
 	var items []GetCountryDataRow
 	for rows.Next() {
 		var i GetCountryDataRow
-		if err := rows.Scan(&i.Country, &i.Count); err != nil {
+		if err := rows.Scan(
+			&i.Country,
+			&i.CountryCode,
+			&i.Emoji,
+			&i.Count,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -960,63 +969,28 @@ func (q *Queries) GetTotalEventCount(ctx context.Context, projectID uuid.UUID) (
 }
 
 const getTrafficSources = `-- name: GetTrafficSources :many
-WITH traffic_data as (
-    SELECT DISTINCT
-        session_id,
-        CASE
-            WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
-            WHEN referrer ILIKE '%google%' THEN 'Google'
-            WHEN referrer ILIKE '%youtube%' THEN 'YouTube'
-            WHEN referrer ILIKE '%facebook%' THEN 'Facebook'
-            WHEN referrer ILIKE '%twitter%' OR referrer ILIKE '%x.com%' THEN 'X (Twitter)'
-            WHEN referrer ILIKE '%instagram%' THEN 'Instagram'
-            WHEN referrer ILIKE '%linkedin%' THEN 'LinkedIn'
-            WHEN referrer ILIKE '%github%' THEN 'GitHub'
-            ELSE 'Other'
-        END as source,
-        COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
-        utm_source,
-        utm_medium,
-        utm_campaign
-    FROM events
-    WHERE project_id = $1 AND event_name = 'page.view'
-)
 SELECT
-    source as name,
-    COUNT(*) as count,
-    'referrer' as category
-FROM traffic_data
-GROUP BY source
-UNION ALL
-SELECT
-    country as name,
-    COUNT(*) as count,
-    'country' as category
-FROM traffic_data
-GROUP BY country
-UNION ALL
-SELECT
-    COALESCE(utm_source, 'None') as name,
-    COUNT(*) as count,
-    'utm_source' as category
-FROM traffic_data
-WHERE utm_source IS NOT NULL
-GROUP BY utm_source
-UNION ALL
-SELECT
-    COALESCE(utm_medium, 'None') as name,
-    COUNT(*) as count,
-    'utm_medium' as category
-FROM traffic_data
-WHERE utm_medium IS NOT NULL
-GROUP BY utm_medium
-ORDER BY category, count DESC
+    session_id,
+    COALESCE(NULLIF(TRIM(referrer), ''), '')::TEXT as referrer,
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown')::TEXT as country,
+    COALESCE(NULLIF(TRIM(utm_source), ''), 'None')::TEXT as utm_source,
+    COALESCE(NULLIF(TRIM(utm_medium), ''), 'None')::TEXT as utm_medium
+FROM events
+WHERE project_id = $1 AND event_name = 'page.view'
+GROUP BY
+    session_id,
+    COALESCE(NULLIF(TRIM(referrer), ''), '')::TEXT,
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown')::TEXT,
+    COALESCE(NULLIF(TRIM(utm_source), ''), 'None')::TEXT,
+    COALESCE(NULLIF(TRIM(utm_medium), ''), 'None')::TEXT
 `
 
 type GetTrafficSourcesRow struct {
-	Name     string `json:"name"`
-	Count    int64  `json:"count"`
-	Category string `json:"category"`
+	SessionID *string `json:"session_id"`
+	Referrer  string  `json:"referrer"`
+	Country   string  `json:"country"`
+	UtmSource string  `json:"utm_source"`
+	UtmMedium string  `json:"utm_medium"`
 }
 
 // Breakdown Data - Traffic Sources
@@ -1029,7 +1003,13 @@ func (q *Queries) GetTrafficSources(ctx context.Context, projectID uuid.UUID) ([
 	var items []GetTrafficSourcesRow
 	for rows.Next() {
 		var i GetTrafficSourcesRow
-		if err := rows.Scan(&i.Name, &i.Count, &i.Category); err != nil {
+		if err := rows.Scan(
+			&i.SessionID,
+			&i.Referrer,
+			&i.Country,
+			&i.UtmSource,
+			&i.UtmMedium,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

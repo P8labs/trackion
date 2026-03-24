@@ -8,80 +8,21 @@ interface WorldMapProps {
   projectId: string;
 }
 
-// Map of country codes to flag emojis
-const countryFlagMap: { [key: string]: string } = {
-  US: "🇺🇸",
-  GB: "🇬🇧",
-  CA: "🇨🇦",
-  AU: "🇦🇺",
-  IN: "🇮🇳",
-  DE: "🇩🇪",
-  FR: "🇫🇷",
-  JP: "🇯🇵",
-  BR: "🇧🇷",
-  MX: "🇲🇽",
-  CN: "🇨🇳",
-  RU: "🇷🇺",
-  ES: "🇪🇸",
-  IT: "🇮🇹",
-  NL: "🇳🇱",
-  KR: "🇰🇷",
-  SG: "🇸🇬",
-  ZA: "🇿🇦",
-  NZ: "🇳🇿",
-  SE: "🇸🇪",
-  CH: "🇨🇭",
-  PL: "🇵🇱",
-  TR: "🇹🇷",
-  NG: "🇳🇬",
-};
-
-// Simplified country code extraction from country name
-function getCountryCode(countryName: string): string {
-  const codeMap: { [key: string]: string } = {
-    unknown: "🌍",
-    "united states": "US",
-    usa: "US",
-    "united kingdom": "GB",
-    uk: "GB",
-    canada: "CA",
-    australia: "AU",
-    india: "IN",
-    germany: "DE",
-    france: "FR",
-    japan: "JP",
-    brazil: "BR",
-    mexico: "MX",
-    china: "CN",
-    russia: "RU",
-    spain: "ES",
-    italy: "IT",
-    netherlands: "NL",
-    "south korea": "KR",
-    korea: "KR",
-    singapore: "SG",
-    "south africa": "ZA",
-    "new zealand": "NZ",
-    sweden: "SE",
-    switzerland: "CH",
-    poland: "PL",
-    turkey: "TR",
-    nigeria: "NG",
-  };
-
-  const normalized = countryName.toLowerCase();
-  const code = codeMap[normalized];
-  if (code) {
-    return countryFlagMap[code] || "?";
+function getCountryFlag(
+  countryName: string,
+  emoji?: string,
+  countryCode?: string,
+): string {
+  if (emoji && emoji.trim() !== "") {
+    return emoji;
   }
-  return countryName.substring(0, 2).toUpperCase();
-}
-
-function getCountryFlag(countryName: string): string {
   if (countryName.toLowerCase() === "unknown") {
-    return "?";
+    return "🌍";
   }
-  return getCountryCode(countryName);
+  if (countryCode && countryCode.trim() !== "") {
+    return countryCode.toUpperCase();
+  }
+  return "🌍";
 }
 
 export function WorldMap({ projectId }: WorldMapProps) {
@@ -154,7 +95,11 @@ export function WorldMap({ projectId }: WorldMapProps) {
       <CardContent>
         <div className="space-y-3">
           {topCountries.map((country) => {
-            const flag = getCountryFlag(country.name);
+            const flag = getCountryFlag(
+              country.name,
+              country.emoji,
+              country.country_code,
+            );
 
             return (
               <div key={country.name} className="space-y-1.5">
