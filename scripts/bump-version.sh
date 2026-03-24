@@ -132,7 +132,7 @@ main() {
   fi
 
   local bump_type=$1
-  local update_web=false
+  local update_web=true
   local sync_packages=false
 
   if [[ $# -eq 2 ]]; then
