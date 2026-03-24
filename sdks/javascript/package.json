@@ -1,0 +1,18 @@
+{
+  "name": "@trackion/javascript-sdk",
+  "version": "0.1.0",
+  "description": "Official JavaScript SDK for sending events to Trackion",
+  "type": "module",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "keywords": [
+    "trackion",
+    "analytics",
+    "sdk",
+    "javascript"
+  ],
+  "license": "MIT"
+}
