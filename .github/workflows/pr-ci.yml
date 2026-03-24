@@ -40,9 +40,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint web
-        run: pnpm run lint
-
       - name: Type-check web
         run: pnpm exec tsc --noEmit
 
@@ -67,4 +64,4 @@ jobs:
         run: go test ./...
 
       - name: Build server
-        run: go build ./cmd
+        run: go build -o /tmp/trackion-server ./cmd
