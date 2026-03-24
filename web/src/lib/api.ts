@@ -5,6 +5,7 @@ import type {
   ChartDataPoint,
   AreaChartDataPoint,
   RecentEventData,
+  CountryDataItem,
   UsageSummary,
   User,
   ServerHealth,
@@ -295,7 +296,7 @@ export const getCountryData = async (
   projectId: string,
   serverUrl: string,
   authToken: string,
-): Promise<Array<{ name: string; count: number }>> => {
+): Promise<CountryDataItem[]> => {
   return apiCall(
     `/api/analytics/${projectId}/country-data`,
     {},

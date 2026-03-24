@@ -99,6 +99,15 @@ export interface BreakdownItem {
   name: string;
   count: number;
   color?: string;
+  country_code?: string;
+  emoji?: string;
+}
+
+export interface CountryDataItem {
+  name: string;
+  count: number;
+  country_code?: string;
+  emoji?: string;
 }
 
 export interface UTMBreakdown {

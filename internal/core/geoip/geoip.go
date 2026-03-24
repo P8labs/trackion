@@ -16,6 +16,7 @@ import (
 type Location struct {
 	Country     string  `json:"country"`
 	CountryCode string  `json:"country_code"`
+	Emoji       string  `json:"emoji,omitempty"`
 	Region      string  `json:"region"`
 	City        string  `json:"city"`
 	Latitude    float64 `json:"latitude"`
@@ -43,13 +44,16 @@ type resolver struct {
 }
 
 type ipWhoIsResponse struct {
-	Success     bool    `json:"success"`
-	Country     string  `json:"country"`
-	CountryCode string  `json:"country_code"`
-	Region      string  `json:"region"`
-	City        string  `json:"city"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
+	Success     bool   `json:"success"`
+	Country     string `json:"country"`
+	CountryCode string `json:"country_code"`
+	Flag        struct {
+		Emoji string `json:"emoji"`
+	} `json:"flag"`
+	Region    string  `json:"region"`
+	City      string  `json:"city"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
 }
 
 func New(cfg config.Config) Resolver {
@@ -140,6 +144,7 @@ func (r *resolver) fetchLocation(ctx context.Context, ip string) (*Location, err
 	return &Location{
 		Country:     strings.TrimSpace(payload.Country),
 		CountryCode: strings.TrimSpace(payload.CountryCode),
+		Emoji:       strings.TrimSpace(payload.Flag.Emoji),
 		Region:      strings.TrimSpace(payload.Region),
 		City:        strings.TrimSpace(payload.City),
 		Latitude:    payload.Latitude,

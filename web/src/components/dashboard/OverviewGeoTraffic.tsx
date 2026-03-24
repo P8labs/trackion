@@ -10,6 +10,7 @@ import { useCountryData, useRecentEventsFormatted } from "../../hooks/useApi";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { LoadingSpinner } from "../LoadingSpinner";
+import { TrafficHeatmap } from "./TrafficHeatmap";
 
 interface OverviewGeoTrafficProps {
   projectId: string;
@@ -17,86 +18,12 @@ interface OverviewGeoTrafficProps {
 
 const GEO_URL =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function hourLabel(hour: number): string {
-  if (hour === 0) return "12am";
-  if (hour < 12) return `${hour}am`;
-  if (hour === 12) return "12pm";
-  return `${hour - 12}pm`;
-}
-
-// Enhanced country matching function following React Simple Maps best practices
-function matchCountry(
-  countryData: Array<{ name: string; count: number }>,
-  geoCountryName: string,
-  iso2: string,
-): number {
-  if (!countryData || countryData.length === 0) return 0;
-
-  // Normalize inputs - handle potential undefined values
-  const geoName = (geoCountryName || "").toLowerCase().trim();
-  const geoIso = (iso2 || "").toLowerCase().trim();
-
-  // Try direct matching with API data
-  for (const country of countryData) {
-    const apiName = country.name.toLowerCase().trim();
-
-    // Direct exact match
-    if (apiName === geoName) return country.count;
-
-    // ISO code matching
-    if (geoIso && apiName === geoIso) return country.count;
-
-    // Enhanced country variations matching
-    const isMatch =
-      // United States variations
-      (["united states", "usa", "us", "america"].includes(apiName) &&
-        (geoName.includes("united states") ||
-          geoName.includes("america") ||
-          geoIso === "us")) ||
-      // United Kingdom variations
-      (["united kingdom", "uk", "great britain", "britain"].includes(apiName) &&
-        (geoName.includes("kingdom") ||
-          geoName.includes("britain") ||
-          geoIso === "gb")) ||
-      // Common country matches with better pattern matching
-      (apiName === "russia" &&
-        (geoName.includes("russia") ||
-          geoName.includes("federation") ||
-          geoIso === "ru")) ||
-      (apiName === "china" &&
-        (geoName.includes("china") ||
-          geoName.includes("peoples") ||
-          geoIso === "cn")) ||
-      (apiName === "india" && (geoName.includes("india") || geoIso === "in")) ||
-      (apiName === "germany" &&
-        (geoName.includes("germany") || geoIso === "de")) ||
-      (apiName === "france" &&
-        (geoName.includes("france") || geoIso === "fr")) ||
-      (apiName === "italy" && (geoName.includes("italy") || geoIso === "it")) ||
-      (apiName === "spain" && (geoName.includes("spain") || geoIso === "es")) ||
-      (apiName === "canada" &&
-        (geoName.includes("canada") || geoIso === "ca")) ||
-      // Additional common patterns
-      (apiName.includes("korea") &&
-        geoName.includes("korea") &&
-        !geoName.includes("north")) ||
-      (apiName.includes("south africa") && geoName.includes("south africa")) ||
-      (apiName === "australia" &&
-        (geoName.includes("australia") || geoIso === "au")) ||
-      (apiName === "brazil" &&
-        (geoName.includes("brazil") || geoIso === "br")) ||
-      (apiName === "japan" && (geoName.includes("japan") || geoIso === "jp")) ||
-      (apiName === "netherlands" &&
-        (geoName.includes("netherlands") || geoIso === "nl"));
-
-    if (isMatch) {
-      return country.count;
-    }
-  }
-
-  return 0;
+function normalizeCountryName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
@@ -119,25 +46,25 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
     return Math.max(...countries.map((c) => c.count), 1);
   }, [countries]);
 
-  const trafficMatrix = useMemo(() => {
-    const grid = Array.from({ length: 24 }, () => Array(7).fill(0));
-
-    for (const event of events || []) {
-      const date = new Date(event.created_at);
-      const day = date.getDay();
-      const hour = date.getHours();
-      grid[hour][day] += 1;
+  const countryByCode = useMemo(() => {
+    const index = new Map<string, { count: number; name: string }>();
+    for (const country of countries || []) {
+      const code = (country.country_code || "").toUpperCase();
+      if (!code) continue;
+      index.set(code, { count: country.count, name: country.name });
     }
+    return index;
+  }, [countries]);
 
-    let maxValue = 0;
-    for (const row of grid) {
-      for (const value of row) {
-        if (value > maxValue) maxValue = value;
-      }
+  const countryByName = useMemo(() => {
+    const index = new Map<string, { count: number; name: string }>();
+    for (const country of countries || []) {
+      const normalized = normalizeCountryName(country.name || "");
+      if (!normalized) continue;
+      index.set(normalized, { count: country.count, name: country.name });
     }
-
-    return { grid, maxValue };
-  }, [events]);
+    return index;
+  }, [countries]);
 
   if (countriesLoading || eventsLoading) {
     return (
@@ -224,6 +151,7 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
             height={400}
             projectionConfig={{
               rotate: [-10, 0, 0],
+              scale: 300,
             }}
             className="w-full h-full"
             style={{ minHeight: "350px" }}
@@ -297,11 +225,11 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
                       properties.iso_a2 ||
                       "";
 
-                    const count = matchCountry(
-                      countries || [],
-                      countryName,
-                      iso2,
-                    );
+                    const countryCode = String(iso2).toUpperCase();
+                    const countryInfo =
+                      countryByCode.get(countryCode) ||
+                      countryByName.get(normalizeCountryName(countryName));
+                    const count = countryInfo?.count ?? 0;
                     const intensity = count > 0 ? count / maxCount : 0;
                     const isActive = count > 0;
 
@@ -338,7 +266,10 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
                         geography={geo}
                         onMouseEnter={() => {
                           if (isActive) {
-                            setHoveredCountry({ name: countryName, count });
+                            setHoveredCountry({
+                              name: countryInfo?.name || countryName,
+                              count,
+                            });
                           }
                         }}
                         onMouseLeave={() => setHoveredCountry(null)}
@@ -386,57 +317,7 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
         </div>
       </Card>
 
-      <Card className="p-4 sm:p-5 h-128 flex flex-col overflow-hidden">
-        <h3 className="text-3xl font-semibold tracking-tight mb-4">Traffic</h3>
-        <div className="border-t border-border mb-4" />
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-[44px_repeat(7,minmax(0,1fr))] gap-x-2 gap-y-1.5 text-sm">
-            <div />
-            {DAYS.map((day) => (
-              <div
-                key={day}
-                className="text-center font-semibold text-foreground/90"
-              >
-                {day}
-              </div>
-            ))}
-
-            {Array.from({ length: 24 }).map((_, hour) => (
-              <div key={`row-${hour}`} className="contents">
-                <div
-                  key={`label-${hour}`}
-                  className="text-muted-foreground text-right pr-1"
-                >
-                  {hourLabel(hour)}
-                </div>
-                {Array.from({ length: 7 }).map((__, day) => {
-                  const value = trafficMatrix.grid[hour][day];
-                  const intensity =
-                    trafficMatrix.maxValue > 0
-                      ? value / trafficMatrix.maxValue
-                      : 0;
-
-                  let dotClass = "bg-muted/40";
-                  if (intensity > 0.75) dotClass = "bg-primary";
-                  else if (intensity > 0.45) dotClass = "bg-primary/75";
-                  else if (intensity > 0.15) dotClass = "bg-primary/45";
-                  else if (intensity > 0) dotClass = "bg-primary/25";
-
-                  return (
-                    <div
-                      key={`${hour}-${day}`}
-                      className="flex items-center justify-center"
-                    >
-                      <span className={`h-4 w-4 rounded-full ${dotClass}`} />
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
-      </Card>
+      <TrafficHeatmap events={events || []} />
     </div>
   );
 }

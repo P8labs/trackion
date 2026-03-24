@@ -314,67 +314,32 @@ ORDER BY category, count DESC;
 
 -- name: GetCountryData :many
 SELECT
-    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
-    COUNT(*) as count
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') AS country,
+    COALESCE(NULLIF(UPPER(properties->'geo'->>'country_code'), ''), '')::TEXT AS country_code,
+    COALESCE(NULLIF(MAX(properties->'geo'->>'emoji'), ''), '')::TEXT AS emoji,
+    COUNT(*) AS count
 FROM events
 WHERE project_id = $1 AND event_name = 'page.view'
-GROUP BY country
+GROUP BY country, country_code
 ORDER BY count DESC
 LIMIT 50;
 
 -- Breakdown Data - Traffic Sources
 -- name: GetTrafficSources :many
-WITH traffic_data as (
-    SELECT DISTINCT
-        session_id,
-        CASE
-            WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
-            WHEN referrer ILIKE '%google%' THEN 'Google'
-            WHEN referrer ILIKE '%youtube%' THEN 'YouTube'
-            WHEN referrer ILIKE '%facebook%' THEN 'Facebook'
-            WHEN referrer ILIKE '%twitter%' OR referrer ILIKE '%x.com%' THEN 'X (Twitter)'
-            WHEN referrer ILIKE '%instagram%' THEN 'Instagram'
-            WHEN referrer ILIKE '%linkedin%' THEN 'LinkedIn'
-            WHEN referrer ILIKE '%github%' THEN 'GitHub'
-            ELSE 'Other'
-        END as source,
-        COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') as country,
-        utm_source,
-        utm_medium,
-        utm_campaign
-    FROM events
-    WHERE project_id = $1 AND event_name = 'page.view'
-)
 SELECT
-    source as name,
-    COUNT(*) as count,
-    'referrer' as category
-FROM traffic_data
-GROUP BY source
-UNION ALL
-SELECT
-    country as name,
-    COUNT(*) as count,
-    'country' as category
-FROM traffic_data
-GROUP BY country
-UNION ALL
-SELECT
-    COALESCE(utm_source, 'None') as name,
-    COUNT(*) as count,
-    'utm_source' as category
-FROM traffic_data
-WHERE utm_source IS NOT NULL
-GROUP BY utm_source
-UNION ALL
-SELECT
-    COALESCE(utm_medium, 'None') as name,
-    COUNT(*) as count,
-    'utm_medium' as category
-FROM traffic_data
-WHERE utm_medium IS NOT NULL
-GROUP BY utm_medium
-ORDER BY category, count DESC;
+    session_id,
+    COALESCE(NULLIF(TRIM(referrer), ''), '')::TEXT as referrer,
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown')::TEXT as country,
+    COALESCE(NULLIF(TRIM(utm_source), ''), 'None')::TEXT as utm_source,
+    COALESCE(NULLIF(TRIM(utm_medium), ''), 'None')::TEXT as utm_medium
+FROM events
+WHERE project_id = $1 AND event_name = 'page.view'
+GROUP BY
+    session_id,
+    COALESCE(NULLIF(TRIM(referrer), ''), '')::TEXT,
+    COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown')::TEXT,
+    COALESCE(NULLIF(TRIM(utm_source), ''), 'None')::TEXT,
+    COALESCE(NULLIF(TRIM(utm_medium), ''), 'None')::TEXT;
 
 -- Breakdown Data - Top Pages
 -- name: GetTopPages :many

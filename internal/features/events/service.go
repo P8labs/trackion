@@ -211,6 +211,7 @@ func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[stri
 	properties["geo"] = map[string]any{
 		"country":      geo.Country,
 		"country_code": geo.CountryCode,
+		"emoji":        geo.Emoji,
 		"region":       geo.Region,
 		"city":         geo.City,
 		"latitude":     geo.Latitude,
