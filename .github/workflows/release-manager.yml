@@ -1,0 +1,53 @@
+name: Release Manager
+
+on:
+  pull_request_target:
+    types:
+      - closed
+
+permissions:
+  contents: write
+
+jobs:
+  bump-and-tag-on-release-pr:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v5
+        with:
+          ref: master
+
+      - name: Set up git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve bump type from labels
+        id: bump
+        env:
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          labels=$(echo "$PR_LABELS" | tr '[:upper:]' '[:lower:]')
+          bump_type="patch"
+
+          if [[ "$labels" == *"major"* ]]; then
+            bump_type="major"
+          elif [[ "$labels" == *"minor"* ]]; then
+            bump_type="minor"
+          elif [[ "$labels" == *"patch"* ]]; then
+            bump_type="patch"
+          fi
+
+          echo "bump_type=$bump_type" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version and create tag
+        run: |
+          printf 'y\ny\n' | ./scripts/bump-version.sh "${{ steps.bump.outputs.bump_type }}"
+
+      - name: Push master and tag
+        run: |
+          VERSION=$(tr -d '[:space:]' < VERSION)
+          git push origin master
+          git push origin "v${VERSION}"
