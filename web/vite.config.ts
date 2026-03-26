@@ -36,9 +36,9 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_WEB_VERSION": JSON.stringify(webVersion),
     "import.meta.env.VITE_ENABLE_GITHUB_LOGIN":
-      process.env.VITE_ENABLE_GITHUB_LOGIN,
+      process.env.VITE_ENABLE_GITHUB_LOGIN || "true",
     "import.meta.env.VITE_ENABLE_GOOGLE_LOGIN":
-      process.env.VITE_ENABLE_GOOGLE_LOGIN,
+      process.env.VITE_ENABLE_GOOGLE_LOGIN || "true",
   },
   server: {
     allowedHosts: ["local.p8labs.qzz.io"],
