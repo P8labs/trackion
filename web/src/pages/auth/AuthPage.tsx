@@ -48,8 +48,8 @@ export function AuthPage() {
   const { setAuth } = useStore();
   const [showSelfHostInputs, setShowSelfHostInputs] = useState(false);
 
-  const showGithubButton = flags.isSaaS && flags.enableGithubLogin;
-  const showGoogleButton = flags.isSaaS && flags.enableGoogleLogin;
+  const showGithubButton = flags.enableGithubLogin;
+  const showGoogleButton = flags.enableGoogleLogin;
   const showOAuthSection = showGithubButton || showGoogleButton;
 
   const form = useForm<AuthFormValues>({
