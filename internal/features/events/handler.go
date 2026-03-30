@@ -40,7 +40,7 @@ func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 	}
 	body.UserAgent = ua
 
-	id, err := h.service.CreateEvent(r.Context(), body)
+	err = h.service.CreateEvent(r.Context(), body)
 	if err != nil {
 		log.Println(err)
 		if errors.Is(err, ErrMonthlyLimitReached) {
@@ -51,7 +51,8 @@ func (h *handler) CollectEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.Success(w, res.M{"eventId": id}, "event recorded.")
+	res.Success(w, res.M{"status": "done"}, "event recorded.")
+
 }
 
 func (h *handler) ProjectConfig(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +107,7 @@ func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id, err := h.service.CreateBatchEvents(r.Context(), body)
+	err = h.service.CreateBatchEvents(r.Context(), body)
 	if err != nil {
 		log.Println(err)
 		if errors.Is(err, ErrMonthlyLimitReached) {
@@ -117,5 +118,5 @@ func (h *handler) CollectBatchEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res.Success(w, res.M{"eventId": id}, "event recorded.")
+	res.Success(w, res.M{"status": "done"}, "event recorded.")
 }

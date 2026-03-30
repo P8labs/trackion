@@ -13,13 +13,16 @@ import (
 	"trackion/internal/features/projects"
 	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
-	"trackion/internal/repository"
 	"trackion/internal/res"
+
+	types "trackion/internal/db"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func (app *application) mount() http.Handler {
@@ -35,27 +38,38 @@ func (app *application) mount() http.Handler {
 
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	repo := repository.New(app.db)
-	authService := auth.NewService(repo, *app.config)
+	db, err := gorm.Open(postgres.Open(app.config.DatabaseURL), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database")
+	}
+
+	db.AutoMigrate(
+		&types.User{},
+		&types.Subscription{},
+		&types.Session{},
+		&types.Project{},
+		&types.Event{},
+	)
+
+	authService := auth.NewService(db, *app.config)
 	authHandler := auth.NewHandler(authService, *app.config)
 
-	r.Mount("/events", events.Routes(repo, *app.config))
+	r.Mount("/events", events.Routes(db, *app.config))
 	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
-	// auth related
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
-		r.Mount("/auth", auth.Routes(repo))
+		r.Mount("/auth", auth.Routes(db))
 	}
 
 	// authenticated APIs
-	mw := auth.NewMiddleware(repo, *app.config)
+	mw := auth.NewMiddleware(db, *app.config)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(repo))
-		r.Mount("/analytics", dashboard.Routes(repo))
-		r.Mount("/settings", settings.Routes(repo, *app.config))
+		r.Mount("/projects", projects.Routes(db))
+		r.Mount("/analytics", dashboard.Routes(db))
+		r.Mount("/settings", settings.Routes(db, *app.config))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

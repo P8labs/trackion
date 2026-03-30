@@ -18,14 +18,15 @@ import (
 	"trackion/internal/config"
 	"trackion/internal/core/domain"
 	"trackion/internal/core/ratelimit"
-	"trackion/internal/repository"
+	"trackion/internal/db"
 	"trackion/internal/res"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type Middleware struct {
-	repo    repository.Querier
+	db      *gorm.DB
 	limiter ratelimit.Limiter
 	cfg     config.Config
 }
@@ -35,9 +36,9 @@ const (
 	ProjectDomainsContextKey string = "projectDomains"
 )
 
-func NewMiddleware(repo repository.Querier) *Middleware {
+func NewMiddleware(db *gorm.DB) *Middleware {
 	return &Middleware{
-		repo: repo,
+		db: db,
 		limiter: ratelimit.NewInMemoryLimiter(
 			60*time.Second,
 			10*time.Minute,
@@ -52,12 +53,12 @@ func NewMiddleware(repo repository.Querier) *Middleware {
 	}
 }
 
-func NewMiddlewareWithConfig(repo repository.Querier, cfg config.Config) *Middleware {
+func NewMiddlewareWithConfig(db *gorm.DB, cfg config.Config) *Middleware {
 	cleanupEvery := time.Duration(cfg.RateLimitCleanupS) * time.Second
 	ttl := time.Duration(cfg.RateLimitTTLMin) * time.Minute
 
 	return &Middleware{
-		repo:    repo,
+		db:      db,
 		cfg:     cfg,
 		limiter: ratelimit.NewInMemoryLimiter(cleanupEvery, ttl),
 	}
@@ -78,7 +79,8 @@ func (m Middleware) AttachProjectContext(next http.Handler) http.Handler {
 			return
 		}
 
-		project, err := m.repo.GetProjectByAPIKey(r.Context(), key)
+		project, err := gorm.G[db.Project](m.db).Where("api_key = ?", key).First(r.Context())
+
 		if err != nil {
 			next.ServeHTTP(w, r)
 			return
@@ -104,7 +106,7 @@ func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
 			return
 		}
 
-		project, err := m.repo.GetProjectByAPIKey(r.Context(), key)
+		project, err := gorm.G[db.Project](m.db).Where("api_key = ?", key).First(r.Context())
 		if err != nil {
 			res.Error(w, "Invalid project key.", 400)
 			return

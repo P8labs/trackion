@@ -1,13 +1,12 @@
 package dashboard
 
 import (
-	"trackion/internal/repository"
-
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-func Routes(repo repository.Querier) *chi.Mux {
-	service := NewService(repo)
+func Routes(db *gorm.DB) *chi.Mux {
+	service := NewService(db)
 	return newRouter(service)
 }
 

@@ -2,14 +2,14 @@ package settings
 
 import (
 	"trackion/internal/config"
-	"trackion/internal/repository"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-func Routes(repo repository.Querier, cfg config.Config) *chi.Mux {
+func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
-	service := NewService(repo, cfg)
+	service := NewService(db, cfg)
 	handler := NewHandler(service)
 
 	r.Get("/usage", handler.GetUsageSummary)

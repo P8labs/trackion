@@ -86,10 +86,10 @@ func (h *handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 
 	// Handle nested settings structure
 	if body.Settings != nil {
-		params.AutoPageview = body.Settings.AutoPageview
-		params.TrackTimeSpent = body.Settings.TrackTimeSpent
-		params.TrackCampaign = body.Settings.TrackCampaign
-		params.TrackClicks = body.Settings.TrackClicks
+		params.AutoPageview = &body.Settings.AutoPageview
+		params.TrackTimeSpent = &body.Settings.TrackTimeSpent
+		params.TrackCampaign = &body.Settings.TrackCampaign
+		params.TrackClicks = &body.Settings.TrackClicks
 	}
 
 	err = h.service.UpdateProject(r.Context(), projectId, params)

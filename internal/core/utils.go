@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/mssola/useragent"
 )
 
 func StrPtr(s string) *string {
@@ -71,4 +73,61 @@ func ParseAuthStateCode(state, secret string) (string, error) {
 	}
 
 	return client, nil
+}
+
+type DeviceInfo struct {
+	Platform   string
+	OS         string
+	Device     string
+	Browser    string
+	AppVersion string
+}
+
+func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
+	get := func(keys ...string) (string, bool) {
+		for _, key := range keys {
+			if v, ok := props[key]; ok {
+				if s, ok := v.(string); ok && s != "" {
+					return s, true
+				}
+			}
+		}
+		return "", false
+	}
+
+	info := DeviceInfo{}
+
+	info.Platform, _ = get("platform")
+	info.Device, _ = get("device", "device_type")
+	info.OS, _ = get("os", "os_version")
+	info.Browser, _ = get("browser")
+	info.AppVersion, _ = get("app_version")
+
+	if info.Platform == "" || info.Device == "" || info.OS == "" || info.Browser == "" {
+		ua := useragent.New(userAgent)
+
+		if info.Platform == "" {
+			info.Platform = ua.Platform()
+		}
+
+		if info.OS == "" {
+			info.OS = ua.OS()
+		}
+
+		if info.Browser == "" {
+			name, version := ua.Browser()
+			info.Browser = name + " " + version
+		}
+
+		if info.Device == "" {
+			switch {
+			case ua.Mobile():
+				info.Device = "mobile"
+			default:
+				info.Device = "desktop"
+			}
+		}
+	}
+
+	return info
 }

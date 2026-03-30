@@ -2,13 +2,16 @@ package projects
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"trackion/internal/core/domain"
+	"trackion/internal/db"
 	"trackion/internal/features/auth"
-	"trackion/internal/repository"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
 )
 
 type CreateProjectParams struct {
@@ -24,22 +27,19 @@ type CreateProjectSettings struct {
 	TrackClicks    *bool `json:"clicks"`
 }
 
-// UpdateProjectRequest represents the request body for updating a project
 type UpdateProjectRequest struct {
 	Name     *string          `json:"name"`
 	Domains  *[]string        `json:"domains"`
 	Settings *ProjectSettings `json:"settings"`
 }
 
-// ProjectSettings represents the feature settings for update requests
 type ProjectSettings struct {
-	AutoPageview   *bool `json:"auto_pageview"`
-	TrackTimeSpent *bool `json:"time_spent"`
-	TrackCampaign  *bool `json:"campaign"`
-	TrackClicks    *bool `json:"clicks"`
+	AutoPageview   bool `json:"auto_pageview"`
+	TrackTimeSpent bool `json:"time_spent"`
+	TrackCampaign  bool `json:"campaign"`
+	TrackClicks    bool `json:"clicks"`
 }
 
-// UpdateProjectParams represents internal service parameters
 type UpdateProjectParams struct {
 	Name           *string   `json:"name"`
 	AutoPageview   *bool     `json:"auto_pageview"`
@@ -51,18 +51,18 @@ type UpdateProjectParams struct {
 
 type Service interface {
 	CreateProject(ctx context.Context, params CreateProjectParams) (string, error)
-	GetProject(ctx context.Context, projectId string) (repository.Project, error)
-	GetUserProjects(ctx context.Context) ([]repository.Project, error)
+	GetProject(ctx context.Context, projectId string) (db.Project, error)
+	GetUserProjects(ctx context.Context) ([]db.Project, error)
 	UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error
 	DeleteProject(ctx context.Context, projectId string) error
 }
 
 type svc struct {
-	repo repository.Querier
+	db *gorm.DB
 }
 
-func NewService(repo repository.Querier) Service {
-	return &svc{repo: repo}
+func NewService(db *gorm.DB) Service {
+	return &svc{db: db}
 }
 
 var (
@@ -79,10 +79,10 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	apiKey := uuid.NewSHA1(id, id.NodeID()).String()
 	userId := ctx.Value(auth.UserIdContextKey).(string)
 
-	autoPageview := true    // Default to true
-	trackTimeSpent := false // Default to false
-	trackCampaign := false  // Default to false
-	trackClicks := false    // Default to false
+	autoPageview := true
+	trackTimeSpent := false
+	trackCampaign := false
+	trackClicks := false
 
 	if params.Settings.AutoPageview != nil {
 		autoPageview = *params.Settings.AutoPageview
@@ -102,17 +102,26 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 		return "", errors.New("invalid domains list")
 	}
 
-	project, err := s.repo.CreateProject(ctx, repository.CreateProjectParams{
-		Name:           name,
-		ID:             id,
-		OwnerID:        uuid.MustParse(userId),
-		ApiKey:         apiKey,
+	cfg := ProjectSettings{
 		AutoPageview:   autoPageview,
 		TrackTimeSpent: trackTimeSpent,
 		TrackCampaign:  trackCampaign,
 		TrackClicks:    trackClicks,
-		Domains:        domains,
-	})
+	}
+	props, err := json.Marshal(cfg)
+	if err != nil {
+		return "", err
+	}
+
+	project := db.Project{
+		UserID:     uuid.MustParse(userId),
+		ApiKey:     apiKey,
+		Status:     "active",
+		Properties: props,
+		Domains:    mustJSON(domains),
+	}
+
+	err = gorm.G[db.Project](s.db).Create(ctx, &project)
 
 	if err != nil {
 		return "", errors.New("Unable to create project. Try again")
@@ -121,17 +130,17 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	return project.ID.String(), nil
 }
 
-func (s *svc) GetProject(ctx context.Context, projectId string) (repository.Project, error) {
-	project, err := s.repo.GetProjectByID(ctx, uuid.MustParse(projectId))
+func (s *svc) GetProject(ctx context.Context, projectId string) (db.Project, error) {
+	project, err := gorm.G[db.Project](s.db).Where("id = ?", projectId).First(ctx)
 	if err != nil {
-		return repository.Project{}, errors.New("Unable to get project. Not found")
+		return db.Project{}, errors.New("Unable to get project. Not found")
 	}
 	return project, nil
 }
 
-func (s *svc) GetUserProjects(ctx context.Context) ([]repository.Project, error) {
+func (s *svc) GetUserProjects(ctx context.Context) ([]db.Project, error) {
 	userId := ctx.Value(auth.UserIdContextKey).(string)
-	projects, err := s.repo.GetUserProjects(ctx, uuid.MustParse(userId))
+	projects, err := gorm.G[db.Project](s.db).Where("user_id = ?", userId).Find(ctx)
 	if err != nil {
 		return nil, errors.New("Unable to fetch projects")
 	}
@@ -139,19 +148,9 @@ func (s *svc) GetUserProjects(ctx context.Context) ([]repository.Project, error)
 }
 
 func (s *svc) UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error {
-	existingProject, err := s.repo.GetProjectByID(ctx, uuid.MustParse(projectId))
+	project, err := gorm.G[db.Project](s.db).Where("id = ?", projectId).First(ctx)
 	if err != nil {
 		return errors.New("Project not found")
-	}
-
-	updateParams := repository.UpdateProjectParams{
-		ID:             uuid.MustParse(projectId),
-		Name:           existingProject.Name,
-		AutoPageview:   existingProject.AutoPageview,
-		TrackTimeSpent: existingProject.TrackTimeSpent,
-		TrackCampaign:  existingProject.TrackCampaign,
-		TrackClicks:    existingProject.TrackClicks,
-		Domains:        existingProject.Domains,
 	}
 
 	if params.Name != nil {
@@ -159,40 +158,60 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 		if len(name) < 2 {
 			return errors.New("project name must be at least 2 characters")
 		}
-		updateParams.Name = name
+		project.Name = name
 	}
-	if params.AutoPageview != nil {
-		updateParams.AutoPageview = *params.AutoPageview
-	}
-	if params.TrackTimeSpent != nil {
-		updateParams.TrackTimeSpent = *params.TrackTimeSpent
-	}
-	if params.TrackCampaign != nil {
-		updateParams.TrackCampaign = *params.TrackCampaign
-	}
-	if params.TrackClicks != nil {
-		updateParams.TrackClicks = *params.TrackClicks
-	}
+
 	if params.Domains != nil {
 		normalizedDomains, err := domain.NormalizeDomains(*params.Domains)
 		if err != nil {
 			return errors.New("invalid domains list")
 		}
-		updateParams.Domains = normalizedDomains
+
+		d, _ := json.Marshal(normalizedDomains)
+		project.Domains = d
 	}
 
-	// Update the project with merged data
-	err = s.repo.UpdateProject(ctx, updateParams)
+	var cfg ProjectSettings
+	if len(project.Properties) > 0 {
+		_ = json.Unmarshal(project.Properties, &cfg)
+	}
+
+	if params.AutoPageview != nil {
+		cfg.AutoPageview = *params.AutoPageview
+	}
+	if params.TrackTimeSpent != nil {
+		cfg.TrackTimeSpent = *params.TrackTimeSpent
+	}
+	if params.TrackCampaign != nil {
+		cfg.TrackCampaign = *params.TrackCampaign
+	}
+	if params.TrackClicks != nil {
+		cfg.TrackClicks = *params.TrackClicks
+	}
+	props, err := json.Marshal(cfg)
 	if err != nil {
-		return errors.New("Unable to update project")
+		return err
+	}
+	project.Properties = props
+
+	if _, err := gorm.G[db.Project](s.db).
+		Where("id = ?", projectId).
+		Updates(ctx, project); err != nil {
+		return errors.New("unable to update project")
 	}
 	return nil
 }
 
 func (s *svc) DeleteProject(ctx context.Context, projectId string) error {
-	err := s.repo.DeleteProject(ctx, uuid.MustParse(projectId))
+	_, err := gorm.G[db.Project](s.db).
+		Where("id = ?", projectId).Delete(ctx)
 	if err != nil {
 		return errors.New("Unable to delete project")
 	}
 	return nil
+}
+
+func mustJSON(v any) datatypes.JSON {
+	b, _ := json.Marshal(v)
+	return b
 }

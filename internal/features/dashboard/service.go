@@ -7,9 +7,11 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"trackion/internal/db"
 	"trackion/internal/repository"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type DashboardData struct {
@@ -127,13 +129,12 @@ type TopPage struct {
 }
 
 type Service interface {
-	GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]repository.Event, error)
+	GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]db.Event, error)
 
 	GetChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]ChartDataPoint, error)
 	GetBreakdownData(ctx context.Context, projectId string) (*BreakdownData, error)
 	GetRecentEventsData(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
 
-	// New optimized endpoints
 	GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error)
 	GetChartDataFlexible(ctx context.Context, projectId string, request ChartDataRequest) ([]ChartDataPoint, error)
 	GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error)
@@ -146,11 +147,11 @@ type Service interface {
 }
 
 type svc struct {
-	repo repository.Querier
+	db *gorm.DB
 }
 
-func NewService(repo repository.Querier) Service {
-	return &svc{repo: repo}
+func NewService(db *gorm.DB) Service {
+	return &svc{db: db}
 }
 
 var colorMap = map[string]string{
@@ -178,13 +179,9 @@ func formatTimeSpent(hours int64) string {
 	return fmt.Sprintf("%dm", minutes)
 }
 
-func (s *svc) GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]repository.Event, error) {
-	projectUUID := uuid.MustParse(projectId)
+func (s *svc) GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]db.Event, error) {
 
-	events, err := s.repo.GetRecentEvents(ctx, repository.GetRecentEventsParams{
-		ProjectID: projectUUID,
-		Limit:     limit,
-	})
+	events, err := gorm.G[db.Event](s.db).Where("project_id = ?", projectId).Limit(int(limit)).Find(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get events: %w", err)
 	}
@@ -205,18 +202,53 @@ func (s *svc) GetChartData(ctx context.Context, projectId string, timeRange stri
 		Column4:   eventFilter,
 	}
 
-	data, err := s.repo.GetEventsOverTimeFiltered(ctx, params)
+	type chartRow struct {
+		Period time.Time
+		Count  int64
+	}
+
+	var rows []chartRow
+
+	query := s.db.WithContext(ctx).
+		Table("events").
+		Select("DATE_TRUNC(?, created_at)::timestamptz AS period, COUNT(*) AS count", granularity).
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= ?", startTime)
+
+	if eventFilter != "" {
+		query = query.Where("event_name = ?", eventFilter)
+	}
+
+	err := query.
+		Group("period").
+		Order("period ASC").
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chart data: %w", err)
 	}
 
-	result := make([]ChartDataPoint, len(data))
-	for i, point := range data {
+	// map to response
+	result := make([]ChartDataPoint, len(rows))
+	for i, r := range rows {
 		result[i] = ChartDataPoint{
-			Period: formatPeriod(point.Period, granularity),
-			Count:  point.Count,
+			Period: formatPeriod(r.Period, granularity),
+			Count:  r.Count,
 		}
 	}
+
+	// data, err := s.repo.GetEventsOverTimeFiltered(ctx, params)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to get chart data: %w", err)
+	// }
+
+	// result := make([]ChartDataPoint, len(data))
+	// for i, point := range data {
+	// 	result[i] = ChartDataPoint{
+	// 		Period: formatPeriod(point.Period, granularity),
+	// 		Count:  point.Count,
+	// 	}
+	// }
 
 	return result, nil
 }

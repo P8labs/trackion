@@ -2,16 +2,17 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"trackion/internal/config"
-	"trackion/internal/repository"
+	"trackion/internal/db"
 	"trackion/internal/res"
+
+	"gorm.io/gorm"
 )
 
 type Middleware struct {
-	repo repository.Querier
-	cfg  config.Config
+	db  *gorm.DB
+	cfg config.Config
 }
 
 const (
@@ -19,10 +20,10 @@ const (
 	SystemUserID     = "00000000-0000-0000-0000-000000000001"
 )
 
-func NewMiddleware(repo repository.Querier, cfg config.Config) *Middleware {
+func NewMiddleware(db *gorm.DB, cfg config.Config) *Middleware {
 	return &Middleware{
-		repo: repo,
-		cfg:  cfg,
+		db:  db,
+		cfg: cfg,
 	}
 }
 
@@ -58,9 +59,8 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		session, err := m.repo.GetSessionByToken(r.Context(), token)
+		session, err := gorm.G[db.Session](m.db).Where("token = ?", token).First(r.Context())
 		if err != nil {
-			fmt.Printf("TOKEN ERROR: %s\n", err.Error())
 
 			res.Error(w, "unauthorized", http.StatusUnauthorized)
 			return

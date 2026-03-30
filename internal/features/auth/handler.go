@@ -6,7 +6,7 @@ import (
 	"strings"
 	"trackion/internal/config"
 	"trackion/internal/core"
-	"trackion/internal/repository"
+	"trackion/internal/db"
 	"trackion/internal/res"
 
 	"github.com/markbates/goth/gothic"
@@ -166,8 +166,8 @@ type verifyTokenRequest struct {
 }
 
 type verifyTokenResponse struct {
-	Token string           `json:"token"`
-	User  *repository.User `json:"user,omitempty"`
+	Token string   `json:"token"`
+	User  *db.User `json:"user,omitempty"`
 }
 
 func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
