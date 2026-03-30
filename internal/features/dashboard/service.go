@@ -7,22 +7,11 @@ import (
 	"sort"
 	"strings"
 	"time"
-	"trackion/internal/db"
-	"trackion/internal/repository"
 
 	"github.com/google/uuid"
+	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
-
-type DashboardData struct {
-	TotalEvents    int64                `json:"total_events"`
-	PageViews      int64                `json:"page_views"`
-	CustomEvents   int64                `json:"custom_events"`
-	AvgTimeSpent   string               `json:"avg_time_spent"`
-	EventsOverTime []TimeSeriesData     `json:"events_over_time"`
-	EventBreakdown []EventBreakdownItem `json:"event_breakdown"`
-	RecentEvents   []repository.Event   `json:"recent_events"`
-}
 
 type TimeSeriesData struct {
 	Date   string `json:"date"`
@@ -129,12 +118,6 @@ type TopPage struct {
 }
 
 type Service interface {
-	GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]db.Event, error)
-
-	GetChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]ChartDataPoint, error)
-	GetBreakdownData(ctx context.Context, projectId string) (*BreakdownData, error)
-	GetRecentEventsData(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
-
 	GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error)
 	GetChartDataFlexible(ctx context.Context, projectId string, request ChartDataRequest) ([]ChartDataPoint, error)
 	GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error)
@@ -179,213 +162,6 @@ func formatTimeSpent(hours int64) string {
 	return fmt.Sprintf("%dm", minutes)
 }
 
-func (s *svc) GetProjectEvents(ctx context.Context, projectId string, limit int32) ([]db.Event, error) {
-
-	events, err := gorm.G[db.Event](s.db).Where("project_id = ?", projectId).Limit(int(limit)).Find(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get events: %w", err)
-	}
-
-	return events, nil
-}
-
-func (s *svc) GetChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]ChartDataPoint, error) {
-	projectUUID := uuid.MustParse(projectId)
-
-	// Parse time range and determine appropriate granularity
-	startTime, granularity := parseTimeRange(timeRange)
-
-	params := repository.GetEventsOverTimeFilteredParams{
-		ProjectID: projectUUID,
-		CreatedAt: startTime,
-		DateTrunc: granularity,
-		Column4:   eventFilter,
-	}
-
-	type chartRow struct {
-		Period time.Time
-		Count  int64
-	}
-
-	var rows []chartRow
-
-	query := s.db.WithContext(ctx).
-		Table("events").
-		Select("DATE_TRUNC(?, created_at)::timestamptz AS period, COUNT(*) AS count", granularity).
-		Where("project_id = ?", projectUUID).
-		Where("created_at >= ?", startTime)
-
-	if eventFilter != "" {
-		query = query.Where("event_name = ?", eventFilter)
-	}
-
-	err := query.
-		Group("period").
-		Order("period ASC").
-		Scan(&rows).Error
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to get chart data: %w", err)
-	}
-
-	// map to response
-	result := make([]ChartDataPoint, len(rows))
-	for i, r := range rows {
-		result[i] = ChartDataPoint{
-			Period: formatPeriod(r.Period, granularity),
-			Count:  r.Count,
-		}
-	}
-
-	// data, err := s.repo.GetEventsOverTimeFiltered(ctx, params)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("failed to get chart data: %w", err)
-	// }
-
-	// result := make([]ChartDataPoint, len(data))
-	// for i, point := range data {
-	// 	result[i] = ChartDataPoint{
-	// 		Period: formatPeriod(point.Period, granularity),
-	// 		Count:  point.Count,
-	// 	}
-	// }
-
-	return result, nil
-}
-
-func (s *svc) GetBreakdownData(ctx context.Context, projectId string) (*BreakdownData, error) {
-	projectUUID := uuid.MustParse(projectId)
-
-	// Get device breakdown
-	deviceData, err := s.repo.GetDeviceBreakdown(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get device breakdown: %w", err)
-	}
-
-	devices := []BreakdownItem{}
-	browsers := []BreakdownItem{}
-	colorIndex := 0
-
-	for _, item := range deviceData {
-		breakdownItem := BreakdownItem{
-			Name:  item.Name,
-			Count: item.Count,
-			Color: deviceColors[colorIndex%len(deviceColors)],
-		}
-
-		if item.Category == "device" {
-			devices = append(devices, breakdownItem)
-		} else {
-			browsers = append(browsers, breakdownItem)
-		}
-		colorIndex++
-	}
-
-	// Get referrer breakdown
-	referrerData, err := s.repo.GetReferrerBreakdown(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get referrer breakdown: %w", err)
-	}
-
-	referrers := make([]BreakdownItem, len(referrerData))
-	for i, ref := range referrerData {
-		referrers[i] = BreakdownItem{
-			Name:  ref.Name,
-			Count: ref.Count,
-			Color: deviceColors[i%len(deviceColors)],
-		}
-	}
-
-	// Get UTM breakdown
-	utmData, err := s.repo.GetUTMBreakdown(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get UTM breakdown: %w", err)
-	}
-
-	utmBreakdown := make([]UTMBreakdown, len(utmData))
-	for i, utm := range utmData {
-		utmBreakdown[i] = UTMBreakdown{
-			Source:   utm.UtmSource,
-			Medium:   utm.UtmMedium,
-			Campaign: utm.UtmCampaign,
-			Count:    utm.Count,
-		}
-	}
-
-	// Get top pages
-	pageData, err := s.repo.GetTopPagesBreakdown(ctx, projectUUID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get top pages breakdown: %w", err)
-	}
-
-	topPages := make([]PageBreakdown, len(pageData))
-	for i, page := range pageData {
-		topPages[i] = PageBreakdown{
-			Path:        *page.Name,
-			Count:       page.Count,
-			UniqueViews: page.UniqueViews,
-		}
-	}
-
-	return &BreakdownData{
-		Devices:   devices,
-		Browsers:  browsers,
-		Referrers: referrers,
-		UTM:       utmBreakdown,
-		TopPages:  topPages,
-	}, nil
-}
-
-func (s *svc) GetRecentEventsData(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error) {
-	projectUUID := uuid.MustParse(projectId)
-
-	events, err := s.repo.GetRecentEventsLimited(ctx, repository.GetRecentEventsLimitedParams{
-		ProjectID: projectUUID,
-		Limit:     limit,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get recent events: %w", err)
-	}
-
-	result := make([]RecentEventData, len(events))
-	for i, event := range events {
-		var sessionID, pagePath, referrer, utmSource, utmMedium, utmCampaign string
-		if event.SessionID != nil {
-			sessionID = *event.SessionID
-		}
-		if event.PagePath != nil {
-			pagePath = *event.PagePath
-		}
-		if event.Referrer != nil {
-			referrer = *event.Referrer
-		}
-		if event.UtmSource != nil {
-			utmSource = *event.UtmSource
-		}
-		if event.UtmMedium != nil {
-			utmMedium = *event.UtmMedium
-		}
-		if event.UtmCampaign != nil {
-			utmCampaign = *event.UtmCampaign
-		}
-
-		result[i] = RecentEventData{
-			ID:          event.ID,
-			EventName:   event.EventName,
-			SessionID:   sessionID,
-			PagePath:    pagePath,
-			Referrer:    referrer,
-			UTMSource:   utmSource,
-			UTMMedium:   utmMedium,
-			UTMCampaign: utmCampaign,
-			Properties:  event.Properties,
-			CreatedAt:   event.CreatedAt,
-		}
-	}
-
-	return result, nil
-}
-
 func parseTimeRange(timeRange string) (time.Time, string) {
 	now := time.Now()
 
@@ -427,23 +203,48 @@ func formatPeriod(period time.Time, granularity string) string {
 func (s *svc) GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	counts, err := s.repo.GetDashboardCounts(ctx, projectUUID)
+	type dashboardRow struct {
+		TotalEvents       int64
+		PageViews         int64
+		UniqueViews       int64
+		TotalTimeMs       int64
+		TimeSpentSessions int64
+	}
+	var row dashboardRow
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			COUNT(*) AS total_events,
+
+			COUNT(*) FILTER (WHERE event_name = 'page.view') AS page_views,
+
+			COUNT(DISTINCT session_id) FILTER (WHERE event_name = 'page.view') AS unique_views,
+
+			COALESCE(SUM(
+				(properties->>'duration_ms')::bigint
+			) FILTER (WHERE event_name = 'page.time_spent'), 0) AS total_time_ms,
+
+			COUNT(DISTINCT session_id) FILTER (WHERE event_name = 'page.time_spent') AS time_spent_sessions
+		`).
+		Where("project_id = ?", projectUUID).
+		Scan(&row).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get dashboard counts: %w", err)
 	}
 
 	avgTimeSpentSeconds := 0.0
-
-	if counts.TimeSpentSessions > 0 {
-		avgTimeSpentSeconds = float64(counts.TotalTimeMs) /
-			float64(counts.TimeSpentSessions) /
+	if row.TimeSpentSessions > 0 {
+		avgTimeSpentSeconds = float64(row.TotalTimeMs) /
+			float64(row.TimeSpentSessions) /
 			1000.0
 	}
 
 	return &DashboardCounts{
-		TotalEvents:         counts.TotalEvents,
-		Views:               counts.PageViews,
-		UniqueViews:         counts.UniqueViews,
+		TotalEvents:         row.TotalEvents,
+		Views:               row.PageViews,
+		UniqueViews:         row.UniqueViews,
 		AvgTimeSpentSeconds: avgTimeSpentSeconds,
 	}, nil
 }
@@ -451,18 +252,27 @@ func (s *svc) GetDashboardCounts(ctx context.Context, projectId string) (*Dashbo
 func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, request ChartDataRequest) ([]ChartDataPoint, error) {
 	projectUUID := uuid.MustParse(projectId)
 
+	type chartRow struct {
+		Period time.Time
+		Count  int64
+	}
+
 	var startTime time.Time
+	var endTime *time.Time
 	var granularity string
 
 	if request.TimeRange == "custom" && request.StartTime != nil {
 		startTime = *request.StartTime
+		endTime = request.EndTime
+
 		if request.EndTime != nil {
 			duration := request.EndTime.Sub(startTime)
-			if duration <= 2*time.Hour {
+			switch {
+			case duration <= 2*time.Hour:
 				granularity = "minute"
-			} else if duration <= 48*time.Hour {
+			case duration <= 48*time.Hour:
 				granularity = "hour"
-			} else {
+			default:
 				granularity = "day"
 			}
 		} else {
@@ -472,23 +282,37 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 		startTime, granularity = parseTimeRange(request.TimeRange)
 	}
 
-	params := repository.GetChartDataFlexibleParams{
-		ProjectID: projectUUID,
-		CreatedAt: startTime,
-		DateTrunc: granularity,
-		Column4:   request.EventFilter,
+	var rows []chartRow
+
+	query := s.db.WithContext(ctx).
+		Table("events").
+		Select("DATE_TRUNC(?, created_at)::timestamptz AS period, COUNT(*) AS count", granularity).
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= ?", startTime)
+
+	if endTime != nil {
+		query = query.Where("created_at <= ?", *endTime)
 	}
 
-	data, err := s.repo.GetChartDataFlexible(ctx, params)
+	if request.EventFilter != "" {
+		query = query.Where("event_name = ?", request.EventFilter)
+	}
+
+	err := query.
+		Group("period").
+		Order("period ASC").
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get chart data: %w", err)
 	}
 
-	result := make([]ChartDataPoint, len(data))
-	for i, point := range data {
+	// map result
+	result := make([]ChartDataPoint, len(rows))
+	for i, r := range rows {
 		result[i] = ChartDataPoint{
-			Period: formatPeriod(point.Period, granularity),
-			Count:  point.Count,
+			Period: formatPeriod(r.Period, granularity),
+			Count:  r.Count,
 		}
 	}
 
@@ -498,28 +322,54 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 func (s *svc) GetDeviceAnalytics(ctx context.Context, projectId string) (*DeviceAnalyticsData, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	data, err := s.repo.GetDeviceAnalytics(ctx, projectUUID)
+	var deviceRows []struct {
+		Name  string
+		Count int64
+	}
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select("COALESCE(device, 'unknown') AS name, COUNT(*) AS count").
+		Where("project_id = ?", projectUUID).
+		Group("name").
+		Order("count DESC").
+		Scan(&deviceRows).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device analytics: %w", err)
 	}
 
-	devices := []BreakdownItem{}
-	browsers := []BreakdownItem{}
-	colorIndex := 0
-
-	for _, item := range data {
-		breakdownItem := BreakdownItem{
-			Name:  item.DeviceName,
-			Count: item.Count,
-			Color: deviceColors[colorIndex%len(deviceColors)],
+	devices := make([]BreakdownItem, len(deviceRows))
+	for i, d := range deviceRows {
+		devices[i] = BreakdownItem{
+			Name:  d.Name,
+			Count: d.Count,
+			Color: deviceColors[i%len(deviceColors)],
 		}
+	}
 
-		if item.Category == "device" {
-			devices = append(devices, breakdownItem)
-		} else {
-			browsers = append(browsers, breakdownItem)
+	var browserRows []struct {
+		Name  string
+		Count int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select("COALESCE(browser, 'unknown') AS name, COUNT(*) AS count").
+		Where("project_id = ?", projectUUID).
+		Group("name").
+		Order("count DESC").
+		Scan(&browserRows).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get browser analytics: %w", err)
+	}
+
+	browsers := make([]BreakdownItem, len(browserRows))
+	for i, b := range browserRows {
+		browsers[i] = BreakdownItem{
+			Name:  b.Name,
+			Count: b.Count,
+			Color: deviceColors[i%len(deviceColors)],
 		}
-		colorIndex++
 	}
 
 	return &DeviceAnalyticsData{
@@ -531,49 +381,109 @@ func (s *svc) GetDeviceAnalytics(ctx context.Context, projectId string) (*Device
 func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*TrafficSourcesData, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	data, err := s.repo.GetTrafficSources(ctx, projectUUID)
+	// --- Referrers (raw) ---
+	var refRows []struct {
+		Referrer *string
+		Count    int64
+	}
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select("referrer, COUNT(*) as count").
+		Where("project_id = ?", projectUUID).
+		Group("referrer").
+		Scan(&refRows).Error
 	if err != nil {
-		return nil, fmt.Errorf("failed to get traffic sources: %w", err)
+		return nil, fmt.Errorf("failed to get referrers: %w", err)
 	}
 
 	referrerCounts := map[string]int64{}
-	countryCounts := map[string]int64{}
-	utmSourceCounts := map[string]int64{}
-	utmMediumCounts := map[string]int64{}
-
-	for _, item := range data {
-		source := classifyReferrer(item.Referrer)
-		referrerCounts[source]++
-
-		country := strings.TrimSpace(item.Country)
-		if country == "" {
-			country = "Unknown"
-		}
-		countryCounts[country]++
-
-		utmSource := strings.TrimSpace(item.UtmSource)
-		if utmSource == "" {
-			utmSource = "None"
-		}
-		utmSourceCounts[utmSource]++
-
-		utmMedium := strings.TrimSpace(item.UtmMedium)
-		if utmMedium == "" {
-			utmMedium = "None"
-		}
-		utmMediumCounts[utmMedium]++
+	for _, r := range refRows {
+		ref := deref(r.Referrer)
+		source := classifyReferrer(ref)
+		referrerCounts[source] += r.Count
 	}
 
-	referrers := toBreakdownItems(referrerCounts)
-	countries := toBreakdownItems(countryCounts)
-	utmSources := toBreakdownItems(utmSourceCounts)
-	utmMediums := toBreakdownItems(utmMediumCounts)
+	// --- Countries ---
+	var countryRows []struct {
+		Country *string
+		Count   int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select("country, COUNT(*) as count").
+		Where("project_id = ?", projectUUID).
+		Group("country").
+		Scan(&countryRows).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get countries: %w", err)
+	}
+
+	countryCounts := map[string]int64{}
+	for _, c := range countryRows {
+		name := strings.TrimSpace(deref(c.Country))
+		if name == "" {
+			name = "Unknown"
+		}
+		countryCounts[name] = c.Count
+	}
+
+	// --- UTM Source ---
+	var utmSourceRows []struct {
+		Name  *string
+		Count int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select("utm_source as name, COUNT(*) as count").
+		Where("project_id = ?", projectUUID).
+		Group("name").
+		Scan(&utmSourceRows).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get utm sources: %w", err)
+	}
+
+	utmSourceCounts := map[string]int64{}
+	for _, u := range utmSourceRows {
+		name := strings.TrimSpace(deref(u.Name))
+		if name == "" {
+			name = "None"
+		}
+		utmSourceCounts[name] = u.Count
+	}
+
+	// --- UTM Medium ---
+	var utmMediumRows []struct {
+		Name  *string
+		Count int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select("utm_medium as name, COUNT(*) as count").
+		Where("project_id = ?", projectUUID).
+		Group("name").
+		Scan(&utmMediumRows).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get utm mediums: %w", err)
+	}
+
+	utmMediumCounts := map[string]int64{}
+	for _, u := range utmMediumRows {
+		name := strings.TrimSpace(deref(u.Name))
+		if name == "" {
+			name = "None"
+		}
+		utmMediumCounts[name] = u.Count
+	}
 
 	return &TrafficSourcesData{
-		Referrers:  referrers,
-		Countries:  countries,
-		UTMSources: utmSources,
-		UTMMediums: utmMediums,
+		Referrers:  toBreakdownItems(referrerCounts),
+		Countries:  toBreakdownItems(countryCounts),
+		UTMSources: toBreakdownItems(utmSourceCounts),
+		UTMMediums: toBreakdownItems(utmMediumCounts),
 	}, nil
 }
 
@@ -655,33 +565,45 @@ func toBreakdownItems(counts map[string]int64) []BreakdownItem {
 	return items
 }
 
+type topPageRow struct {
+	Path           *string
+	TotalViews     int64
+	UniqueVisitors int64
+	AvgTimeSeconds *float64
+}
+
 func (s *svc) GetTopPages(ctx context.Context, projectId string) ([]TopPage, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	pages, err := s.repo.GetTopPages(ctx, projectUUID)
+	var rows []topPageRow
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			page_path AS path,
+			COUNT(*) FILTER (WHERE event_name = 'page.view') AS total_views,
+			COUNT(DISTINCT session_id) FILTER (WHERE event_name = 'page.view') AS unique_visitors,
+			AVG((properties->>'duration_ms')::float) FILTER (WHERE event_name = 'page.time_spent') / 1000 AS avg_time_seconds
+		`).
+		Where("project_id = ?", projectUUID).
+		Where("page_path IS NOT NULL").
+		Group("path").
+		Order("total_views DESC").
+		Limit(10).
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get top pages: %w", err)
 	}
 
-	result := make([]TopPage, len(pages))
-	for i, page := range pages {
-		var avgTimeSeconds float64
-		if pages[i].AvgTimeSeconds.Valid {
-			if val, err := pages[i].AvgTimeSeconds.Float64Value(); err == nil {
-				avgTimeSeconds = val.Float64
-			}
-		}
+	result := make([]TopPage, len(rows))
 
-		path := ""
-		if page.Path != nil {
-			path = *page.Path
-		}
-
+	for i, r := range rows {
 		result[i] = TopPage{
-			Path:           path,
-			TotalViews:     page.TotalViews,
-			UniqueVisitors: page.UniqueVisitors,
-			AvgTimeSeconds: avgTimeSeconds,
+			Path:           deref(r.Path),
+			TotalViews:     r.TotalViews,
+			UniqueVisitors: r.UniqueVisitors,
+			AvgTimeSeconds: floatOrZero(r.AvgTimeSeconds),
 		}
 	}
 
@@ -691,41 +613,60 @@ func (s *svc) GetTopPages(ctx context.Context, projectId string) ([]TopPage, err
 func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	events, err := s.repo.GetRecentEventsFormatted(ctx, repository.GetRecentEventsFormattedParams{
-		ProjectID: projectUUID,
-		Limit:     limit,
-	})
+	var rows []struct {
+		ID         int64
+		EventName  string
+		SessionID  *string
+		PagePath   *string
+		Referrer   string
+		Properties datatypes.JSON
+		CreatedAt  time.Time
+	}
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			id,
+			event_name,
+			session_id,
+			page_path,
+			CASE
+				WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+				ELSE referrer
+			END AS referrer,
+			properties,
+			created_at
+		`).
+		Where("project_id = ?", projectUUID).
+		Order("created_at DESC").
+		Limit(int(limit)).
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get recent events: %w", err)
 	}
 
-	result := make([]RecentEventData, len(events))
-	for i, event := range events {
-		var sessionID, pagePath, referrer string
-		if event.SessionID != nil {
-			sessionID = *event.SessionID
-		}
-		if event.PagePath != nil {
-			pagePath = *event.PagePath
-		}
-		if event.ReferrerSource != nil {
-			if str, ok := event.ReferrerSource.(string); ok {
-				referrer = str
-			}
-		}
+	result := make([]RecentEventData, len(rows))
 
+	for i, r := range rows {
 		result[i] = RecentEventData{
-			ID:         event.ID,
-			EventName:  event.EventName,
-			SessionID:  sessionID,
-			PagePath:   pagePath,
-			Referrer:   referrer,
-			Properties: event.Properties,
-			CreatedAt:  event.CreatedAt,
+			ID:         r.ID,
+			EventName:  r.EventName,
+			SessionID:  deref(r.SessionID),
+			PagePath:   deref(r.PagePath),
+			Referrer:   r.Referrer,
+			Properties: r.Properties,
+			CreatedAt:  r.CreatedAt,
 		}
 	}
 
 	return result, nil
+}
+
+type areaRow struct {
+	Period  time.Time
+	Desktop int64
+	Mobile  int64
 }
 
 func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange string, eventFilter string) ([]AreaChartDataPoint, error) {
@@ -733,24 +674,37 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 
 	startTime, granularity := parseTimeRange(timeRange)
 
-	params := repository.GetAreaChartDataByDeviceParams{
-		ProjectID: projectUUID,
-		CreatedAt: startTime,
-		DateTrunc: granularity,
-		Column4:   eventFilter,
+	var rows []areaRow
+
+	query := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			DATE_TRUNC(?, created_at)::timestamptz AS period,
+			COUNT(*) FILTER (WHERE device = 'desktop') AS desktop,
+			COUNT(*) FILTER (WHERE device = 'mobile') AS mobile
+		`, granularity).
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= ?", startTime)
+
+	if eventFilter != "" {
+		query = query.Where("event_name = ?", eventFilter)
 	}
 
-	data, err := s.repo.GetAreaChartDataByDevice(ctx, params)
+	err := query.
+		Group("period").
+		Order("period ASC").
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get area chart data: %w", err)
 	}
 
-	result := make([]AreaChartDataPoint, len(data))
-	for i, point := range data {
+	result := make([]AreaChartDataPoint, len(rows))
+	for i, r := range rows {
 		result[i] = AreaChartDataPoint{
-			Period:  point.Period.String(),
-			Desktop: point.Desktop,
-			Mobile:  point.Mobile,
+			Period:  r.Period.String(),
+			Desktop: r.Desktop,
+			Mobile:  r.Mobile,
 		}
 	}
 
@@ -760,7 +714,15 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 func (s *svc) GetOnlineUsers(ctx context.Context, projectId string) (int64, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	count, err := s.repo.GetOnlineUsers(ctx, projectUUID)
+	var count int64
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select("COUNT(DISTINCT session_id)").
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= NOW() - INTERVAL '5 minutes'").
+		Scan(&count).Error
+
 	if err != nil {
 		return 0, fmt.Errorf("failed to get online users: %w", err)
 	}
@@ -771,25 +733,39 @@ func (s *svc) GetOnlineUsers(ctx context.Context, projectId string) (int64, erro
 func (s *svc) GetCountryData(ctx context.Context, projectId string) ([]BreakdownItem, error) {
 	projectUUID := uuid.MustParse(projectId)
 
-	data, err := s.repo.GetCountryData(ctx, projectUUID)
+	var rows []struct {
+		Country     string
+		CountryCode string
+		Emoji       string
+		Count       int64
+	}
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') AS country,
+			COALESCE(NULLIF(UPPER(properties->'geo'->>'country_code'), ''), '') AS country_code,
+			COALESCE(NULLIF(MAX(properties->'geo'->>'emoji'), ''), '') AS emoji,
+			COUNT(*) AS count
+		`).
+		Where("project_id = ?", projectUUID).
+		Where("event_name = ?", "page.view").
+		Group("country, country_code").
+		Order("count DESC").
+		Limit(50).
+		Scan(&rows).Error
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to get country data: %w", err)
 	}
 
-	result := make([]BreakdownItem, len(data))
-	for i, country := range data {
-		countryName := stringValue(country.Country)
-		if countryName == "" {
-			countryName = "Unknown"
-		}
-		countryCode := stringValue(any(country.CountryCode))
-		emoji := stringValue(country.Emoji)
-
+	result := make([]BreakdownItem, len(rows))
+	for i, r := range rows {
 		result[i] = BreakdownItem{
-			Name:        countryName,
-			Count:       country.Count,
-			CountryCode: countryCode,
-			Emoji:       emoji,
+			Name:        r.Country,
+			Count:       r.Count,
+			CountryCode: r.CountryCode,
+			Emoji:       r.Emoji,
 		}
 	}
 
@@ -815,4 +791,18 @@ func stringValue(v any) string {
 	default:
 		return ""
 	}
+}
+
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func floatOrZero(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
 }

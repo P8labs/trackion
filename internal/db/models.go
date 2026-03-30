@@ -84,6 +84,7 @@ type Event struct {
 	Device     *string `gorm:"column:device"`
 	OSVersion  *string `gorm:"column:os_version"`
 	AppVersion *string `gorm:"column:app_version"`
+	Browser    *string `gorm:"column:browser"`
 
 	PagePath  *string `gorm:"column:page_path"`
 	PageTitle *string `gorm:"column:page_title"`

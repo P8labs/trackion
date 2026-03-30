@@ -6,23 +6,23 @@ import (
 	"log/slog"
 	"time"
 	"trackion/internal/config"
-	"trackion/internal/repository"
+	"trackion/internal/db"
 
-	"github.com/jackc/pgx/v5/pgtype"
+	"gorm.io/gorm"
 )
 
 type MaintenanceJob struct {
-	repo repository.Querier
-	cfg  config.Config
-	log  *slog.Logger
+	db  *gorm.DB
+	cfg config.Config
+	log *slog.Logger
 }
 
-func NewMaintenanceJob(repo repository.Querier, cfg config.Config, logger *slog.Logger) *MaintenanceJob {
+func NewMaintenanceJob(db *gorm.DB, cfg config.Config, logger *slog.Logger) *MaintenanceJob {
 	if logger == nil {
 		logger = slog.Default()
 	}
 
-	return &MaintenanceJob{repo: repo, cfg: cfg, log: logger}
+	return &MaintenanceJob{db: db, cfg: cfg, log: logger}
 }
 
 func (j *MaintenanceJob) Name() string {
@@ -37,26 +37,24 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(j.cfg.CleanupTimeoutSec)*time.Second)
 	defer cancel()
 
-	renewedSubscriptions, err := j.repo.RenewFreeSubscriptionsForNewMonth(jobCtx)
+	renewedSubscriptions, err := j.renewFreeSubscriptions(jobCtx)
 	if err != nil {
 		return fmt.Errorf("renew free subscriptions: %w", err)
 	}
 
-	if err := j.repo.CleanupExpiredSessions(jobCtx); err != nil {
+	_, err = j.cleanupExpiredSessions(jobCtx)
+	if err != nil {
 		return fmt.Errorf("cleanup sessions: %w", err)
 	}
 
 	eventCutoff := time.Now().AddDate(0, 0, -j.cfg.EventRetentionDays)
-	deletedEvents, err := j.repo.DeleteEventsOlderThan(jobCtx, eventCutoff)
+	deletedEvents, err := j.deleteOldEvents(jobCtx, eventCutoff)
 	if err != nil {
 		return fmt.Errorf("cleanup events: %w", err)
 	}
 
 	projectCutoff := time.Now().AddDate(0, 0, -j.cfg.ProjectDeleteAfter)
-	deletedProjects, err := j.repo.HardDeleteProjectsDeletedBefore(jobCtx, pgtype.Timestamptz{
-		Time:  projectCutoff,
-		Valid: true,
-	})
+	deletedProjects, err := j.hardDeleteProjects(jobCtx, projectCutoff)
 	if err != nil {
 		return fmt.Errorf("cleanup deleted projects: %w", err)
 	}
@@ -70,4 +68,57 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 	)
 
 	return nil
+}
+
+func (j *MaintenanceJob) renewFreeSubscriptions(ctx context.Context) (int64, error) {
+	res := j.db.WithContext(ctx).
+		Model(&db.Subscription{}).
+		Where("status = ?", "active").
+		Where("plan = ?", "free").
+		Where("current_period_end IS NULL OR current_period_end <= NOW()").
+		Update("current_period_end", gorm.Expr("date_trunc('month', now()) + INTERVAL '1 month'"))
+
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) hardDeleteProjects(ctx context.Context, cutoff time.Time) (int64, error) {
+	res := j.db.WithContext(ctx).
+		Unscoped().
+		Where("deleted_at IS NOT NULL").
+		Where("deleted_at < ?", cutoff).
+		Delete(&db.Project{})
+
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) deleteOldEvents(ctx context.Context, cutoff time.Time) (int64, error) {
+	res := j.db.WithContext(ctx).
+		Where("created_at < ?", cutoff).
+		Delete(&db.Event{})
+
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) cleanupExpiredSessions(ctx context.Context) (int64, error) {
+	res := j.db.WithContext(ctx).
+		Where("expires_at <= ?", time.Now()).
+		Delete(&db.Session{})
+
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
 }

@@ -15,13 +15,9 @@ import (
 	"trackion/internal/features/tracker"
 	"trackion/internal/res"
 
-	types "trackion/internal/db"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -38,46 +34,28 @@ func (app *application) mount() http.Handler {
 
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	db, err := gorm.Open(postgres.Open(app.config.DatabaseURL), &gorm.Config{})
-	if err != nil {
-		panic("failed to connect database")
-	}
-
-	db.AutoMigrate(
-		&types.User{},
-		&types.Subscription{},
-		&types.Session{},
-		&types.Project{},
-		&types.Event{},
-	)
-
-	authService := auth.NewService(db, *app.config)
+	authService := auth.NewService(app.db, *app.config)
 	authHandler := auth.NewHandler(authService, *app.config)
 
-	r.Mount("/events", events.Routes(db, *app.config))
+	r.Mount("/events", events.Routes(app.db, *app.config))
 	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
-		r.Mount("/auth", auth.Routes(db))
+		r.Mount("/auth", auth.Routes(app.db))
 	}
 
 	// authenticated APIs
-	mw := auth.NewMiddleware(db, *app.config)
+	mw := auth.NewMiddleware(app.db, *app.config)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(db))
-		r.Mount("/analytics", dashboard.Routes(db))
-		r.Mount("/settings", settings.Routes(db, *app.config))
+		r.Mount("/projects", projects.Routes(app.db))
+		r.Mount("/analytics", dashboard.Routes(app.db))
+		r.Mount("/settings", settings.Routes(app.db, *app.config))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		if err := app.db.Ping(r.Context()); err != nil {
-			res.Error(w, "Database unavailable", 503)
-			return
-		}
-
 		res.Success(w, map[string]string{
 			"status":         "ok",
 			"timestamp":      time.Now().Format(time.RFC3339),
@@ -112,5 +90,5 @@ func (app *application) run(h http.Handler) error {
 type application struct {
 	config *config.Config
 	logger *slog.Logger
-	db     *pgxpool.Pool
+	db     *gorm.DB
 }
