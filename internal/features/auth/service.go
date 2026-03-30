@@ -64,7 +64,7 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 		return user.ID.String(), nil
 	}
 
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
 
@@ -87,7 +87,7 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 		return emailUser.ID.String(), nil
 	}
 
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
 
@@ -125,14 +125,12 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 
 func (s *service) findUserByProvider(ctx context.Context, provider, externalID string) (db.User, error) {
 
-	// gorm.G[db.User](s.db).
-
 	switch provider {
 	case "github":
-		return gorm.G[db.User](s.db).Where("github_id= ?", externalID).First(ctx)
+		return gorm.G[db.User](s.db).Where("github_id = ?", externalID).First(ctx)
 
 	case "google":
-		return gorm.G[db.User](s.db).Where("google_id= ?", externalID).First(ctx)
+		return gorm.G[db.User](s.db).Where("google_id = ?", externalID).First(ctx)
 	default:
 		return db.User{}, errors.New("unsupported oauth provider")
 	}

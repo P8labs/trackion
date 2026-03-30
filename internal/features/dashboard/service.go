@@ -412,9 +412,13 @@ func (s *svc) GetTrafficSources(ctx context.Context, projectId string) (*Traffic
 
 	err = s.db.WithContext(ctx).
 		Table("events").
-		Select("country, COUNT(*) as count").
+		Select(`
+		COALESCE(NULLIF(properties->'geo'->>'country', ''), 'Unknown') AS country,
+		COUNT(*) as count
+	`).
 		Where("project_id = ?", projectUUID).
 		Group("country").
+		Order("count DESC").
 		Scan(&countryRows).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to get countries: %w", err)

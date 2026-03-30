@@ -16,24 +16,35 @@ import (
 )
 
 type EventParams struct {
-	ProjectKey string    `json:"project_key"`
-	Event      string    `json:"event" validate:"required"`
-	Type       string    `json:"type"`
-	SessionID  string    `json:"session_Id" validate:"required"`
-	UserAgent  string    `json:"user_agent"`
-	ClientIP   string    `json:"-"`
-	Timestamp  time.Time `json:"timestamp"`
-	Page       struct {
+	ProjectKey string `json:"project_key"`
+	Event      string `json:"event" validate:"required"`
+	Type       string `json:"type,omitempty"`
+
+	SessionID string  `json:"session_id" validate:"required"`
+	UserID    *string `json:"user_id,omitempty"`
+
+	UserAgent string `json:"user_agent"`
+	ClientIP  string `json:"-"`
+
+	Timestamp time.Time `json:"timestamp"`
+
+	Device   *string `json:"device,omitempty"`
+	Platform *string `json:"platform,omitempty"`
+	Browser  *string `json:"browser,omitempty"`
+
+	Page struct {
 		Title    string `json:"title"`
 		Path     string `json:"path"`
 		Referrer string `json:"referrer"`
 	} `json:"page"`
+
 	Utm struct {
-		Source   string `json:"source"`
-		Medium   string `json:"medium"`
-		Campaign string `json:"campaign"`
+		Source   string `json:"source,omitempty"`
+		Medium   string `json:"medium,omitempty"`
+		Campaign string `json:"campaign,omitempty"`
 	} `json:"utm"`
-	Properties map[string]any `json:"properties"`
+
+	Properties map[string]any `json:"properties,omitempty"`
 }
 
 type BatchEventsParams struct {
@@ -151,11 +162,12 @@ func (s *svc) checkUsageLimit(ctx context.Context, projectID uuid.UUID, incoming
 	if incoming <= 0 {
 		return nil
 	}
-	var userId uuid.UUID
-	if err := s.db.Model(&db.Project{}).
-		Select("user_id").
-		Where("id = ?", projectID).
-		Scan(&userId).Error; err != nil {
+
+	p, err := gorm.G[db.Project](s.db).Select("user_id").Where("id = ?", projectID).First(ctx)
+
+	userId := p.UserID
+
+	if err != nil {
 		return err
 	}
 

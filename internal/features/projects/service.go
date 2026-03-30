@@ -114,6 +114,7 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	}
 
 	project := db.Project{
+		Name:       name,
 		UserID:     uuid.MustParse(userId),
 		ApiKey:     apiKey,
 		Status:     "active",
