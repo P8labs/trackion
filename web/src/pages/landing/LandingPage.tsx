@@ -3,17 +3,14 @@ import {
   ArrowRightIcon,
   BarChart3,
   Code,
-  Globe,
   Radar,
   Rocket,
-  Server,
   Shield,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import CodeBox from "@/components/CodeBox";
 import { SCRIPT_TAG_CODE } from "@/lib/constants";
-import { PublicPageLayout } from "./components/PublicPageLayout";
 import { Icons } from "@/lib/icons";
 import Header from "./components/Header";
 import DemoSection from "./components/DemoSection";
