@@ -3,9 +3,14 @@ import { useStore } from "../store";
 import {
   getProjects,
   getProject,
+  getProjectRuntime,
   createProject,
   updateProject,
   deleteProject,
+  upsertFeatureFlag,
+  deleteFeatureFlag,
+  upsertRemoteConfig,
+  deleteRemoteConfig,
   getDashboardCounts,
   getChartDataFlexible,
   getAreaChartData,
@@ -21,6 +26,7 @@ import type { ProjectSettings, UpdateProject } from "../types";
 export const queryKeys = {
   projects: ["projects"] as const,
   project: (id: string) => ["projects", id] as const,
+  projectRuntime: (projectId: string) => ["projectRuntime", projectId] as const,
   counts: (projectId: string) => ["counts", projectId] as const,
   chartData: (projectId: string, timeRange: string, eventFilter: string) =>
     ["chartData", projectId, timeRange, eventFilter] as const,
@@ -54,6 +60,16 @@ export function useProject(id: string) {
     queryKey: queryKeys.project(id),
     queryFn: () => getProject(id, serverUrl, authToken!),
     enabled: !!authToken && !!id,
+  });
+}
+
+export function useProjectRuntime(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.projectRuntime(projectId),
+    queryFn: () => getProjectRuntime(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
   });
 }
 
@@ -143,6 +159,85 @@ export function useDeleteProject() {
       });
       // Invalidate projects list to refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+  });
+}
+
+export function useUpsertFeatureFlag(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (data: {
+      key: string;
+      enabled: boolean;
+      rollout_percentage: number;
+    }) =>
+      upsertFeatureFlag(
+        projectId,
+        data.key,
+        {
+          enabled: data.enabled,
+          rollout_percentage: data.rollout_percentage,
+        },
+        serverUrl,
+        authToken!,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useDeleteFeatureFlag(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (key: string) =>
+      deleteFeatureFlag(projectId, key, serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useUpsertRemoteConfig(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (data: { key: string; value: unknown }) =>
+      upsertRemoteConfig(
+        projectId,
+        data.key,
+        data.value,
+        serverUrl,
+        authToken!,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useDeleteRemoteConfig(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (key: string) =>
+      deleteRemoteConfig(projectId, key, serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
     },
   });
 }

@@ -8,6 +8,7 @@ import (
 	"trackion/internal/features/dashboard"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/runtime"
 	"trackion/internal/features/settings"
 
 	"github.com/go-chi/chi/v5"
@@ -85,6 +86,24 @@ func TestEventsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 		"POST /collect",
 		"POST /batch",
 		"GET /config",
+	})
+}
+
+func TestRuntimePublicRoutes_AllAPIEndpointsRegistered(t *testing.T) {
+	routes := collectRoutes(t, runtime.PublicRoutes(nil))
+	assertHasRoutes(t, routes, []string{
+		"GET /runtime",
+	})
+}
+
+func TestRuntimeProtectedRoutes_AllAPIEndpointsRegistered(t *testing.T) {
+	routes := collectRoutes(t, runtime.Routes(nil))
+	assertHasRoutes(t, routes, []string{
+		"GET /projects/{id}/runtime",
+		"PUT /projects/{id}/runtime/flags/{key}",
+		"DELETE /projects/{id}/runtime/flags/{key}",
+		"PUT /projects/{id}/runtime/config/{key}",
+		"DELETE /projects/{id}/runtime/config/{key}",
 	})
 }
 

@@ -2,20 +2,31 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   AlertTriangle,
+  Braces,
   ChevronRight,
   Copy,
   Check,
   Code,
+  Flag,
   KeyRound,
   Pencil,
   SlidersHorizontal,
+  Trash2,
 } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Badge } from "../../components/ui/badge";
 import { Card, CardContent } from "../../components/ui/card";
 import CodeBox from "../../components/CodeBox";
-import { useProject, useUpdateProject } from "../../hooks/useApi";
+import {
+  useDeleteFeatureFlag,
+  useDeleteRemoteConfig,
+  useProject,
+  useProjectRuntime,
+  useUpdateProject,
+  useUpsertFeatureFlag,
+  useUpsertRemoteConfig,
+} from "../../hooks/useApi";
 import { parseDomainsInput } from "../../lib/domain";
 import { useStore } from "../../store";
 import {
@@ -70,8 +81,22 @@ export function ProjectDetailPage() {
   const [editName, setEditName] = useState("");
   const [editDomains, setEditDomains] = useState("");
   const [editSettings, setEditSettings] = useState(defaultSettings);
+  const [flagKey, setFlagKey] = useState("");
+  const [flagEnabled, setFlagEnabled] = useState(true);
+  const [flagRollout, setFlagRollout] = useState(100);
+  const [configKey, setConfigKey] = useState("");
+  const [configValue, setConfigValue] = useState("{}");
+  const [configError, setConfigError] = useState("");
 
   const { data: project, isLoading, error } = useProject(id!);
+  const { data: runtimeData, isLoading: runtimeLoading } = useProjectRuntime(
+    id || "",
+  );
+
+  const upsertFlagMutation = useUpsertFeatureFlag(id || "");
+  const deleteFlagMutation = useDeleteFeatureFlag(id || "");
+  const upsertConfigMutation = useUpsertRemoteConfig(id || "");
+  const deleteConfigMutation = useDeleteRemoteConfig(id || "");
 
   useEffect(() => {
     if (!project) {
@@ -196,6 +221,47 @@ export function ProjectDetailPage() {
     setEditOpen(false);
   };
 
+  const handleSaveFlag = async () => {
+    const key = flagKey.trim();
+    if (!key) {
+      return;
+    }
+
+    const rollout = Number.isFinite(flagRollout)
+      ? Math.max(0, Math.min(100, Math.floor(flagRollout)))
+      : 0;
+
+    await upsertFlagMutation.mutateAsync({
+      key,
+      enabled: flagEnabled,
+      rollout_percentage: rollout,
+    });
+
+    setFlagKey("");
+    setFlagEnabled(true);
+    setFlagRollout(100);
+  };
+
+  const handleSaveConfig = async () => {
+    const key = configKey.trim();
+    if (!key) {
+      return;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(configValue);
+    } catch {
+      setConfigError("Config value must be valid JSON.");
+      return;
+    }
+
+    setConfigError("");
+    await upsertConfigMutation.mutateAsync({ key, value: parsed });
+    setConfigKey("");
+    setConfigValue("{}");
+  };
+
   return (
     <div className="max-w-4xl space-y-5">
       <section className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
@@ -296,6 +362,177 @@ export function ProjectDetailPage() {
             );
           })}
         </div>
+      </section>
+
+      <section className="space-y-3 border-t pt-4">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
+          <Flag className="h-4 w-4" />
+          Feature Flags
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Create boolean flags and control rollout percentage by user.
+        </p>
+
+        <div className="grid gap-2 rounded-md border p-3 md:grid-cols-[1fr_auto_auto_auto] md:items-end">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Flag Key</p>
+            <Input
+              value={flagKey}
+              onChange={(e) => setFlagKey(e.target.value)}
+              placeholder="checkout_v2"
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Enabled</p>
+            <div className="flex h-10 items-center rounded-md border px-3">
+              <Checkbox
+                checked={flagEnabled}
+                onCheckedChange={(checked) => setFlagEnabled(Boolean(checked))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Rollout %</p>
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={flagRollout}
+              onChange={(e) => setFlagRollout(Number(e.target.value))}
+            />
+          </div>
+          <Button
+            onClick={handleSaveFlag}
+            disabled={upsertFlagMutation.isPending || !flagKey.trim()}
+          >
+            {upsertFlagMutation.isPending ? "Saving..." : "Save Flag"}
+          </Button>
+        </div>
+
+        {runtimeLoading ? (
+          <Skeleton className="h-20 w-full" />
+        ) : (runtimeData?.flags || []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No feature flags yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {(runtimeData?.flags || []).map((item) => (
+              <div
+                key={item.key}
+                className="flex items-center justify-between gap-3 rounded-md border p-3"
+              >
+                <div>
+                  <p className="font-mono text-sm">{item.key}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.enabled ? "Enabled" : "Disabled"} • Rollout:{" "}
+                    {item.rollout_percentage}%
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setFlagKey(item.key);
+                      setFlagEnabled(item.enabled);
+                      setFlagRollout(item.rollout_percentage);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => deleteFlagMutation.mutate(item.key)}
+                    disabled={deleteFlagMutation.isPending}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-3 border-t pt-4">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
+          <Braces className="h-4 w-4" />
+          Remote Config
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Manage JSON config values fetched by clients at runtime.
+        </p>
+
+        <div className="space-y-2 rounded-md border p-3">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Config Key</p>
+            <Input
+              value={configKey}
+              onChange={(e) => setConfigKey(e.target.value)}
+              placeholder="paywall.copy"
+            />
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">JSON Value</p>
+            <Textarea
+              value={configValue}
+              onChange={(e) => setConfigValue(e.target.value)}
+              rows={6}
+              className="font-mono text-xs"
+            />
+            {configError && (
+              <p className="text-xs text-destructive">{configError}</p>
+            )}
+          </div>
+          <Button
+            onClick={handleSaveConfig}
+            disabled={upsertConfigMutation.isPending || !configKey.trim()}
+          >
+            {upsertConfigMutation.isPending ? "Saving..." : "Save Config"}
+          </Button>
+        </div>
+
+        {runtimeLoading ? (
+          <Skeleton className="h-20 w-full" />
+        ) : (runtimeData?.configs || []).length === 0 ? (
+          <p className="text-sm text-muted-foreground">No configs yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {(runtimeData?.configs || []).map((item) => (
+              <div key={item.key} className="rounded-md border p-3">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <p className="font-mono text-sm">{item.key}</p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setConfigKey(item.key);
+                        setConfigValue(JSON.stringify(item.value, null, 2));
+                        setConfigError("");
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => deleteConfigMutation.mutate(item.key)}
+                      disabled={deleteConfigMutation.isPending}
+                    >
+                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+                <pre className="overflow-x-auto rounded-md bg-muted p-2 text-xs">
+                  {JSON.stringify(item.value, null, 2)}
+                </pre>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>

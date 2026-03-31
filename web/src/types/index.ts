@@ -153,3 +153,19 @@ export interface ServerHealth {
   timestamp: string;
   server_version: string;
 }
+
+export interface RuntimeFlag {
+  key: string;
+  enabled: boolean;
+  rollout_percentage: number;
+}
+
+export interface RuntimeConfig {
+  key: string;
+  value: unknown;
+}
+
+export interface ProjectRuntime {
+  flags: RuntimeFlag[];
+  configs: RuntimeConfig[];
+}

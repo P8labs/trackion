@@ -39,6 +39,8 @@ func main() {
 		&types.Session{},
 		&types.Project{},
 		&types.Event{},
+		&types.Flag{},
+		&types.Config{},
 	)
 
 	workerManager := worker.NewManager(logger)

@@ -1,6 +1,7 @@
 import type {
   Project,
   ProjectSettings,
+  ProjectRuntime,
   UpdateProject,
   ChartDataPoint,
   AreaChartDataPoint,
@@ -300,6 +301,87 @@ export const getCountryData = async (
   return apiCall(
     `/api/analytics/${projectId}/country-data`,
     {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getProjectRuntime = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<ProjectRuntime> => {
+  return apiCall(
+    `/api/runtime/projects/${projectId}/runtime`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const upsertFeatureFlag = async (
+  projectId: string,
+  key: string,
+  data: { enabled: boolean; rollout_percentage: number },
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  return apiCall(
+    `/api/runtime/projects/${projectId}/runtime/flags/${encodeURIComponent(key)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    },
+    serverUrl,
+    authToken,
+  );
+};
+
+export const deleteFeatureFlag = async (
+  projectId: string,
+  key: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  return apiCall(
+    `/api/runtime/projects/${projectId}/runtime/flags/${encodeURIComponent(key)}`,
+    {
+      method: "DELETE",
+    },
+    serverUrl,
+    authToken,
+  );
+};
+
+export const upsertRemoteConfig = async (
+  projectId: string,
+  key: string,
+  value: unknown,
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  return apiCall(
+    `/api/runtime/projects/${projectId}/runtime/config/${encodeURIComponent(key)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify({ value }),
+    },
+    serverUrl,
+    authToken,
+  );
+};
+
+export const deleteRemoteConfig = async (
+  projectId: string,
+  key: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  return apiCall(
+    `/api/runtime/projects/${projectId}/runtime/config/${encodeURIComponent(key)}`,
+    {
+      method: "DELETE",
+    },
     serverUrl,
     authToken,
   );

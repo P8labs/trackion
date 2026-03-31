@@ -64,8 +64,10 @@ type Project struct {
 	UpdatedAt  time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"column:deleted_at;index" json:"deleted_at,omitempty"`
 
-	Events []Event `gorm:"foreignKey:ProjectID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-	User   *User   `gorm:"foreignKey:UserID;references:ID" json:"-"`
+	Events  []Event  `gorm:"foreignKey:ProjectID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	Flags   []Flag   `gorm:"foreignKey:ProjectID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	Configs []Config `gorm:"foreignKey:ProjectID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	User    *User    `gorm:"foreignKey:UserID;references:ID" json:"-"`
 }
 
 func (Project) TableName() string { return "projects" }
@@ -102,3 +104,30 @@ type Event struct {
 }
 
 func (Event) TableName() string { return "events" }
+
+type Flag struct {
+	ID                uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ProjectID         uuid.UUID `gorm:"column:project_id;type:uuid;not null;index" json:"project_id"`
+	Key               string    `gorm:"column:key;not null" json:"key"`
+	Enabled           bool      `gorm:"column:enabled;default:false" json:"enabled"`
+	RolloutPercentage int       `gorm:"column:rollout_percentage;default:100" json:"rollout_percentage"`
+	CreatedAt         time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt         time.Time `gorm:"column:updated_at" json:"updated_at"`
+
+	Project *Project `gorm:"foreignKey:ProjectID;references:ID" json:"-"`
+}
+
+func (Flag) TableName() string { return "flags" }
+
+type Config struct {
+	ID        uuid.UUID      `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ProjectID uuid.UUID      `gorm:"column:project_id;type:uuid;not null;index" json:"project_id"`
+	Key       string         `gorm:"column:key;not null" json:"key"`
+	Value     datatypes.JSON `gorm:"column:value;type:jsonb;not null;default:'{}'" json:"value"`
+	CreatedAt time.Time      `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"column:updated_at" json:"updated_at"`
+
+	Project *Project `gorm:"foreignKey:ProjectID;references:ID" json:"-"`
+}
+
+func (Config) TableName() string { return "configs" }

@@ -23,6 +23,7 @@ Trackion is built to be:
 ## Features
 
 - Event tracking (custom + automatic)
+- Runtime control (feature flags + remote config)
 - Real-time analytics dashboard
 - Session and user insights
 - Lightweight SDK (minimal overhead)
@@ -79,6 +80,8 @@ Guides:
 ## Documentation
 
 Full docs: [https://trackion.tech/docs/](https://trackion.tech/docs/)
+
+SDK examples are available in `examples/` for web, react, vue, node, and script integrations.
 
 ## License & Usage
 
