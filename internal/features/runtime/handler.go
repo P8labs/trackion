@@ -7,7 +7,10 @@ import (
 	"trackion/internal/res"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
+
+const ProjectIdContextKey string = "projectId"
 
 type handler struct {
 	service Service
@@ -18,10 +21,15 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) GetRuntime(w http.ResponseWriter, r *http.Request) {
-	projectID := strings.TrimSpace(r.URL.Query().Get("project_id"))
+	projectID, ok := r.Context().Value(ProjectIdContextKey).(uuid.UUID)
+	if !ok {
+		res.Error(w, "Project not found", http.StatusBadRequest)
+		return
+	}
+
 	userID := strings.TrimSpace(r.URL.Query().Get("user_id"))
 
-	data, err := h.service.GetPublicRuntime(r.Context(), projectID, userID)
+	data, err := h.service.GetPublicRuntime(r.Context(), projectID.String(), userID)
 	if err != nil {
 		log.Println(err)
 		res.Error(w, err.Error(), http.StatusBadRequest)

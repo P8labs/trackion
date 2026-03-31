@@ -36,7 +36,7 @@ import { createTrackionClient } from "@trackion/web";
 
 const trackion = createTrackionClient({
   serverUrl: "https://api.trackion.tech",
-  projectKey: "PROJECT_API_KEY",
+  apiKey: "YOUR_API_KEY",
   projectId: "PROJECT_UUID",
   userId: "user-123",
   autoPageview: true,
@@ -89,7 +89,7 @@ export function App() {
     <TrackionProvider
       options={{
         serverUrl: "https://api.trackion.tech",
-        projectKey: "PROJECT_API_KEY",
+        apiKey: "YOUR_API_KEY",
         projectId: "PROJECT_UUID",
         userId: "user-123",
       }}
@@ -112,7 +112,7 @@ const app = createApp({
   setup() {
     const client = createVueTrackion({
       serverUrl: "https://api.trackion.tech",
-      projectKey: "PROJECT_API_KEY",
+      apiKey: "YOUR_API_KEY",
       projectId: "PROJECT_UUID",
       userId: "user-123",
     });
@@ -151,7 +151,7 @@ import { createTrackionNodeClient, trackServerEvent } from "@trackion/web/node";
 
 const trackion = createTrackionNodeClient({
   serverUrl: "https://api.trackion.tech",
-  projectKey: "PROJECT_API_KEY",
+  apiKey: "YOUR_API_KEY",
   projectId: "PROJECT_UUID",
   userId: "server-user-123",
 });
@@ -173,7 +173,7 @@ Creates and starts a client.
 `TrackionClientOptions`
 
 - `serverUrl` (required): API base URL.
-- `projectKey` (required): Ingestion project key.
+- `apiKey` (required): Authentication API key.
 - `projectId` (optional): UUID used for runtime fetch (`/v1/runtime`).
 - `autoPageview` (optional, default `true`).
 - `batchSize` (optional, default `20`).
@@ -197,6 +197,136 @@ Creates and starts a client.
 - `getConfig(configKey, fallback?)`
 - `getRuntimeSnapshot()`
 - `subscribeRuntime(listener)`
+- `captureError(error, context?)`
+
+## Device Information
+
+Trackion automatically captures device and browser information with every event:
+
+```typescript
+// Automatically included in all events:
+{
+  user_agent: "Mozilla/5.0...",
+  browser: "Chrome",
+  browser_version: "91.0",
+  os: "macOS",
+  os_version: "10.15",
+  device: "Desktop",
+  device_type: "desktop", // "desktop" | "mobile" | "tablet"
+  screen_resolution: "1920x1080",
+  viewport: "1366x768",
+  language: "en-US",
+  timezone: "America/New_York",
+  platform: "MacIntel"
+}
+
+// Access device info directly:
+import { getDeviceInfo } from "@trackion/web";
+const deviceInfo = getDeviceInfo();
+```
+
+This information is automatically merged with your custom event properties, with your properties taking precedence if there are any naming conflicts.
+
+## Error Tracking
+
+Trackion SDK automatically captures JavaScript errors and unhandled promise rejections:
+
+### Automatic Error Capture
+
+```ts
+const trackion = createTrackionClient({
+  serverUrl: "https://api.trackion.tech",
+  projectKey: "PROJECT_API_KEY",
+  // Error capture is enabled by default
+});
+
+// These are automatically captured:
+throw new Error("Uncaught error");
+Promise.reject(new Error("Unhandled promise rejection"));
+```
+
+### Manual Error Capture
+
+```ts
+// Capture any error manually
+trackion.captureError(new Error("Something went wrong"));
+
+// With additional context
+trackion.captureError(error, {
+  userId: "user123",
+  feature: "checkout", 
+  step: "payment"
+});
+
+// Capture string errors
+trackion.captureError("Failed to load resource");
+```
+
+### React Error Boundaries
+
+```tsx
+import { TrackionErrorBoundary, useCaptureError } from "@trackion/web/react";
+
+function MyComponent() {
+  const captureError = useCaptureError();
+  
+  const handleSubmit = async () => {
+    try {
+      await submitForm();
+    } catch (error) {
+      captureError(error, { form: "checkout" });
+      throw error; // Re-throw to handle in UI
+    }
+  };
+  
+  return <form onSubmit={handleSubmit}>...</form>;
+}
+
+// Wrap your app to catch React component errors
+function App() {
+  return (
+    <TrackionErrorBoundary fallback={<ErrorFallback />}>
+      <TrackionProvider options={{...}}>
+        <MyComponent />
+      </TrackionProvider>
+    </TrackionErrorBoundary>
+  );
+}
+```
+
+### Error Filtering
+
+The SDK automatically filters out noise:
+
+```ts
+// These errors are ignored by default:
+// - Browser extension errors (chrome-extension://, moz-extension://)
+// - ResizeObserver loop errors
+// - Cross-origin script errors
+// - Errors with empty messages
+
+// Custom filtering can be added via context:
+trackion.captureError(error, {
+  skipCapture: shouldIgnoreError(error)
+});
+```
+
+### Error Deduplication
+
+Identical errors are automatically deduplicated within a 5-second window to prevent spam:
+
+```ts
+// Only the first occurrence is sent:
+trackion.captureError(new Error("Same error"));
+trackion.captureError(new Error("Same error")); // Deduplicated
+```
+
+### Error Grouping
+
+Errors are grouped by fingerprint in the dashboard:
+- Fingerprint = SHA256(error message + first line of stack trace)
+- Same errors across different users/sessions are grouped together
+- View error counts, first/last occurrence, and individual stack traces
 
 ## Runtime Behavior
 

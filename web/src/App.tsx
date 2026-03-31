@@ -47,6 +47,16 @@ const SettingsPage = lazy(() =>
     default: m.SettingsPage,
   })),
 );
+const ErrorListPage = lazy(() =>
+  import("./pages/errors/ErrorListPage").then((m) => ({
+    default: m.ErrorListPage,
+  })),
+);
+const ErrorDetailPage = lazy(() =>
+  import("./pages/errors/ErrorDetailPage").then((m) => ({
+    default: m.ErrorDetailPage,
+  })),
+);
 const LandingPage = lazy(() =>
   import("./pages/landing/LandingPage").then((m) => ({
     default: m.LandingPage,
@@ -151,6 +161,22 @@ function App() {
                     element={
                       <Layout>
                         <SettingsPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/errors"
+                    element={
+                      <Layout>
+                        <ErrorListPage />
+                      </Layout>
+                    }
+                  />
+                  <Route
+                    path="/errors/:fingerprint"
+                    element={
+                      <Layout>
+                        <ErrorDetailPage />
                       </Layout>
                     }
                   />

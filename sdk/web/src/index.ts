@@ -8,4 +8,20 @@ export {
   type RuntimePayload,
   type RuntimeListener,
   type RefreshRuntimeOptions,
+  type DeviceInfo,
+  getDeviceInfo,
 } from "./core";
+
+export {
+  type ErrorContext,
+  type NormalizedError,
+  generateFingerprint,
+  normalizeError,
+  parseStackTrace,
+  shouldIgnoreError,
+  ErrorDeduplicator,
+} from "./errors";
+
+export {
+  getEventDeviceInfo,
+} from "./device";

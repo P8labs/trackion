@@ -87,7 +87,7 @@ func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
 	get := func(keys ...string) (string, bool) {
 		for _, key := range keys {
 			if v, ok := props[key]; ok {
-				if s, ok := v.(string); ok && s != "" {
+				if s, ok := v.(string); ok && s != "" && s != "Unknown" {
 					return s, true
 				}
 			}
@@ -107,16 +107,32 @@ func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
 		ua := useragent.New(userAgent)
 
 		if info.Platform == "" {
-			info.Platform = ua.Platform()
+			platform := ua.Platform()
+			if platform == "" || platform == "unknown" {
+				platform = "Unknown"
+			}
+			info.Platform = platform
 		}
 
 		if info.OS == "" {
-			info.OS = ua.OS()
+			os := ua.OS()
+			if os == "" || os == "unknown" {
+				os = "Unknown"
+			}
+			info.OS = os
 		}
 
 		if info.Browser == "" {
 			name, version := ua.Browser()
-			info.Browser = name + " " + version
+			if name == "" || name == "unknown" {
+				info.Browser = "Unknown Browser"
+			} else {
+				if version == "" {
+					info.Browser = name
+				} else {
+					info.Browser = name + " " + version
+				}
+			}
 		}
 
 		if info.Device == "" {
@@ -127,6 +143,23 @@ func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
 				info.Device = "desktop"
 			}
 		}
+	}
+
+	// Ensure no empty values
+	if info.Platform == "" {
+		info.Platform = "Unknown"
+	}
+	if info.Device == "" {
+		info.Device = "Unknown"
+	}
+	if info.OS == "" {
+		info.OS = "Unknown"
+	}
+	if info.Browser == "" {
+		info.Browser = "Unknown Browser"
+	}
+	if info.AppVersion == "" {
+		info.AppVersion = "Unknown"
 	}
 
 	return info

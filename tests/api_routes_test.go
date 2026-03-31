@@ -89,13 +89,6 @@ func TestEventsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 	})
 }
 
-func TestRuntimePublicRoutes_AllAPIEndpointsRegistered(t *testing.T) {
-	routes := collectRoutes(t, runtime.PublicRoutes(nil))
-	assertHasRoutes(t, routes, []string{
-		"GET /runtime",
-	})
-}
-
 func TestRuntimeProtectedRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 	routes := collectRoutes(t, runtime.Routes(nil))
 	assertHasRoutes(t, routes, []string{

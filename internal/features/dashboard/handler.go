@@ -44,8 +44,6 @@ func (h *handler) GetChartDataFlexible(w http.ResponseWriter, r *http.Request) {
 		request.TimeRange = "24h"
 	}
 
-	// TODO: Handle custom date ranges from query params if needed
-
 	data, err := h.service.GetChartDataFlexible(r.Context(), projectId, request)
 	if err != nil {
 		log.Println(err)

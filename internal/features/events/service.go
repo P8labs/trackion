@@ -84,7 +84,19 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
 	}
 
-	props, err := json.Marshal(mergeGeoProperties(params.Properties, geo))
+	// Remove device-related properties to avoid duplication
+	cleanedProps := make(map[string]any)
+	for k, v := range params.Properties {
+		switch k {
+		case "device", "platform", "browser", "user_agent", "device_type":
+			// Skip these as they're handled separately
+			continue
+		default:
+			cleanedProps[k] = v
+		}
+	}
+
+	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
 	if err != nil {
 		return err
 	}
@@ -253,7 +265,19 @@ func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Locati
 }
 
 func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.Event, error) {
-	props, err := json.Marshal(mergeGeoProperties(e.Properties, geo))
+	// Remove device-related properties to avoid duplication
+	cleanedProps := make(map[string]any)
+	for k, v := range e.Properties {
+		switch k {
+		case "device", "platform", "browser", "user_agent", "device_type":
+			// Skip these as they're handled separately
+			continue
+		default:
+			cleanedProps[k] = v
+		}
+	}
+
+	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
 	deviceInfo := core.ResolveDeviceInfo(e.Properties, e.UserAgent)
 	if err != nil {
 		return db.Event{}, err

@@ -1,3 +1,16 @@
+import {
+  type ErrorContext,
+  normalizeError,
+  generateFingerprint,
+  parseStackTrace,
+  shouldIgnoreError,
+  ErrorDeduplicator,
+} from "./errors";
+import { getEventDeviceInfo } from "./device";
+
+export type { ErrorContext };
+export { type DeviceInfo, getDeviceInfo } from "./device";
+
 export type TrackionJSON =
   | string
   | number
@@ -35,7 +48,7 @@ export interface TrackionPageOptions extends TrackionPageContext {
 
 export interface TrackionClientOptions {
   serverUrl: string;
-  projectKey: string;
+  apiKey: string;
   projectId?: string;
   autoPageview?: boolean;
   batchSize?: number;
@@ -47,7 +60,6 @@ export interface TrackionClientOptions {
 
 export interface RefreshRuntimeOptions {
   force?: boolean;
-  userId?: string;
 }
 
 export type RuntimeListener = (runtime: RuntimePayload) => void;
@@ -58,11 +70,18 @@ interface RuntimeStorageRecord {
 }
 
 interface EventPayload {
+  project_key: string;
   event: string;
-  session_Id: string;
+  type?: string;
+  session_id: string;
+  user_id?: string;
+  user_agent: string;
+  device?: string;
+  platform?: string;
+  browser?: string;
   page: {
-    path: string;
     title: string;
+    path: string;
     referrer: string;
   };
   utm: {
@@ -124,12 +143,12 @@ function getCurrentUTM(): Required<TrackionUTMContext> {
 
 async function postBatch(
   serverUrl: string,
-  projectKey: string,
+  apiKey: string,
   events: EventPayload[],
   useBeacon: boolean,
 ): Promise<void> {
   const payload = {
-    project_key: projectKey,
+    project_key: apiKey,
     events,
   };
 
@@ -151,7 +170,7 @@ async function postBatch(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Project-Key": projectKey,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify(payload),
     keepalive: true,
@@ -165,7 +184,7 @@ async function postBatch(
 }
 
 export class TrackionClient {
-  private readonly projectKey: string;
+  private readonly apiKey: string;
   private readonly projectId: string;
   private readonly serverUrl: string;
   private readonly autoPageview: boolean;
@@ -189,16 +208,23 @@ export class TrackionClient {
   private runtimeFetchedAt = 0;
   private runtimeListeners = new Set<RuntimeListener>();
 
+  // Error tracking state
+  private errorDeduplicator = new ErrorDeduplicator(5000);
+  private originalOnError: OnErrorEventHandler | null = null;
+  private originalOnUnhandledRejection:
+    | ((event: PromiseRejectionEvent) => void)
+    | null = null;
+
   constructor(options: TrackionClientOptions) {
     if (!options || typeof options !== "object") {
       throw new Error("Trackion SDK: options are required");
     }
 
-    if (!options.projectKey) {
-      throw new Error("Trackion SDK: projectKey is required");
+    if (!options.apiKey) {
+      throw new Error("Trackion SDK: apiKey is required");
     }
 
-    this.projectKey = options.projectKey;
+    this.apiKey = options.apiKey;
     this.projectId = options.projectId || "";
     this.serverUrl = normalizeServerUrl(options.serverUrl);
     this.autoPageview = options.autoPageview !== false;
@@ -224,8 +250,49 @@ export class TrackionClient {
       : "";
 
     this._hydrateRuntimeFromStorage();
+    this._setupErrorHandlers();
+  }
 
-    this._onPageHide = this._onPageHide.bind(this);
+  /**
+   * Setup automatic error capture hooks
+   * @private
+   */
+  private _setupErrorHandlers(): void {
+    if (typeof window === "undefined") return;
+
+    // Hook window.onerror for uncaught errors
+    this.originalOnError = window.onerror;
+    window.onerror = (message, source, lineno, colno, error) => {
+      // Capture the error
+      void this.captureError(
+        error ||
+          ({
+            message: String(message),
+            filename: source,
+            lineno,
+            colno,
+          } as ErrorEvent),
+      );
+
+      // Call original handler if it exists
+      if (this.originalOnError) {
+        return this.originalOnError(message, source, lineno, colno, error);
+      }
+
+      return false;
+    };
+
+    // Hook window.onunhandledrejection for unhandled promise rejections
+    this.originalOnUnhandledRejection = window.onunhandledrejection;
+    window.onunhandledrejection = (event: PromiseRejectionEvent) => {
+      // Capture the rejection as an error
+      void this.captureError(event.reason);
+
+      // Call original handler if it exists
+      if (this.originalOnUnhandledRejection) {
+        this.originalOnUnhandledRejection(event);
+      }
+    };
   }
 
   start(): void {
@@ -259,6 +326,16 @@ export class TrackionClient {
     if (typeof window !== "undefined") {
       window.removeEventListener("pagehide", this._onPageHide);
       window.removeEventListener("beforeunload", this._onPageHide);
+
+      // Restore original error handlers
+      if (this.originalOnError !== null) {
+        window.onerror = this.originalOnError;
+        this.originalOnError = null;
+      }
+      if (this.originalOnUnhandledRejection !== null) {
+        window.onunhandledrejection = this.originalOnUnhandledRejection;
+        this.originalOnUnhandledRejection = null;
+      }
     }
 
     this.started = false;
@@ -291,13 +368,29 @@ export class TrackionClient {
 
     const page = getCurrentPage();
     const utm = getCurrentUTM();
+    const deviceInfo = getEventDeviceInfo();
+
+    // Merge user properties with device information
+    const enrichedProperties = {
+      ...deviceInfo,
+      ...properties, // User properties take precedence
+    };
+
+    const userAgent =
+      typeof navigator !== "undefined" ? navigator.userAgent : "";
 
     this._enqueue({
+      project_key: this.apiKey,
       event: eventName,
-      session_Id: context.sessionId || this.sessionId,
+      session_id: context.sessionId || this.sessionId,
+      user_id: this.userId || undefined,
+      user_agent: userAgent,
+      device: String(deviceInfo.device || ""),
+      platform: String(deviceInfo.platform || ""),
+      browser: String(deviceInfo.browser || ""),
       page: {
-        path: context.path || page.path,
         title: context.title || page.title,
+        path: context.path || page.path,
         referrer: context.referrer || page.referrer,
       },
       utm: {
@@ -305,7 +398,7 @@ export class TrackionClient {
         medium: context.utm?.medium || utm.medium,
         campaign: context.utm?.campaign || utm.campaign,
       },
-      properties,
+      properties: enrichedProperties,
       timestamp: new Date().toISOString(),
     });
   }
@@ -313,13 +406,29 @@ export class TrackionClient {
   page(data: TrackionPageOptions = {}): void {
     const page = getCurrentPage();
     const utm = getCurrentUTM();
+    const deviceInfo = getEventDeviceInfo();
+
+    // Merge user properties with device information
+    const enrichedProperties = {
+      ...deviceInfo,
+      ...(data.properties || {}), // User properties take precedence
+    };
+
+    const userAgent =
+      typeof navigator !== "undefined" ? navigator.userAgent : "";
 
     this._enqueue({
+      project_key: this.apiKey,
       event: "page.view",
-      session_Id: this.sessionId,
+      session_id: this.sessionId,
+      user_id: this.userId || undefined,
+      user_agent: userAgent,
+      device: String(deviceInfo.device || ""),
+      platform: String(deviceInfo.platform || ""),
+      browser: String(deviceInfo.browser || ""),
       page: {
-        path: data.path || page.path,
         title: data.title || page.title,
+        path: data.path || page.path,
         referrer: data.referrer || page.referrer,
       },
       utm: {
@@ -327,13 +436,115 @@ export class TrackionClient {
         medium: data.utm?.medium || utm.medium,
         campaign: data.utm?.campaign || utm.campaign,
       },
-      properties: data.properties || {},
+      properties: enrichedProperties,
       timestamp: new Date().toISOString(),
     });
   }
 
   identify(userId: string, traits: Record<string, TrackionJSON> = {}): void {
     this.track("user.identify", { user_id: userId, traits });
+  }
+
+  /**
+   * Capture an error for error tracking
+   * @param error - Error object, string, or ErrorEvent
+   * @param context - Additional context data
+   */
+  async captureError(
+    error: Error | string | ErrorEvent | unknown,
+    context: ErrorContext = {},
+  ): Promise<void> {
+    try {
+      // Normalize the error
+      const normalized = normalizeError(error);
+
+      // Check if we should ignore this error
+      if (shouldIgnoreError(normalized)) {
+        return;
+      }
+
+      // Generate fingerprint for grouping
+      const fingerprint = await generateFingerprint(
+        normalized.message,
+        normalized.stack,
+      );
+
+      // Check if this is a duplicate within the deduplication window
+      if (!this.errorDeduplicator.shouldCapture(fingerprint)) {
+        return;
+      }
+
+      // Parse stack trace for file location
+      const location = parseStackTrace(normalized.stack);
+
+      // Get current page URL
+      const url =
+        typeof window !== "undefined" ? window.location.href : "unknown";
+
+      // Build error metadata
+      const errorMetadata: Record<string, TrackionJSON> = {
+        error_message: normalized.message,
+        stack_trace: normalized.stack,
+        fingerprint: fingerprint,
+        url: url,
+        user_agent:
+          typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+      };
+
+      // Add line/column numbers if available
+      if (normalized.lineno !== undefined || location?.line !== undefined) {
+        errorMetadata.line_number = normalized.lineno || location?.line || 0;
+      }
+      if (normalized.colno !== undefined || location?.column !== undefined) {
+        errorMetadata.column_number = normalized.colno || location?.column || 0;
+      }
+
+      // Add custom context
+      if (Object.keys(context).length > 0) {
+        errorMetadata.context = context;
+      }
+
+      // Track the error event with type="error"
+      const page = getCurrentPage();
+      const utm = getCurrentUTM();
+      const deviceInfo = getEventDeviceInfo();
+
+      // Merge device info with error metadata
+      const enrichedErrorMetadata = {
+        ...deviceInfo,
+        ...errorMetadata, // Error metadata takes precedence
+      };
+
+      const userAgent =
+        typeof navigator !== "undefined" ? navigator.userAgent : "";
+
+      this._enqueue({
+        project_key: this.apiKey,
+        event: "error",
+        type: "error",
+        session_id: this.sessionId,
+        user_id: this.userId || undefined,
+        user_agent: userAgent,
+        device: String(deviceInfo.device || ""),
+        platform: String(deviceInfo.platform || ""),
+        browser: String(deviceInfo.browser || ""),
+        page: {
+          title: page.title,
+          path: page.path,
+          referrer: page.referrer,
+        },
+        utm: {
+          source: utm.source,
+          medium: utm.medium,
+          campaign: utm.campaign,
+        },
+        properties: enrichedErrorMetadata,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (captureError) {
+      // Never throw errors from error capture - fail silently
+      console.error("[Trackion] Failed to capture error:", captureError);
+    }
   }
 
   async flush({
@@ -347,7 +558,7 @@ export class TrackionClient {
     const chunk = this.queue.slice(0, this.batchSize);
 
     try {
-      await postBatch(this.serverUrl, this.projectKey, chunk, useBeacon);
+      await postBatch(this.serverUrl, this.apiKey, chunk, useBeacon);
       this.queue.splice(0, chunk.length);
     } finally {
       this.flushing = false;
@@ -356,30 +567,23 @@ export class TrackionClient {
 
   async refreshRuntime({
     force = false,
-    userId,
   }: RefreshRuntimeOptions = {}): Promise<RuntimePayload> {
-    if (!this.projectId) {
-      return this.runtime;
-    }
-
     const now = Date.now();
     if (!force && now - this.runtimeFetchedAt < this.runtimeTTLms) {
       return this.runtime;
     }
 
     const runtimeUrl = new URL(`${this.serverUrl}/v1/runtime`);
-    runtimeUrl.searchParams.set("project_id", this.projectId);
 
-    const effectiveUserId =
-      typeof userId === "string" && userId.trim() ? userId.trim() : this.userId;
-    if (effectiveUserId) {
-      runtimeUrl.searchParams.set("user_id", effectiveUserId);
+    if (this.userId) {
+      runtimeUrl.searchParams.set("user_id", this.userId);
     }
 
     const response = await fetch(runtimeUrl.toString(), {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${this.apiKey}`,
       },
     });
 
@@ -445,9 +649,9 @@ export class TrackionClient {
     }
   }
 
-  private _onPageHide(): void {
+  private _onPageHide = (): void => {
     void this.flush({ useBeacon: true });
-  }
+  };
 
   private _hydrateRuntimeFromStorage(): void {
     if (!this.runtimeStorageKey || typeof localStorage === "undefined") {

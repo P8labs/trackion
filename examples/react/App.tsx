@@ -31,7 +31,7 @@ export default function App() {
     <TrackionProvider
       options={{
         serverUrl: "https://your-trackion-server.com",
-        projectKey: "PROJECT_API_KEY",
+        apiKey: "YOUR_API_KEY",
         projectId: "PROJECT_UUID",
         userId: "user-42",
       }}

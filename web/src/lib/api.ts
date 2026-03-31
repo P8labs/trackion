@@ -10,6 +10,9 @@ import type {
   UsageSummary,
   User,
   ServerHealth,
+  GroupedError,
+  ErrorOccurrence,
+  ErrorStats,
 } from "../types";
 
 const apiCall = async <T>(
@@ -382,6 +385,49 @@ export const deleteRemoteConfig = async (
     {
       method: "DELETE",
     },
+    serverUrl,
+    authToken,
+  );
+};
+
+// Error Tracking API
+export const getGroupedErrors = async (
+  projectId: string,
+  timeRange: string = "7d",
+  serverUrl: string,
+  authToken: string,
+): Promise<GroupedError[]> => {
+  return apiCall<GroupedError[]>(
+    `/api/errors?project_id=${projectId}&time_range=${timeRange}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getErrorOccurrences = async (
+  projectId: string,
+  fingerprint: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<ErrorOccurrence[]> => {
+  return apiCall<ErrorOccurrence[]>(
+    `/api/errors/${fingerprint}?project_id=${projectId}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getErrorStats = async (
+  projectId: string,
+  timeRange: string = "7d",
+  serverUrl: string,
+  authToken: string,
+): Promise<ErrorStats> => {
+  return apiCall<ErrorStats>(
+    `/api/errors/stats?project_id=${projectId}&time_range=${timeRange}`,
+    {},
     serverUrl,
     authToken,
   );

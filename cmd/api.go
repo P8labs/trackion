@@ -9,6 +9,7 @@ import (
 	"trackion/internal/config"
 	"trackion/internal/features/auth"
 	"trackion/internal/features/dashboard"
+	"trackion/internal/features/errortracking"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
 	"trackion/internal/features/runtime"
@@ -39,7 +40,7 @@ func (app *application) mount() http.Handler {
 	authHandler := auth.NewHandler(authService, *app.config)
 
 	r.Mount("/events", events.Routes(app.db, *app.config))
-	r.Mount("/v1", runtime.PublicRoutes(app.db))
+	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
 	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
 	if app.config.IsSaaS() {
@@ -55,6 +56,7 @@ func (app *application) mount() http.Handler {
 		r.Mount("/projects", projects.Routes(app.db))
 		r.Mount("/runtime", runtime.Routes(app.db))
 		r.Mount("/analytics", dashboard.Routes(app.db))
+		r.Mount("/errors", errortracking.Routes(app.db))
 		r.Mount("/settings", settings.Routes(app.db, *app.config))
 	})
 

@@ -194,11 +194,22 @@ func (m Middleware) BatchRateLimit(next http.Handler) http.Handler {
 }
 
 func extractProjectKey(r *http.Request) string {
+	// 1. Check X-Project-Key header (legacy)
 	key := strings.TrimSpace(r.Header.Get("X-Project-Key"))
 	if key != "" {
 		return key
 	}
 
+	// 2. Check Authorization header (Bearer token)
+	authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+	if authHeader != "" && strings.HasPrefix(authHeader, "Bearer ") {
+		token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+		if token != "" {
+			return token
+		}
+	}
+
+	// 3. Check request body for project_key
 	if r.Body == nil {
 		return ""
 	}

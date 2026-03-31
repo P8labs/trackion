@@ -169,3 +169,33 @@ export interface ProjectRuntime {
   flags: RuntimeFlag[];
   configs: RuntimeConfig[];
 }
+
+// Error Tracking Types
+export interface GroupedError {
+  fingerprint: string;
+  message: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  last_url?: string;
+}
+
+export interface ErrorOccurrence {
+  id: number;
+  timestamp: string;
+  message: string;
+  stack_trace: string;
+  url: string;
+  user_id?: string;
+  session_id?: string;
+  browser?: string;
+  platform?: string;
+  line_number?: number;
+  column_number?: number;
+  context?: Record<string, any>;
+}
+
+export interface ErrorStats {
+  total_errors: number;
+  time_range: string;
+}

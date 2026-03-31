@@ -5,6 +5,8 @@ import {
   useRef,
   useState,
   type ReactNode,
+  Component,
+  type ErrorInfo,
 } from "react";
 import {
   createTrackionClient,
@@ -12,6 +14,7 @@ import {
   type RuntimePayload,
   type TrackionClientOptions,
   type TrackionJSON,
+  type ErrorContext,
 } from "./core";
 
 const TrackionContext = createContext<TrackionClient | null>(null);
@@ -92,4 +95,103 @@ export async function refreshTrackionRuntime(
   client: TrackionClient,
 ): Promise<RuntimePayload> {
   return client.refreshRuntime({ force: true });
+}
+
+/**
+ * Hook to get the captureError function
+ * Usage: const captureError = useCaptureError();
+ *        captureError(new Error("Something went wrong"), { userId: "123" });
+ */
+export function useCaptureError() {
+  const client = useTrackion();
+  return (error: Error | string | unknown, context?: ErrorContext) => {
+    void client.captureError(error, context);
+  };
+}
+
+/**
+ * ErrorBoundary component props
+ */
+export interface TrackionErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ReactNode | ((error: Error, reset: () => void) => ReactNode);
+  onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  context?: ErrorContext;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+/**
+ * React ErrorBoundary that automatically captures errors to Trackion
+ * 
+ * Usage:
+ * ```tsx
+ * <TrackionErrorBoundary fallback={<ErrorFallback />}>
+ *   <App />
+ * </TrackionErrorBoundary>
+ * ```
+ */
+export class TrackionErrorBoundary extends Component<
+  TrackionErrorBoundaryProps,
+  ErrorBoundaryState
+> {
+  static contextType = TrackionContext;
+  declare context: TrackionClient | null;
+
+  constructor(props: TrackionErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    // Capture error to Trackion
+    if (this.context) {
+      const context: ErrorContext = {
+        ...this.props.context,
+        componentStack: errorInfo.componentStack || "unknown",
+        errorBoundary: true,
+      };
+      void this.context.captureError(error, context);
+    }
+
+    // Call custom error handler if provided
+    if (this.props.onError) {
+      this.props.onError(error, errorInfo);
+    }
+  }
+
+  resetError = (): void => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  render(): ReactNode {
+    if (this.state.hasError && this.state.error) {
+      const { fallback } = this.props;
+
+      if (typeof fallback === "function") {
+        return fallback(this.state.error, this.resetError);
+      }
+
+      if (fallback) {
+        return fallback;
+      }
+
+      // Default fallback
+      return (
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <h2>Something went wrong</h2>
+          <button onClick={this.resetError}>Try again</button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
 }

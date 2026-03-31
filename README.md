@@ -22,13 +22,14 @@ Trackion is built to be:
 
 ## Features
 
-- Event tracking (custom + automatic)
-- Runtime control (feature flags + remote config)
-- Real-time analytics dashboard
-- Session and user insights
-- Lightweight SDK (minimal overhead)
-- Self-host friendly (your data stays with you)
-- hosted cloud (beta)
+- **Event tracking** (custom + automatic)
+- **Error tracking** (automatic capture + grouping)
+- **Runtime control** (feature flags + remote config)
+- **Real-time analytics dashboard**
+- **Session and user insights**
+- **Lightweight SDK** (minimal overhead)
+- **Self-host friendly** (your data stays with you)
+- **Hosted cloud** (beta)
 
 ## Quick Example
 
@@ -50,6 +51,34 @@ trackion.track("button.click", {
 ```
 
 That’s it. Events will start appearing in your dashboard.
+
+
+## Error Tracking
+
+Trackion automatically captures JavaScript errors and unhandled promise rejections:
+
+```js
+// Automatic capture - no setup needed
+window.onerror = (message, source, lineno, colno, error) => {
+  // Trackion captures this automatically
+};
+
+// Manual capture
+trackion.captureError(new Error("Something went wrong"), {
+  userId: "user123",
+  page: "checkout"
+});
+```
+
+**Key Features:**
+- **Automatic capture** of uncaught errors and promise rejections
+- **Error grouping** by fingerprint (same errors grouped together)
+- **Stack traces** with source file and line numbers
+- **Context data** (URL, user ID, browser, custom data)
+- **Deduplication** (prevents spam from repeated errors)
+- **Dashboard integration** (view and debug errors in your analytics)
+
+Errors appear in your dashboard under the "Errors" section, grouped by their fingerprint for easy debugging.
 
 ## Getting started
 

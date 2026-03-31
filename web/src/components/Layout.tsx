@@ -17,6 +17,7 @@ import {
   PieChart,
   Radio,
   ShieldAlert,
+  Bug,
 } from "lucide-react";
 import { useStore } from "../store";
 import { getProjects, getServerHealth } from "../lib/api";
@@ -50,6 +51,7 @@ interface LayoutProps {
 
 const primaryNav = [
   { name: "Projects", path: "/projects", icon: FolderKanban },
+  { name: "Errors", path: "/errors", icon: Bug },
   { name: "Settings", path: "/settings", icon: Settings },
 ];
 

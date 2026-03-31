@@ -43,6 +43,11 @@ func main() {
 		&types.Config{},
 	)
 
+	// Run custom migrations for error tracking indexes
+	if err := types.RunMigrations(db, logger); err != nil {
+		panic("failed to run custom migrations")
+	}
+
 	workerManager := worker.NewManager(logger)
 
 	if err := workerManager.Register(worker.NewMaintenanceJob(db, *cfg, logger)); err != nil {
