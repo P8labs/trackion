@@ -9,9 +9,11 @@ interface PublicPageLayoutProps {
 export function PublicPageLayout({ children }: PublicPageLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      {children}
-      <Footer />
+      <div className="mx-auto relative md:max-w-5xl *:[[id]]:scroll-mt-22">
+        <Header />
+        {children}
+        <Footer />
+      </div>
     </div>
   );
 }

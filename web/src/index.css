@@ -7,6 +7,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --accent-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+  --accent-medium: color-mix(in oklab, var(--primary) 30%, transparent);
+  --accent-strong: var(--primary);
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.147 0.004 49.3);
   --theme: oklab(70.45% 0.14919 0.12175);
