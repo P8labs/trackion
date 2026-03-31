@@ -11,7 +11,6 @@ import (
 	"trackion/internal/db"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"gorm.io/gorm"
 )
 
@@ -277,7 +276,7 @@ func (s *service) ensureActiveSubscription(ctx context.Context, userID uuid.UUID
 		return nil
 	}
 
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return s.createDefaultSubscription(ctx, userID)
 	}
 

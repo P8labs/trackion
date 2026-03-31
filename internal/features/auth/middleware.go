@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"net/http"
+	"time"
 	"trackion/internal/config"
 	"trackion/internal/db"
 	"trackion/internal/res"
@@ -59,7 +60,9 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		session, err := gorm.G[db.Session](m.db).Where("token = ?", token).First(r.Context())
+		session, err := gorm.G[db.Session](m.db).
+			Where("token = ? AND expires_at > ?", token, time.Now()).
+			First(r.Context())
 		if err != nil {
 
 			res.Error(w, "unauthorized", http.StatusUnauthorized)
