@@ -10,6 +10,7 @@ import (
 	"trackion/internal/core"
 	"trackion/internal/core/geoip"
 	"trackion/internal/db"
+	"trackion/internal/features/billing"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -63,19 +64,24 @@ type Service interface {
 	CreateEvent(ctx context.Context, params EventParams) error
 	GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error)
 	CreateBatchEvents(ctx context.Context, params BatchEventsParams) error
-	GetMonthlyUsageByUser(ctx context.Context, userId uuid.UUID) (int64, error)
 }
 
 type svc struct {
 	db          *gorm.DB
 	cfg         config.Config
 	geoResolver geoip.Resolver
+	billing     billing.Service
 }
 
 var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")
 
 func NewService(db *gorm.DB, cfg config.Config) Service {
-	return &svc{db: db, cfg: cfg, geoResolver: geoip.New(cfg)}
+	return &svc{
+		db:          db,
+		cfg:         cfg,
+		geoResolver: geoip.New(cfg),
+		billing:     billing.NewService(db),
+	}
 }
 
 func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
@@ -84,12 +90,10 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
 	}
 
-	// Remove device-related properties to avoid duplication
 	cleanedProps := make(map[string]any)
 	for k, v := range params.Properties {
 		switch k {
 		case "device", "platform", "browser", "user_agent", "device_type":
-			// Skip these as they're handled separately
 			continue
 		default:
 			cleanedProps[k] = v
@@ -103,37 +107,51 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
+	var project db.Project
+	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+		return err
+	}
+
 	if s.cfg.IsSaaS() {
-		if err := s.checkUsageLimit(ctx, projectId, 1); err != nil {
-			return err
+		if err := s.billing.CheckEventLimit(ctx, project.UserID, 1); err != nil {
+			return ErrMonthlyLimitReached
 		}
 	}
 
 	deviceInfo := core.ResolveDeviceInfo(params.Properties, params.UserAgent)
 
-	err = gorm.G[db.Event](s.db).Create(ctx, &db.Event{
-		ProjectID:   projectId,
-		EventName:   params.Event,
-		EventType:   params.Type,
-		SessionID:   core.StrPtr(params.SessionID),
-		PagePath:    core.StrPtr(params.Page.Path),
-		PageTitle:   core.StrPtr(params.Page.Title),
-		Referrer:    core.StrPtr(params.Page.Referrer),
-		UTMSource:   core.StrPtr(params.Utm.Source),
-		UTMMedium:   core.StrPtr(params.Utm.Medium),
-		UTMCampaign: core.StrPtr(params.Utm.Campaign),
-		Properties:  props,
-		Platform:    &deviceInfo.Platform,
-		Device:      &deviceInfo.Device,
-		OSVersion:   &deviceInfo.OS,
-		AppVersion:  &deviceInfo.AppVersion,
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&db.Event{
+			ProjectID:   projectId,
+			EventName:   params.Event,
+			EventType:   params.Type,
+			SessionID:   core.StrPtr(params.SessionID),
+			PagePath:    core.StrPtr(params.Page.Path),
+			PageTitle:   core.StrPtr(params.Page.Title),
+			Referrer:    core.StrPtr(params.Page.Referrer),
+			UTMSource:   core.StrPtr(params.Utm.Source),
+			UTMMedium:   core.StrPtr(params.Utm.Medium),
+			UTMCampaign: core.StrPtr(params.Utm.Campaign),
+			Properties:  props,
+			Platform:    &deviceInfo.Platform,
+			Device:      &deviceInfo.Device,
+			OSVersion:   &deviceInfo.OS,
+			AppVersion:  &deviceInfo.AppVersion,
+		}).Error; err != nil {
+			return err
+		}
+
+		if s.cfg.IsSaaS() {
+			if err := s.billing.IncrementEventUsage(ctx, project.UserID, 1); err != nil {
+				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+				// Don't fail the request if usage tracking fails
+			}
+		}
+
+		return nil
 	})
 
-	if err != nil {
-		return err
-	}
-	return nil
-
+	return err
 }
 
 func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
@@ -148,83 +166,43 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) e
 		}
 	}
 
+	eventCount := len(params.Events)
+	if eventCount == 0 {
+		return nil
+	}
+
+	var project db.Project
+	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+		return err
+	}
+
 	if s.cfg.IsSaaS() {
-		if err := s.checkUsageLimit(ctx, projectId, len(params.Events)); err != nil {
-			return err
+		if err := s.billing.CheckEventLimit(ctx, project.UserID, eventCount); err != nil {
+			return ErrMonthlyLimitReached
 		}
 	}
 
 	events, err := ToInsertEvents(projectId, params.Events, geo)
-
 	if err != nil {
 		return err
 	}
 
-	err = gorm.G[db.Event](s.db).CreateInBatches(ctx, &events, len(events))
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.CreateInBatches(&events, len(events)).Error; err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
+		if s.cfg.IsSaaS() {
+			if err := s.billing.IncrementEventUsage(ctx, project.UserID, eventCount); err != nil {
+				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+				// Don't fail the request if usage tracking fails
+			}
+		}
 
-	}
-	return nil
-
-}
-
-func (s *svc) checkUsageLimit(ctx context.Context, projectID uuid.UUID, incoming int) error {
-	if incoming <= 0 {
 		return nil
-	}
+	})
 
-	p, err := gorm.G[db.Project](s.db).Select("user_id").Where("id = ?", projectID).First(ctx)
-
-	userId := p.UserID
-
-	if err != nil {
-		return err
-	}
-
-	var limit int
-	if err := s.db.Model(&db.Subscription{}).
-		Select("monthly_event_limit").
-		Where("user_id = ?", userId).
-		Where("status = ?", "active").
-		Order("created_at DESC").
-		Limit(1).
-		Scan(&limit).Error; err != nil {
-		return err
-	}
-
-	if limit == 0 {
-		return errors.New("no active subscription found")
-	}
-
-	usage, err := s.GetMonthlyUsageByUser(ctx, projectID)
-	if err != nil {
-		return errors.New("unable to verify usage limit")
-	}
-
-	if usage+int64(incoming) > int64(limit) {
-		return ErrMonthlyLimitReached
-	}
-
-	return nil
-}
-
-func (s *svc) GetMonthlyUsageByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
-	var count int64
-
-	err := s.db.WithContext(ctx).
-		Table("events AS e").
-		Joins("JOIN projects p ON p.id = e.project_id").
-		Where("p.user_id = ?", userID).
-		Where("e.created_at >= date_trunc('month', now())").
-		Count(&count).Error
-
-	if err != nil {
-		return 0, err
-	}
-
-	return count, nil
+	return err
 }
 
 func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {

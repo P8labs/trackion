@@ -20,6 +20,9 @@ import {
   getRecentEventsFormatted,
   getOnlineUsers,
   getCountryData,
+  getUsage,
+  getPlanInfo,
+  upgradeToPro,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
@@ -40,6 +43,8 @@ export const queryKeys = {
     ["recentEventsFormatted", projectId, limit] as const,
   onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
   countryData: (projectId: string) => ["countryData", projectId] as const,
+  usage: ["usage"] as const,
+  planInfo: ["planInfo"] as const,
 };
 
 // Custom hooks for queries
@@ -393,5 +398,41 @@ export function useCountryData(projectId: string) {
     queryFn: () => getCountryData(projectId, serverUrl, authToken!),
     enabled: !!authToken && !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// Billing hooks
+export function useUsage() {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.usage,
+    queryFn: () => getUsage(serverUrl, authToken!),
+    enabled: !!authToken,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function usePlanInfo() {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.planInfo,
+    queryFn: () => getPlanInfo(serverUrl, authToken!),
+    enabled: !!authToken,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useUpgradeToPro() {
+  const { authToken, serverUrl } = useStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => upgradeToPro(serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.usage });
+      queryClient.invalidateQueries({ queryKey: queryKeys.planInfo });
+    },
   });
 }

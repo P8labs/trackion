@@ -55,7 +55,14 @@ func TestDashboardRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 }
 
 func TestProjectsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
-	routes := collectRoutes(t, projects.Routes(nil))
+	cfg := config.Config{
+		BatchProjectRPS:   10,
+		BatchProjectBurst: 20,
+		BatchIPRPM:        100,
+		RateLimitTTLMin:   10,
+		RateLimitCleanupS: 60,
+	}
+	routes := collectRoutes(t, projects.Routes(nil, cfg))
 	assertHasRoutes(t, routes, []string{
 		"GET /",
 		"POST /",
@@ -90,7 +97,14 @@ func TestEventsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 }
 
 func TestRuntimeProtectedRoutes_AllAPIEndpointsRegistered(t *testing.T) {
-	routes := collectRoutes(t, runtime.Routes(nil))
+	cfg := config.Config{
+		BatchProjectRPS:   10,
+		BatchProjectBurst: 20,
+		BatchIPRPM:        100,
+		RateLimitTTLMin:   10,
+		RateLimitCleanupS: 60,
+	}
+	routes := collectRoutes(t, runtime.Routes(nil, cfg))
 	assertHasRoutes(t, routes, []string{
 		"GET /projects/{id}/runtime",
 		"PUT /projects/{id}/runtime/flags/{key}",

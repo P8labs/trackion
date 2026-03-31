@@ -37,9 +37,14 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 	jobCtx, cancel := context.WithTimeout(ctx, time.Duration(j.cfg.CleanupTimeoutSec)*time.Second)
 	defer cancel()
 
-	renewedSubscriptions, err := j.renewFreeSubscriptions(jobCtx)
+	renewedSubscriptions, resetUsage, err := j.renewFreeSubscriptions(jobCtx)
 	if err != nil {
 		return fmt.Errorf("renew free subscriptions: %w", err)
+	}
+
+	updatedProjectCounts, err := j.updateProjectCounts(jobCtx)
+	if err != nil {
+		return fmt.Errorf("update project counts: %w", err)
 	}
 
 	_, err = j.cleanupExpiredSessions(jobCtx)
@@ -47,8 +52,7 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 		return fmt.Errorf("cleanup sessions: %w", err)
 	}
 
-	eventCutoff := time.Now().AddDate(0, 0, -j.cfg.EventRetentionDays)
-	deletedEvents, err := j.deleteOldEvents(jobCtx, eventCutoff)
+	deletedEvents, err := j.deleteOldEventsByProject(jobCtx)
 	if err != nil {
 		return fmt.Errorf("cleanup events: %w", err)
 	}
@@ -61,28 +65,33 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 
 	j.log.Info("maintenance cleanup summary",
 		"renewed_subscriptions", renewedSubscriptions,
+		"reset_usage_count", resetUsage,
+		"updated_project_counts", updatedProjectCounts,
 		"deleted_events", deletedEvents,
 		"deleted_projects", deletedProjects,
-		"event_cutoff", eventCutoff.Format(time.RFC3339),
 		"project_cutoff", projectCutoff.Format(time.RFC3339),
 	)
 
 	return nil
 }
 
-func (j *MaintenanceJob) renewFreeSubscriptions(ctx context.Context) (int64, error) {
-	res := j.db.WithContext(ctx).
+func (j *MaintenanceJob) renewFreeSubscriptions(ctx context.Context) (int64, int64, error) {
+	// Reset usage counts for subscriptions starting a new period
+	resetUsageRes := j.db.WithContext(ctx).
 		Model(&db.Subscription{}).
 		Where("status = ?", "active").
-		Where("plan = ?", "free").
 		Where("current_period_end IS NULL OR current_period_end <= NOW()").
-		Update("current_period_end", gorm.Expr("date_trunc('month', now()) + INTERVAL '1 month'"))
+		Updates(map[string]interface{}{
+			"current_period_end":     gorm.Expr("date_trunc('month', now()) + INTERVAL '1 month'"),
+			"events_used_this_month": 0,
+			"last_usage_reset":       gorm.Expr("NOW()"),
+		})
 
-	if res.Error != nil {
-		return 0, res.Error
+	if resetUsageRes.Error != nil {
+		return 0, 0, resetUsageRes.Error
 	}
 
-	return res.RowsAffected, nil
+	return resetUsageRes.RowsAffected, resetUsageRes.RowsAffected, nil
 }
 
 func (j *MaintenanceJob) hardDeleteProjects(ctx context.Context, cutoff time.Time) (int64, error) {
@@ -92,6 +101,45 @@ func (j *MaintenanceJob) hardDeleteProjects(ctx context.Context, cutoff time.Tim
 		Where("deleted_at < ?", cutoff).
 		Delete(&db.Project{})
 
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) updateProjectCounts(ctx context.Context) (int64, error) {
+	query := `
+		UPDATE subscriptions 
+		SET projects_used = (
+			SELECT COUNT(*) 
+			FROM projects 
+			WHERE projects.user_id = subscriptions.user_id 
+			AND projects.deleted_at IS NULL
+		)
+		WHERE status = 'active'
+	`
+
+	res := j.db.WithContext(ctx).Exec(query)
+	if res.Error != nil {
+		return 0, res.Error
+	}
+
+	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) deleteOldEventsByProject(ctx context.Context) (int64, error) {
+	query := `
+		DELETE FROM events 
+		WHERE id IN (
+			SELECT e.id 
+			FROM events e
+			JOIN projects p ON e.project_id = p.id
+			WHERE e.created_at < (NOW() - INTERVAL '1 day' * p.event_retention_days)
+		)
+	`
+
+	res := j.db.WithContext(ctx).Exec(query)
 	if res.Error != nil {
 		return 0, res.Error
 	}

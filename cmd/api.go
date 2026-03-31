@@ -8,6 +8,7 @@ import (
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/features/auth"
+	"trackion/internal/features/billing"
 	"trackion/internal/features/dashboard"
 	"trackion/internal/features/errortracking"
 	"trackion/internal/features/events"
@@ -53,11 +54,12 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(app.db))
-		r.Mount("/runtime", runtime.Routes(app.db))
+		r.Mount("/projects", projects.Routes(app.db, *app.config))
+		r.Mount("/runtime", runtime.Routes(app.db, *app.config))
 		r.Mount("/analytics", dashboard.Routes(app.db))
 		r.Mount("/errors", errortracking.Routes(app.db))
 		r.Mount("/settings", settings.Routes(app.db, *app.config))
+		r.Mount("/billing", billing.Routes(app.db, *app.config))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

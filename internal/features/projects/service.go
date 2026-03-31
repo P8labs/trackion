@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"strings"
+	"trackion/internal/config"
 	"trackion/internal/core/domain"
 	"trackion/internal/db"
 	"trackion/internal/features/auth"
+	"trackion/internal/features/billing"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -58,11 +61,17 @@ type Service interface {
 }
 
 type svc struct {
-	db *gorm.DB
+	db      *gorm.DB
+	billing billing.Service
+	config  config.Config
 }
 
-func NewService(db *gorm.DB) Service {
-	return &svc{db: db}
+func NewService(db *gorm.DB, cfg config.Config) Service {
+	return &svc{
+		db:      db,
+		billing: billing.NewService(db),
+		config:  cfg,
+	}
 }
 
 var (
@@ -75,9 +84,16 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 		return "", errors.New("project name must be at least 2 characters")
 	}
 
+	userId := ctx.Value(auth.UserIdContextKey).(string)
+
+	if s.config.IsSaaS() {
+		if err := s.billing.CheckProjectLimit(ctx, uuid.MustParse(userId)); err != nil {
+			return "", err
+		}
+	}
+
 	id := uuid.New()
 	apiKey := uuid.NewSHA1(id, id.NodeID()).String()
-	userId := ctx.Value(auth.UserIdContextKey).(string)
 
 	autoPageview := true
 	trackTimeSpent := false
@@ -114,18 +130,26 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	}
 
 	project := db.Project{
-		Name:       name,
-		UserID:     uuid.MustParse(userId),
-		ApiKey:     apiKey,
-		Status:     "active",
-		Properties: props,
-		Domains:    mustJSON(domains),
+		Name:               name,
+		UserID:             uuid.MustParse(userId),
+		ApiKey:             apiKey,
+		Status:             "active",
+		Properties:         props,
+		Domains:            mustJSON(domains),
+		EventRetentionDays: 30,
 	}
 
 	err = gorm.G[db.Project](s.db).Create(ctx, &project)
-
 	if err != nil {
 		return "", errors.New("Unable to create project. Try again")
+	}
+
+	if s.config.IsSaaS() {
+		userUUID := uuid.MustParse(userId)
+		if err := s.billing.IncrementProjectUsage(ctx, userUUID); err != nil {
+			log.Printf("Failed to increment project usage for user %s: %v", userUUID, err)
+			// Don't fail the request if usage tracking fails
+		}
 	}
 
 	return project.ID.String(), nil
@@ -204,11 +228,24 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 }
 
 func (s *svc) DeleteProject(ctx context.Context, projectId string) error {
+	var project db.Project
+	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+		return errors.New("Unable to find project")
+	}
+
 	_, err := gorm.G[db.Project](s.db).
 		Where("id = ?", projectId).Delete(ctx)
 	if err != nil {
 		return errors.New("Unable to delete project")
 	}
+
+	if s.config.IsSaaS() {
+		if err := s.billing.DecrementProjectUsage(ctx, project.UserID); err != nil {
+			log.Printf("Failed to decrement project usage for user %s: %v", project.UserID, err)
+			// Don't fail the request if usage tracking fails
+		}
+	}
+
 	return nil
 }
 

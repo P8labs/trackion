@@ -32,6 +32,18 @@ type Subscription struct {
 	Status            string    `gorm:"column:status;default:active" json:"status"`
 	MonthlyEventLimit int       `gorm:"column:monthly_event_limit;default:10000" json:"monthly_event_limit"`
 	CurrentPeriodEnd  time.Time `gorm:"column:current_period_end" json:"current_period_end"`
+	
+	// Usage tracking fields for new pricing structure
+	EventsUsedThisMonth int       `gorm:"column:events_used_this_month;default:0" json:"events_used_this_month"`
+	ProjectsUsed        int       `gorm:"column:projects_used;default:0" json:"projects_used"`
+	LastUsageReset      time.Time `gorm:"column:last_usage_reset;default:CURRENT_TIMESTAMP" json:"last_usage_reset"`
+	
+	// Plan limits - stored per subscription for flexibility
+	MaxProjects       int `gorm:"column:max_projects;default:3" json:"max_projects"`
+	MaxConfigKeys     int `gorm:"column:max_config_keys;default:10" json:"max_config_keys"` // -1 for unlimited
+	ErrorRetentionDays int `gorm:"column:error_retention_days;default:3" json:"error_retention_days"`
+	SupportsRollout   bool `gorm:"column:supports_rollout;default:false" json:"supports_rollout"`
+	
 	CreatedAt         time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt         time.Time `gorm:"column:updated_at" json:"updated_at"`
 
@@ -60,6 +72,10 @@ type Project struct {
 	ApiKey     string         `gorm:"column:api_key;type:text;not null;uniqueIndex" json:"api_key"`
 	Properties datatypes.JSON `gorm:"column:properties;type:jsonb;not null;default:'{}'" json:"properties"`
 	Domains    datatypes.JSON `gorm:"column:domains;type:jsonb;not null;default:'[]'" json:"domains"`
+	
+	// Retention settings
+	EventRetentionDays int `gorm:"column:event_retention_days;default:30" json:"event_retention_days"`
+	
 	CreatedAt  time.Time      `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt  time.Time      `gorm:"column:updated_at" json:"updated_at"`
 	DeletedAt  gorm.DeletedAt `gorm:"column:deleted_at;index" json:"deleted_at,omitempty"`

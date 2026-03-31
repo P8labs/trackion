@@ -13,7 +13,7 @@ func PublicRoutes(db *gorm.DB, cfg config.Config) *chi.Mux {
 
 	eventsMw := events.NewMiddlewareWithConfig(db, cfg)
 
-	service := NewService(db)
+	service := NewService(db, cfg)
 	handler := NewHandler(service)
 
 	r.With(eventsMw.ProjectIDValidation).Get("/runtime", handler.GetRuntime)
@@ -21,9 +21,9 @@ func PublicRoutes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	return r
 }
 
-func Routes(db *gorm.DB) *chi.Mux {
+func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
-	service := NewService(db)
+	service := NewService(db, cfg)
 	handler := NewHandler(service)
 
 	r.Get("/projects/{id}/runtime", handler.GetProjectRuntime)

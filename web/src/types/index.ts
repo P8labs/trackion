@@ -199,3 +199,26 @@ export interface ErrorStats {
   total_errors: number;
   time_range: string;
 }
+
+// Billing and Usage Types
+export interface UsagePlan {
+  events_used: number;
+  events_limit: number;
+  projects_used: number;
+  projects_limit: number;
+  plan: "free" | "pro";
+}
+
+export interface PlanLimits {
+  monthly_events: number;
+  max_projects: number;
+  max_config_keys: number;
+  error_retention: number; // hours
+  supports_rollout: boolean;
+}
+
+export interface PlanInfo {
+  plan: "free" | "pro";
+  status: string;
+  limits: PlanLimits;
+}

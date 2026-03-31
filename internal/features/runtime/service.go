@@ -10,8 +10,10 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"trackion/internal/config"
 	"trackion/internal/db"
 	"trackion/internal/features/auth"
+	"trackion/internal/features/billing"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -105,14 +107,18 @@ type Service interface {
 }
 
 type service struct {
-	db    *gorm.DB
-	cache *runtimeCache
+	db      *gorm.DB
+	cache   *runtimeCache
+	billing billing.Service
+	config  config.Config
 }
 
-func NewService(db *gorm.DB) Service {
+func NewService(db *gorm.DB, cfg config.Config) Service {
 	return &service{
-		db:    db,
-		cache: newRuntimeCache(30 * time.Second),
+		db:      db,
+		cache:   newRuntimeCache(30 * time.Second),
+		billing: billing.NewService(db),
+		config:  cfg,
 	}
 }
 
@@ -190,6 +196,12 @@ func (s *service) UpsertFlag(ctx context.Context, projectID, key string, params 
 		return errors.New("flag key is required")
 	}
 
+	if s.config.IsSaaS() && params.RolloutPercentage > 0 && params.RolloutPercentage < 100 {
+		if err := s.billing.CheckFeatureFlagRollout(ctx); err != nil {
+			return err
+		}
+	}
+
 	if params.RolloutPercentage < 0 || params.RolloutPercentage > 100 {
 		return errors.New("rollout_percentage must be between 0 and 100")
 	}
@@ -247,6 +259,27 @@ func (s *service) UpsertConfig(ctx context.Context, projectID, key string, param
 	key = strings.TrimSpace(key)
 	if key == "" {
 		return errors.New("config key is required")
+	}
+
+	if s.config.IsSaaS() {
+		var configCount int64
+		countErr := s.db.WithContext(ctx).Model(&db.Config{}).Where("project_id = ?", projectID).Count(&configCount).Error
+		if countErr != nil {
+			return countErr
+		}
+
+		var existingConfig db.Config
+		existingErr := s.db.WithContext(ctx).Where("project_id = ? AND key = ?", projectID, key).First(&existingConfig).Error
+		if existingErr != nil && !errors.Is(existingErr, gorm.ErrRecordNotFound) {
+			return existingErr
+		}
+
+		if errors.Is(existingErr, gorm.ErrRecordNotFound) {
+			projectUUID := uuid.MustParse(projectID)
+			if err := s.billing.CheckConfigLimit(ctx, projectUUID, int(configCount)); err != nil {
+				return err
+			}
+		}
 	}
 
 	value := strings.TrimSpace(string(params.Value))

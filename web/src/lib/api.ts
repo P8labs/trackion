@@ -13,6 +13,8 @@ import type {
   GroupedError,
   ErrorOccurrence,
   ErrorStats,
+  UsagePlan,
+  PlanInfo,
 } from "../types";
 
 const apiCall = async <T>(
@@ -428,6 +430,45 @@ export const getErrorStats = async (
   return apiCall<ErrorStats>(
     `/api/errors/stats?project_id=${projectId}&time_range=${timeRange}`,
     {},
+    serverUrl,
+    authToken,
+  );
+};
+
+// Billing API functions
+export const getUsage = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<UsagePlan> => {
+  return apiCall<UsagePlan>(
+    `/api/billing/usage`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getPlanInfo = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<PlanInfo> => {
+  return apiCall<PlanInfo>(
+    `/api/billing/plan`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const upgradeToPro = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<{ message: string }> => {
+  return apiCall<{ message: string }>(
+    `/api/billing/upgrade`,
+    {
+      method: "POST",
+    },
     serverUrl,
     authToken,
   );
