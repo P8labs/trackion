@@ -1,332 +1,110 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useMutation } from "@tanstack/react-query";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Controller, useForm } from "react-hook-form";
-import { z } from "zod";
-import {
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Server,
-  Lock,
-  Loader2,
-  ShieldCheck,
-  LineChart,
-  Cloud,
-} from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { useStore } from "@/store";
-import {
-  loginWithToken,
-  getGithubLoginUrl,
-  getGoogleLoginUrl,
-} from "@/lib/api";
+import { getGithubLoginUrl, getGoogleLoginUrl } from "@/lib/api";
 import { flags } from "@/lib/flags";
-import { SERVER_URL } from "@/lib/constants";
 import { Icons } from "@/lib/icons";
-
-const authSchema = z.object({
-  serverUrl: z.url("Enter a valid server URL."),
-  adminToken: z.string().min(1, "Admin token is required."),
-});
-
-type AuthFormValues = z.infer<typeof authSchema>;
+import SelfhostForm from "./components/SelfhostForm";
+import { FullLine } from "@/components/Line";
+import PlusDecor from "@/components/PlusDecor";
 
 export function AuthPage() {
-  const navigate = useNavigate();
-  const { setAuth } = useStore();
-  const [showSelfHostInputs, setShowSelfHostInputs] = useState(false);
-
-  const showGithubButton = flags.enableGithubLogin;
-  const showGoogleButton = flags.enableGoogleLogin;
-  const showOAuthSection = showGithubButton || showGoogleButton;
-
-  const form = useForm<AuthFormValues>({
-    resolver: zodResolver(authSchema),
-    defaultValues: {
-      serverUrl: SERVER_URL,
-      adminToken: "",
-    },
-  });
-
-  const loginMutation = useMutation({
-    mutationFn: async ({
-      serverUrl,
-      adminToken,
-    }: Pick<AuthFormValues, "serverUrl" | "adminToken">) => {
-      const result = await loginWithToken(adminToken, serverUrl);
-      return { result, serverUrl };
-    },
-    onSuccess: ({ result, serverUrl }) => {
-      setAuth(result.token, serverUrl, result.user);
-      navigate("/dashboard");
-    },
-  });
-
-  const greeting = useMemo(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  }, []);
-
-  const handleTokenLogin = (values: AuthFormValues) => {
-    loginMutation.mutate({
-      serverUrl: values.serverUrl.trim(),
-      adminToken: values.adminToken.trim(),
-    });
-  };
+  const showOAuthSection = flags.isSaaS;
 
   const handleGithubLogin = () => {
-    const githubLoginUrl = getGithubLoginUrl(
-      form.getValues("serverUrl").trim(),
-    );
+    const githubLoginUrl = getGithubLoginUrl();
     window.location.href = githubLoginUrl;
   };
 
   const handleGoogleLogin = () => {
-    const googleLoginUrl = getGoogleLoginUrl(
-      form.getValues("serverUrl").trim(),
-    );
+    const googleLoginUrl = getGoogleLoginUrl();
     window.location.href = googleLoginUrl;
   };
 
   return (
-    <div className="flex items-center justify-center relative min-h-screen overflow-hidden bg-background px-4 py-10 md:px-8">
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-28 top-10 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute -right-28 bottom-0 h-80 w-80 rounded-full bg-chart-2/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,var(--accent-soft),transparent_55%),radial-gradient(circle_at_80%_100%,var(--accent-soft),transparent_50%)] opacity-30 dark:opacity-50" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-size-[80px_80px]" />
+        <div className="absolute left-1/2 top-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
       </div>
-
-      <div className="relative mx-auto grid w-full max-w-6xl gap-6 min-[900px]:grid-cols-[1.2fr_1fr] min-[900px]:items-center">
-        <div className="hidden min-[850px]:block rounded-2xl border border-border/70 bg-card/70 p-8 backdrop-blur-sm">
-          <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-border/80 bg-accent/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            <Sparkles className="size-3.5" />
-            {greeting}
-          </p>
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground md:text-5xl">
-            Continue where your insights left off
-          </h1>
-          <p className="mt-4 max-w-lg text-base text-muted-foreground md:text-lg">
-            Trackion keeps your telemetry crisp and actionable. Sign in to
-            inspect sessions, monitor event flow, and validate launches faster.
-          </p>
-
-          <div className="mt-7 grid gap-3 text-sm">
-            <div className="flex items-center gap-3 rounded-lg border border-border/80 bg-accent/65 px-4 py-3">
-              <LineChart className="size-4 text-primary" />
-              <p>Real-time event intelligence across your projects</p>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-border/80 bg-accent/65 px-4 py-3">
-              <ShieldCheck className="size-4 text-primary" />
-              <p>Secure workspace sessions with explicit consent controls</p>
-            </div>
-            <div className="flex items-center gap-3 rounded-lg border border-border/80 bg-accent/65 px-4 py-3">
-              <Cloud className="size-4 text-primary" />
-              <p>Cloud OAuth and self-host token access in one place</p>
-            </div>
-          </div>
-        </div>
-
-        <Card className="border-border/80 bg-card/85 shadow-xl backdrop-blur-sm">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-semibold tracking-tight">
-              Continue to Dashboard
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Use SaaS OAuth or expand self-host token login.
+      <section className="relative z-10 mx-auto w-full max-w-3xl border border-border/60 bg-background/95 backdrop-blur-[2px] dark:bg-background/80">
+        <FullLine direction="vertical" />
+        <PlusDecor position="top" />
+        <FullLine />
+        <div className="relative overflow-hidden px-6 py-10 lg:px-8 lg:py-12">
+          <div className="relative">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+              Unified authentication
             </p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {showOAuthSection && (
-              <div className="space-y-3">
-                {showGoogleButton && (
+            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+              Continue to Dashboard
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Choose a provider or expand self-host credentials in the same
+              system flow.
+            </p>
+
+            <div className="mt-7 border border-border/60">
+              {showOAuthSection && (
+                <div className="space-y-3 border-b border-border/60 p-4">
+                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                    Managed OAuth
+                  </p>
                   <Button
                     onClick={handleGoogleLogin}
-                    variant="default"
-                    className="w-full cursor-pointer py-6 text-base"
-                    disabled={loginMutation.isPending}
+                    variant="outline"
+                    className="h-11 w-full cursor-pointer justify-start gap-2 rounded-md border-border/60 bg-background px-3.5 text-sm font-medium transition hover:bg-muted/30 dark:bg-muted/20 dark:hover:bg-muted/35"
                     type="button"
                   >
                     <Icons.google className="size-4" />
-                    Continue With Google
+                    Continue with Google
                   </Button>
-                )}
 
-                {showGithubButton && (
                   <Button
                     onClick={handleGithubLogin}
                     variant="outline"
-                    className="w-full cursor-pointer py-6 text-base"
-                    disabled={loginMutation.isPending}
+                    className="h-11 w-full cursor-pointer justify-start gap-2 rounded-md border-border/60 bg-background px-3.5 text-sm font-medium transition hover:bg-muted/30 dark:bg-muted/20 dark:hover:bg-muted/35"
                     type="button"
                   >
-                    <Icons.github />
-                    Continue With GitHub
+                    <Icons.github className="size-4" />
+                    Continue with GitHub
                   </Button>
-                )}
-              </div>
-            )}
-
-            {showOAuthSection && (
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
                 </div>
-                <div className="relative flex justify-center text-[11px] uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
-                    Self-host token login
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="rounded-xl border border-border/80 bg-accent/40 p-4">
-              <button
-                type="button"
-                onClick={() => setShowSelfHostInputs((prev) => !prev)}
-                className="flex w-full cursor-pointer items-center justify-between text-left"
-              >
-                <div>
-                  <p className="text-sm font-semibold">Self-hosted login</p>
-                  <p className="text-xs text-muted-foreground">
-                    {showSelfHostInputs
-                      ? "Hide manual server and admin token fields"
-                      : "Expand to connect with server URL and admin token"}
-                  </p>
-                </div>
-                {showSelfHostInputs ? (
-                  <ChevronUp className="size-4 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="size-4 text-muted-foreground" />
-                )}
-              </button>
-
-              {showSelfHostInputs && (
-                <form
-                  onSubmit={form.handleSubmit(handleTokenLogin)}
-                  className="mt-4 space-y-4"
-                  id="login-form"
-                >
-                  <FieldGroup>
-                    <Controller
-                      name="serverUrl"
-                      disabled={loginMutation.isPending}
-                      control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="server-url">
-                            Server URL
-                          </FieldLabel>
-                          <div className="relative">
-                            <Server className="absolute left-3 top-2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              id="server-url"
-                              aria-invalid={fieldState.invalid}
-                              type="url"
-                              className="pl-10"
-                              placeholder="http://localhost:8000"
-                            />
-                          </div>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-
-                    <Controller
-                      name="adminToken"
-                      control={form.control}
-                      disabled={loginMutation.isPending}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel htmlFor="admin-token">
-                            Admin Token
-                          </FieldLabel>
-                          <div className="relative">
-                            <Lock className="absolute left-3 top-2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                              {...field}
-                              id="admin-token"
-                              aria-invalid={fieldState.invalid}
-                              className="pl-10"
-                              placeholder="Enter your admin token"
-                            />
-                          </div>
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
-                        </Field>
-                      )}
-                    />
-                  </FieldGroup>
-
-                  {loginMutation.isError && (
-                    <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-destructive">
-                      <p className="text-sm">
-                        {loginMutation.error instanceof Error
-                          ? loginMutation.error.message
-                          : "Login failed"}
-                      </p>
-                    </div>
-                  )}
-
-                  <Button
-                    type="submit"
-                    disabled={loginMutation.isPending}
-                    className="w-full cursor-pointer"
-                  >
-                    {loginMutation.isPending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Logging in...
-                      </>
-                    ) : (
-                      "Login with Admin Token"
-                    )}
-                  </Button>
-                </form>
               )}
+
+              <div className="p-4">
+                <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  Self-host override
+                </p>
+                <SelfhostForm />
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-center text-xs text-muted-foreground">
+            <div className="mt-5 space-y-1 text-xs text-muted-foreground">
+              <p>
                 By logging in, you agree to our{" "}
                 <Link
                   to="/terms"
-                  className="text-primary underline underline-offset-4"
+                  className="text-foreground underline underline-offset-4"
                 >
                   Terms
                 </Link>
                 <span> and </span>
                 <Link
                   to="/privacy"
-                  className="text-primary underline underline-offset-4"
+                  className="text-foreground underline underline-offset-4"
                 >
                   Privacy Policy
                 </Link>
                 .
               </p>
-              <p className="text-center text-xs text-muted-foreground">
-                Need help signing in? For self-host mode, use your admin token.
-              </p>
+              <p>For self-host mode, use your admin token and server URL.</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </div>
+        <FullLine />
+        <PlusDecor />
+      </section>
     </div>
   );
 }

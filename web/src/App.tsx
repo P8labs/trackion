@@ -11,8 +11,8 @@ import { useStore } from "./store";
 import { Layout } from "./components/Layout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { LoadingSpinner } from "./components/LoadingSpinner";
 import { queryClient } from "./lib/queryClient";
+import Loader from "./Loader";
 
 const AuthPage = lazy(() =>
   import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
@@ -108,13 +108,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
             <RouteMiddleware>
-              <Suspense
-                fallback={
-                  <div className="min-h-screen flex items-center justify-center">
-                    <LoadingSpinner size="lg" />
-                  </div>
-                }
-              >
+              <Suspense fallback={<Loader />}>
                 <Routes>
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/about" element={<AboutPage />} />

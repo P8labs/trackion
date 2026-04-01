@@ -16,6 +16,7 @@ import type {
   UsagePlan,
   PlanInfo,
 } from "../types";
+import { SERVER_URL } from "./constants";
 
 const apiCall = async <T>(
   endpoint: string,
@@ -64,11 +65,11 @@ export const loginWithToken = async (
   );
 };
 
-export const getGithubLoginUrl = (serverUrl: string): string => {
+export const getGithubLoginUrl = (serverUrl = SERVER_URL): string => {
   return `${serverUrl}/auth/login/github?client=web`;
 };
 
-export const getGoogleLoginUrl = (serverUrl: string): string => {
+export const getGoogleLoginUrl = (serverUrl = SERVER_URL): string => {
   return `${serverUrl}/auth/login/google?client=web`;
 };
 
@@ -440,24 +441,14 @@ export const getUsage = async (
   serverUrl: string,
   authToken: string,
 ): Promise<UsagePlan> => {
-  return apiCall<UsagePlan>(
-    `/api/billing/usage`,
-    {},
-    serverUrl,
-    authToken,
-  );
+  return apiCall<UsagePlan>(`/api/billing/usage`, {}, serverUrl, authToken);
 };
 
 export const getPlanInfo = async (
   serverUrl: string,
   authToken: string,
 ): Promise<PlanInfo> => {
-  return apiCall<PlanInfo>(
-    `/api/billing/plan`,
-    {},
-    serverUrl,
-    authToken,
-  );
+  return apiCall<PlanInfo>(`/api/billing/plan`, {}, serverUrl, authToken);
 };
 
 export const upgradeToPro = async (
