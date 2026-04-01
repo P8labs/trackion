@@ -20,6 +20,8 @@ import {
   getRecentEventsFormatted,
   getOnlineUsers,
   getCountryData,
+  getCountryMapData,
+  getTrafficHeatmap,
   getUsage,
   getPlanInfo,
   upgradeToPro,
@@ -44,6 +46,8 @@ export const queryKeys = {
     ["recentEventsFormatted", projectId, limit] as const,
   onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
   countryData: (projectId: string) => ["countryData", projectId] as const,
+  countryMapData: (projectId: string) => ["countryMapData", projectId] as const,
+  trafficHeatmap: (projectId: string) => ["trafficHeatmap", projectId] as const,
   usage: ["usage"] as const,
   planInfo: ["planInfo"] as const,
   user: ["current-user"] as const,
@@ -407,6 +411,28 @@ export function useCountryData(projectId: string) {
   return useQuery({
     queryKey: queryKeys.countryData(projectId),
     queryFn: () => getCountryData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCountryMapData(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.countryMapData(projectId),
+    queryFn: () => getCountryMapData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useTrafficHeatmap(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.trafficHeatmap(projectId),
+    queryFn: () => getTrafficHeatmap(projectId, serverUrl, authToken!),
     enabled: !!authToken && !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

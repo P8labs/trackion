@@ -157,3 +157,29 @@ func (h *handler) GetCountryData(w http.ResponseWriter, r *http.Request) {
 
 	res.Success(w, data, "Country data fetched successfully.")
 }
+
+func (h *handler) GetCountryMapData(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	data, err := h.service.GetCountryMapData(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Country map data fetched successfully.")
+}
+
+func (h *handler) GetTrafficHeatmap(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	data, err := h.service.GetTrafficHeatmap(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Traffic heatmap fetched successfully.")
+}

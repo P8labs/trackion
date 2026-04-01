@@ -213,7 +213,6 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
             px-1.5 py-0.5 rounded
             truncate
             transition
-
             ${
               isLast
                 ? "text-foreground cursor-default"
@@ -221,7 +220,7 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
             }
           `}
             >
-              {getLabel(segment)}
+              {getLabel(segment).normalize()}
             </button>
 
             {!isLast && (

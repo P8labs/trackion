@@ -8,7 +8,7 @@ import {
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { useStore } from "./store";
-import { Layout } from "./components/Layout";
+import { ProjectDashboardLayout } from "./components/ProjectDashboardLayout";
 import { ProjectsWorkspaceLayout } from "./pages/dashboard/components/ProjectsWorkspaceLayout";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
@@ -70,7 +70,7 @@ function App() {
                     ))}
                   </Route>
 
-                  <Route element={<Layout />}>
+                  <Route element={<ProjectDashboardLayout />}>
                     {projectRoutes.map((r) => (
                       <Route key={r.path} {...r} />
                     ))}

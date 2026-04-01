@@ -1,27 +1,38 @@
-import { RefreshCw } from "lucide-react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { RefreshIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useStore } from "../../store";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import { DashboardCounts } from "../../components/dashboard/DashboardCounts";
-import { DashboardChart } from "../../components/dashboard/DashboardChart";
-import { AnalyticsBreakdown } from "../../components/dashboard/AnalyticsBreakdown";
-import { TopPages } from "../../components/dashboard/TopPages";
-import { RecentEvents } from "../../components/dashboard/RecentEvents";
 import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
-import { OverviewGeoTraffic } from "../../components/dashboard/OverviewGeoTraffic";
-import { WorldMap } from "../../components/dashboard/WorldMap";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys, useProject } from "../../hooks/useApi";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { PLine } from "@/components/Line";
+
+const DashboardCounts = lazy(() =>
+  import("../../components/dashboard/DashboardCounts").then((m) => ({
+    default: m.DashboardCounts,
+  })),
+);
+const DashboardChart = lazy(() =>
+  import("../../components/dashboard/DashboardChart").then((m) => ({
+    default: m.DashboardChart,
+  })),
+);
+const OverviewGeoTraffic = lazy(() =>
+  import("../../components/dashboard/OverviewGeoTraffic").then((m) => ({
+    default: m.OverviewGeoTraffic,
+  })),
+);
 
 export function OverviewPage() {
   const { id } = useParams<{ id: string }>();
   const { currentProject, setCurrentProject } = useStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { data: projectFromRoute } = useProject(id || "");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (!projectFromRoute || !id) {
@@ -37,13 +48,6 @@ export function OverviewPage() {
     ? projectFromRoute || (currentProject?.id === id ? currentProject : null)
     : currentProject;
 
-  const sectionParam = searchParams.get("section") || "overview";
-  const section = ["overview", "events", "breakdown", "realtime"].includes(
-    sectionParam,
-  )
-    ? sectionParam
-    : "overview";
-
   if (!activeProject) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
@@ -57,7 +61,7 @@ export function OverviewPage() {
               events, and usage insights.
             </p>
             <Button
-              onClick={() => navigate("/dashboard")}
+              onClick={() => navigate("/projects")}
               className="w-full h-11 text-base"
             >
               Go to Projects
@@ -68,103 +72,112 @@ export function OverviewPage() {
     );
   }
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.counts(activeProject.id),
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["chartData", activeProject.id],
-      exact: false,
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.deviceAnalytics(activeProject.id),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.trafficSources(activeProject.id),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.topPages(activeProject.id),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.recentEventsFormatted(activeProject.id),
-      exact: false,
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.onlineUsers(activeProject.id),
-    });
-    queryClient.invalidateQueries({
-      queryKey: queryKeys.countryData(activeProject.id),
-    });
+  const handleRefresh = async () => {
+    if (refreshing) {
+      return;
+    }
+
+    setRefreshing(true);
+
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.counts(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: ["chartData", activeProject.id],
+        exact: false,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.areaChartData(activeProject.id, "24h", ""),
+        exact: false,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.deviceAnalytics(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.trafficSources(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.topPages(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.recentEventsFormatted(activeProject.id),
+        exact: false,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.onlineUsers(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.countryData(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.countryMapData(activeProject.id),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.trafficHeatmap(activeProject.id),
+      }),
+    ]);
+
+    setRefreshing(false);
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {activeProject.name}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Real-time analytics and insights
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <OnlineUsers projectId={activeProject.id} />
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            className="h-10 px-4 gap-2 text-sm"
-          >
-            <RefreshCw className="h-5 w-5" />
-            Refresh
-          </Button>
+    <section className="max-w-6xl mx-auto relative">
+      <PLine />
+      <div className="px-4 md:px-6 py-6 border-b border-border/60 relative">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+              Overview
+            </p>
+
+            <h1 className="mt-1 text-xl font-medium tracking-tight md:text-2xl">
+              {activeProject.name}
+            </h1>
+
+            <p className="mt-1 text-sm text-muted-foreground">
+              Real-time analytics and insights
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <OnlineUsers projectId={activeProject.id} />
+
+            <Button
+              variant="ghost"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-9 gap-2 px-3 text-sm"
+            >
+              <HugeiconsIcon
+                icon={RefreshIcon}
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              />
+              {refreshing ? "Refreshing" : "Refresh"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {section === "overview" && (
-          <>
-            <DashboardCounts projectId={activeProject.id} />
-            <DashboardChart projectId={activeProject.id} />
-            <OverviewGeoTraffic projectId={activeProject.id} />
-          </>
-        )}
-
-        {section === "events" && (
-          <>
-            <DashboardCounts projectId={activeProject.id} />
-            <RecentEvents projectId={activeProject.id} />
-          </>
-        )}
-
-        {section === "breakdown" && (
-          <>
-            <AnalyticsBreakdown projectId={activeProject.id} />
-            <div className="grid gap-4 lg:grid-cols-2">
-              <WorldMap projectId={activeProject.id} />
-              <TopPages projectId={activeProject.id} />
-            </div>
-          </>
-        )}
-
-        {section === "realtime" && (
-          <>
-            <Card className="p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold">Realtime Status</h2>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Active sessions and latest event activity
-                  </p>
-                </div>
-                <OnlineUsers projectId={activeProject.id} />
-              </div>
-            </Card>
-
-            <RecentEvents projectId={activeProject.id} />
-          </>
-        )}
+      <div className="relative">
+        <Suspense fallback={<OverviewCardFallback heightClass="h-32" />}>
+          <DashboardCounts projectId={activeProject.id} />
+        </Suspense>
+        <Suspense fallback={<OverviewCardFallback heightClass="h-80" />}>
+          <DashboardChart projectId={activeProject.id} />
+        </Suspense>
+        <Suspense fallback={<OverviewCardFallback heightClass="h-[28rem]" />}>
+          <OverviewGeoTraffic projectId={activeProject.id} />
+        </Suspense>
       </div>
-    </div>
+    </section>
+  );
+}
+
+function OverviewCardFallback({ heightClass }: { heightClass: string }) {
+  return (
+    <Card className="border-border/60">
+      <div className={`w-full animate-pulse bg-muted/25 ${heightClass}`} />
+    </Card>
   );
 }

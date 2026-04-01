@@ -7,6 +7,8 @@ import type {
   AreaChartDataPoint,
   RecentEventData,
   CountryDataItem,
+  CountryMapData,
+  TrafficHeatmapData,
   UsageSummary,
   User,
   ServerHealth,
@@ -35,14 +37,10 @@ const apiCall = async <T>(
     headers,
   });
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
-
   const data = await response.json();
 
   if (!data.status) {
-    throw new Error(`API Error: ${data.message}`);
+    throw new Error(data.message);
   }
   return data.data;
 };
@@ -306,6 +304,32 @@ export const getCountryData = async (
 ): Promise<CountryDataItem[]> => {
   return apiCall(
     `/api/analytics/${projectId}/country-data`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getCountryMapData = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<CountryMapData> => {
+  return apiCall(
+    `/api/analytics/${projectId}/country-map-data`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getTrafficHeatmap = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<TrafficHeatmapData> => {
+  return apiCall(
+    `/api/analytics/${projectId}/traffic-heatmap`,
     {},
     serverUrl,
     authToken,

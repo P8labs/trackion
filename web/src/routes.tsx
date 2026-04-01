@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { Navigate } from "react-router-dom";
 
 const AuthPage = lazy(() =>
   import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
@@ -8,9 +9,24 @@ const AuthCallbackPage = lazy(() =>
     default: m.AuthCallbackPage,
   })),
 );
-const DashboardPage = lazy(() =>
+const OverviewPage = lazy(() =>
   import("./pages/dashboard/OverviewPage").then((m) => ({
     default: m.OverviewPage,
+  })),
+);
+const EventsPage = lazy(() =>
+  import("./pages/dashboard/EventsPage").then((m) => ({
+    default: m.EventsPage,
+  })),
+);
+const BreakdownPage = lazy(() =>
+  import("./pages/dashboard/BreakdownPage").then((m) => ({
+    default: m.BreakdownPage,
+  })),
+);
+const RealtimePage = lazy(() =>
+  import("./pages/dashboard/RealtimePage").then((m) => ({
+    default: m.RealtimePage,
   })),
 );
 const ProjectsPage = lazy(() =>
@@ -83,7 +99,14 @@ export const workspaceRoutes = [
 ];
 
 export const projectRoutes = [
-  { path: "/projects/:id", element: <DashboardPage /> },
+  {
+    path: "/projects/:id",
+    element: <Navigate to="overview" replace />,
+  },
+  { path: "/projects/:id/overview", element: <OverviewPage /> },
+  { path: "/projects/:id/events", element: <EventsPage /> },
+  { path: "/projects/:id/breakdown", element: <BreakdownPage /> },
+  { path: "/projects/:id/realtime", element: <RealtimePage /> },
   { path: "/projects/:id/settings", element: <ProjectDetailPage /> },
   { path: "/projects/:id/errors", element: <ErrorListPage /> },
   { path: "/projects/:id/errors/:fingerprint", element: <ErrorDetailPage /> },

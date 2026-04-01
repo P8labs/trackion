@@ -56,8 +56,11 @@ export function ProjectsWorkspaceLayout() {
             <span className="text-sm font-medium">Trackion</span>
           </div>
 
-          <nav className="flex-1 py-4">
-            <div className="px-2 space-y-1">
+          <nav className="mt-2 px-1 space-y-1 flex-1">
+            <div className="space-y-1">
+              <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
+                Dashboard
+              </p>
               <NavItem
                 to="/projects"
                 active={location.pathname === "/projects"}
@@ -156,14 +159,13 @@ function NavItem({ to, icon, label, active, onClick }: any) {
     <Link
       to={to}
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-2 px-3 py-2 text-sm transition",
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
         active
-          ? "text-foreground"
-          : "text-muted-foreground hover:text-foreground hover:bg-muted/20",
-      )}
+          ? "bg-sidebar-accent text-sidebar-accent-foreground"
+          : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground"
+      }`}
     >
-      <span className="opacity-80">{icon}</span>
+      <span>{icon}</span>
       <span>{label}</span>
     </Link>
   );

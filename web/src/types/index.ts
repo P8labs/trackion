@@ -110,6 +110,31 @@ export interface CountryDataItem {
   emoji?: string;
 }
 
+export interface CountryMapEntry {
+  name: string;
+  count: number;
+  country_code?: string;
+  emoji?: string;
+  normalized_name: string;
+}
+
+export interface CountryMapData {
+  countries: CountryMapEntry[];
+  max_count: number;
+  by_code: Record<string, CountryMapEntry>;
+  by_name: Record<string, CountryMapEntry>;
+}
+
+export interface TrafficHeatmapData {
+  day_hour: number[][];
+  month_day: number[][];
+  stats: {
+    today: number;
+    weekly_avg: number;
+    monthly_avg: number;
+  };
+}
+
 export interface UTMBreakdown {
   source: string;
   medium: string;

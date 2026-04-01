@@ -1,15 +1,10 @@
-/**
- * @deprecated
- */
-
 import { useEffect, useMemo, useState } from "react";
-import { Link, matchPath, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   PieChart,
   Radio,
-  Bug,
   Activity,
   Braces,
   SlidersHorizontal,
@@ -20,21 +15,12 @@ import type { Project } from "../types";
 import Topbar from "@/pages/dashboard/components/Topbar";
 import { cn } from "@/lib/utils";
 
-const overviewSubmenu = [
-  { name: "Overview", section: "overview", icon: LayoutDashboard },
-  { name: "Events", section: "events", icon: Activity },
-  { name: "Breakdown", section: "breakdown", icon: PieChart },
-  { name: "Realtime", section: "realtime", icon: Radio },
-];
-
-export function Layout() {
+export function ProjectDashboardLayout() {
   const location = useLocation();
+  const { id: projectId = "" } = useParams<{ id: string }>();
   const { currentProject, setCurrentProject, authToken, serverUrl } =
     useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const projectDashboardMatch = matchPath("/dashboard/:id", location.pathname);
-  const projectDashboardId = projectDashboardMatch?.params.id || "";
-  const isProjectDashboard = !!projectDashboardId;
 
   const { data: projectsData } = useQuery({
     queryKey: ["projects", serverUrl, authToken],
@@ -63,51 +49,60 @@ export function Layout() {
   }, [projectsData]);
 
   useEffect(() => {
-    if (!isProjectDashboard || !projectDashboardId || projects.length === 0) {
+    if (!projectId || projects.length === 0) {
       return;
     }
 
-    const matchedProject = projects.find(
-      (project) => project.id === projectDashboardId,
-    );
+    const matchedProject = projects.find((project) => project.id === projectId);
 
     if (matchedProject && matchedProject.id !== currentProject?.id) {
       setCurrentProject(matchedProject);
     }
-  }, [
-    currentProject?.id,
-    isProjectDashboard,
-    projectDashboardId,
-    projects,
-    setCurrentProject,
-  ]);
+  }, [currentProject?.id, projectId, projects, setCurrentProject]);
 
-  const currentSection =
-    new URLSearchParams(location.search).get("section") || "overview";
+  const analyticsLinks = useMemo(() => {
+    if (!projectId) {
+      return [];
+    }
+
+    return [
+      {
+        name: "Overview",
+        path: `/projects/${projectId}/overview`,
+        icon: LayoutDashboard,
+      },
+      { name: "Events", path: `/projects/${projectId}/events`, icon: Activity },
+      {
+        name: "Breakdown",
+        path: `/projects/${projectId}/breakdown`,
+        icon: PieChart,
+      },
+      {
+        name: "Realtime",
+        path: `/projects/${projectId}/realtime`,
+        icon: Radio,
+      },
+    ];
+  }, [projectId]);
 
   const projectLinks = useMemo(() => {
-    if (!projectDashboardId) {
+    if (!projectId) {
       return [];
     }
 
     return [
       {
         name: "Project Settings",
-        path: `/projects/${projectDashboardId}`,
+        path: `/projects/${projectId}/settings`,
         icon: SlidersHorizontal,
       },
       {
-        name: "Error Tracking",
-        path: "/errors",
-        icon: Bug,
-      },
-      {
         name: "Remote Config",
-        path: `/projects/${projectDashboardId}#remote-config`,
+        path: `/projects/${projectId}/settings#remote-config`,
         icon: Braces,
       },
     ];
-  }, [projectDashboardId]);
+  }, [projectId]);
 
   return (
     <div className="h-screen flex bg-background text-foreground">
@@ -130,15 +125,14 @@ export function Layout() {
               <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
                 Analytics
               </p>
-              {overviewSubmenu.map((item) => {
+              {analyticsLinks.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  isProjectDashboard && currentSection === item.section;
+                const isActive = location.pathname === item.path;
 
                 return (
                   <Link
-                    key={item.section}
-                    to={`/projects/${projectDashboardId}?section=${item.section}`}
+                    key={item.path}
+                    to={item.path}
                     onClick={() => setSidebarOpen(false)}
                     className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
                       isActive
@@ -159,10 +153,12 @@ export function Layout() {
               </p>
               {projectLinks.map((item) => {
                 const Icon = item.icon;
-                const isActive =
-                  location.pathname === item.path ||
-                  (item.path.includes("#remote-config") &&
-                    location.pathname === `/projects/${projectDashboardId}`);
+                const isRemoteConfig = item.path.includes("#remote-config");
+                const isSettingsPage =
+                  location.pathname === `/projects/${projectId}/settings`;
+                const isActive = isRemoteConfig
+                  ? isSettingsPage && location.hash === "#remote-config"
+                  : location.pathname === item.path;
 
                 return (
                   <Link

@@ -24,6 +24,8 @@ func newRouter(service Service) *chi.Mux {
 	r.Get("/{id}/recent-events", handler.GetRecentEventsFormatted)
 	r.Get("/{id}/online-users", handler.GetOnlineUsers)
 	r.Get("/{id}/country-data", handler.GetCountryData)
+	r.Get("/{id}/country-map-data", handler.GetCountryMapData)
+	r.Get("/{id}/traffic-heatmap", handler.GetTrafficHeatmap)
 
 	return r
 }

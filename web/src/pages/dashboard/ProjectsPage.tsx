@@ -131,7 +131,7 @@ export function ProjectsPage() {
                 key={project.id}
                 onClick={() => {
                   setCurrentProject(project);
-                  navigate(`/projects/${project.id}?section=overview`);
+                  navigate(`/projects/${project.id}/overview`);
                 }}
                 className="
                   px-4 md:px-6 py-4
