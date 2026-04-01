@@ -8,17 +8,17 @@ export interface Project {
   updated_at: string;
 }
 
-export interface UpdateProject {
-  name?: string;
-  domains?: string[];
-  settings?: ProjectSettings;
-}
-
 export interface ProjectSettings {
   auto_pageview: boolean;
   time_spent: boolean;
   campaign: boolean;
   clicks: boolean;
+}
+
+export interface UpdateProject {
+  name?: string;
+  domains?: string[];
+  settings?: ProjectSettings;
 }
 
 export interface Event {
@@ -110,6 +110,31 @@ export interface CountryDataItem {
   emoji?: string;
 }
 
+export interface CountryMapEntry {
+  name: string;
+  count: number;
+  country_code?: string;
+  emoji?: string;
+  normalized_name: string;
+}
+
+export interface CountryMapData {
+  countries: CountryMapEntry[];
+  max_count: number;
+  by_code: Record<string, CountryMapEntry>;
+  by_name: Record<string, CountryMapEntry>;
+}
+
+export interface TrafficHeatmapData {
+  day_hour: number[][];
+  month_day: number[][];
+  stats: {
+    today: number;
+    weekly_avg: number;
+    monthly_avg: number;
+  };
+}
+
 export interface UTMBreakdown {
   source: string;
   medium: string;
@@ -126,14 +151,30 @@ export interface PageBreakdown {
 export interface RecentEventData {
   id: number;
   event_name: string;
+  event_type?: string;
+  user_id?: string;
   session_id: string;
+  platform?: string;
+  device?: string;
+  os_version?: string;
+  app_version?: string;
+  browser?: string;
   page_path?: string;
+  page_title?: string;
   referrer?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
   properties?: any;
   created_at: string;
+}
+
+export interface PaginatedEventsResponse {
+  events: RecentEventData[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface UsageSummary {
@@ -202,11 +243,23 @@ export interface ErrorStats {
 
 // Billing and Usage Types
 export interface UsagePlan {
+  plan: "free" | "pro";
+  status: string;
+  current_period_end: string;
+  last_usage_reset: string;
   events_used: number;
   events_limit: number;
+  events_remaining: number;
   projects_used: number;
   projects_limit: number;
-  plan: "free" | "pro";
+  projects_remaining: number;
+  configs_used: number;
+  config_keys_limit: number;
+  config_keys_remaining: number;
+  config_unlimited: boolean;
+  feature_flags_used: number;
+  error_retention_days: number;
+  supports_rollout: boolean;
 }
 
 export interface PlanLimits {

@@ -1,5 +1,6 @@
-import { SiGithub, SiGoogle } from "@icons-pack/react-simple-icons";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
 export const Icons = {
-  github: SiGithub,
-  google: SiGoogle,
+  github: FaGithub,
+  google: FcGoogle,
 };

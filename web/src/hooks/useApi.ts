@@ -18,11 +18,15 @@ import {
   getTrafficSources,
   getTopPages,
   getRecentEventsFormatted,
+  getRecentEventsPaginated,
   getOnlineUsers,
   getCountryData,
+  getCountryMapData,
+  getTrafficHeatmap,
   getUsage,
   getPlanInfo,
   upgradeToPro,
+  getCurrentUser,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
@@ -41,13 +45,27 @@ export const queryKeys = {
   topPages: (projectId: string) => ["topPages", projectId] as const,
   recentEventsFormatted: (projectId: string, limit?: number) =>
     ["recentEventsFormatted", projectId, limit] as const,
+  recentEventsPaginated: (projectId: string, page: number, pageSize: number) =>
+    ["recentEventsPaginated", projectId, page, pageSize] as const,
   onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
   countryData: (projectId: string) => ["countryData", projectId] as const,
+  countryMapData: (projectId: string) => ["countryMapData", projectId] as const,
+  trafficHeatmap: (projectId: string) => ["trafficHeatmap", projectId] as const,
   usage: ["usage"] as const,
   planInfo: ["planInfo"] as const,
+  user: ["current-user"] as const,
 };
 
 // Custom hooks for queries
+export function useUser() {
+  const { authToken, serverUrl } = useStore();
+  return useQuery({
+    queryKey: queryKeys.user,
+    queryFn: () => getCurrentUser(serverUrl, authToken!),
+    enabled: !!authToken,
+    retry: false,
+  });
+}
 export function useProjects() {
   const { authToken, serverUrl } = useStore();
 
@@ -366,7 +384,11 @@ export function useTopPages(projectId: string) {
   });
 }
 
-export function useRecentEventsFormatted(projectId: string, limit = 50) {
+export function useRecentEventsFormatted(
+  projectId: string,
+  limit = 50,
+  refetchIntervalMs = 30 * 1000,
+) {
   const { authToken, serverUrl } = useStore();
 
   return useQuery({
@@ -374,7 +396,29 @@ export function useRecentEventsFormatted(projectId: string, limit = 50) {
     queryFn: () =>
       getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
     enabled: !!authToken && !!projectId,
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+export function useRecentEventsPaginated(
+  projectId: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.recentEventsPaginated(projectId, page, pageSize),
+    queryFn: () =>
+      getRecentEventsPaginated(
+        projectId,
+        serverUrl,
+        authToken!,
+        page,
+        pageSize,
+      ),
+    enabled: !!authToken && !!projectId,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -396,6 +440,28 @@ export function useCountryData(projectId: string) {
   return useQuery({
     queryKey: queryKeys.countryData(projectId),
     queryFn: () => getCountryData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCountryMapData(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.countryMapData(projectId),
+    queryFn: () => getCountryMapData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useTrafficHeatmap(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.trafficHeatmap(projectId),
+    queryFn: () => getTrafficHeatmap(projectId, serverUrl, authToken!),
     enabled: !!authToken && !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });

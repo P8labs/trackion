@@ -96,6 +96,22 @@ interface EventPayload {
 const DEFAULT_BATCH_SIZE = 20;
 const DEFAULT_FLUSH_INTERVAL_MS = 5000;
 const DEFAULT_RUNTIME_TTL_MS = 60_000;
+const SESSION_TTL_MS = 30 * 60 * 1000;
+const SESSION_STORAGE_KEY = "trackion.session";
+
+const EVENTS = {
+  PAGE_VIEW: "page.view",
+  PAGE_LEAVE: "page.leave",
+  TIME_SPENT: "page.time_spent",
+  CLICK: "page.click",
+  HEARTBEAT: "session.active",
+} as const;
+
+type TrackingConfig = {
+  autoPageview: boolean;
+  trackTimeSpent: boolean;
+  trackClicks: boolean;
+};
 
 function randomId(): string {
   if (
@@ -114,6 +130,45 @@ function normalizeServerUrl(serverUrl: string): string {
   }
 
   return serverUrl.replace(/\/+$/, "");
+}
+
+function getOrCreateSessionId(seed?: string): string {
+  if (seed && typeof seed === "string") {
+    return seed;
+  }
+
+  if (typeof localStorage === "undefined") {
+    return randomId();
+  }
+
+  try {
+    const raw = localStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as { id?: string; exp?: number } | null;
+      if (
+        parsed &&
+        typeof parsed.id === "string" &&
+        typeof parsed.exp === "number" &&
+        Date.now() < parsed.exp
+      ) {
+        return parsed.id;
+      }
+    }
+  } catch {
+    // Ignore malformed session cache and recreate below.
+  }
+
+  const id = randomId();
+  try {
+    localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({ id, exp: Date.now() + SESSION_TTL_MS }),
+    );
+  } catch {
+    // Ignore storage write failures.
+  }
+
+  return id;
 }
 
 function getCurrentPage(): Required<TrackionPageContext> {
@@ -171,6 +226,7 @@ async function postBatch(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
+      "X-Project-Key": apiKey,
     },
     body: JSON.stringify(payload),
     keepalive: true,
@@ -197,18 +253,26 @@ export class TrackionClient {
   private queue: EventPayload[] = [];
   private sessionId: string;
   private timer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private started = false;
   private flushing = false;
+  private pageStartedAt = Date.now();
+  private lastLeaveAt = 0;
+  private lastHeartbeatAt = 0;
 
   private runtime: RuntimePayload = {
     flags: {},
     config: {},
   };
+  private scriptConfig: Partial<{
+    auto_pageview: boolean;
+    track_time_spent: boolean;
+    track_clicks: boolean;
+  }> = {};
 
   private runtimeFetchedAt = 0;
   private runtimeListeners = new Set<RuntimeListener>();
 
-  // Error tracking state
   private errorDeduplicator = new ErrorDeduplicator(5000);
   private originalOnError: OnErrorEventHandler | null = null;
   private originalOnUnhandledRejection:
@@ -244,7 +308,7 @@ export class TrackionClient {
     this.userId =
       typeof options.userId === "string" ? options.userId.trim() : "";
 
-    this.sessionId = options.sessionId || randomId();
+    this.sessionId = getOrCreateSessionId(options.sessionId);
     this.runtimeStorageKey = this.projectId
       ? `trackion.runtime.${this.projectId}`
       : "";
@@ -299,6 +363,7 @@ export class TrackionClient {
     if (this.started) return;
     this.started = true;
 
+    this.pageStartedAt = Date.now();
     this.timer = setInterval(() => {
       this.flush().catch(() => {
         // Ignore transient network errors; events stay queued for later flush.
@@ -306,15 +371,26 @@ export class TrackionClient {
     }, this.flushIntervalMs);
 
     if (typeof window !== "undefined") {
+      this.heartbeatTimer = setInterval(() => {
+        this._sendHeartbeat();
+      }, 30_000);
+
       window.addEventListener("pagehide", this._onPageHide);
       window.addEventListener("beforeunload", this._onPageHide);
+      document.addEventListener("visibilitychange", this._onVisibilityChange);
+      document.addEventListener("click", this._onTrackedClick);
     }
 
-    if (this.autoPageview) {
+    if (this._getTrackingConfig().autoPageview) {
       this.page();
     }
 
-    void this.refreshRuntime();
+    void this.refreshRuntime().catch(() => {
+      // Runtime fetch is optional for automatic event flows.
+    });
+    void this._refreshScriptConfig().catch(() => {
+      // Script config endpoint is optional; fallback defaults still apply.
+    });
   }
 
   shutdown(): void {
@@ -323,9 +399,19 @@ export class TrackionClient {
       this.timer = null;
     }
 
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer);
+      this.heartbeatTimer = null;
+    }
+
     if (typeof window !== "undefined") {
       window.removeEventListener("pagehide", this._onPageHide);
       window.removeEventListener("beforeunload", this._onPageHide);
+      document.removeEventListener(
+        "visibilitychange",
+        this._onVisibilityChange,
+      );
+      document.removeEventListener("click", this._onTrackedClick);
 
       // Restore original error handlers
       if (this.originalOnError !== null) {
@@ -347,6 +433,17 @@ export class TrackionClient {
     }
 
     this.sessionId = sessionId;
+
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem(
+          SESSION_STORAGE_KEY,
+          JSON.stringify({ id: sessionId, exp: Date.now() + SESSION_TTL_MS }),
+        );
+      } catch {
+        // Ignore storage write failures.
+      }
+    }
   }
 
   setUserId(userId: string): void {
@@ -373,6 +470,10 @@ export class TrackionClient {
     // Merge user properties with device information
     const enrichedProperties = {
       ...deviceInfo,
+      tz:
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+          : "",
       ...properties, // User properties take precedence
     };
 
@@ -411,6 +512,10 @@ export class TrackionClient {
     // Merge user properties with device information
     const enrichedProperties = {
       ...deviceInfo,
+      tz:
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone || ""
+          : "",
       ...(data.properties || {}), // User properties take precedence
     };
 
@@ -419,7 +524,7 @@ export class TrackionClient {
 
     this._enqueue({
       project_key: this.apiKey,
-      event: "page.view",
+      event: EVENTS.PAGE_VIEW,
       session_id: this.sessionId,
       user_id: this.userId || undefined,
       user_agent: userAgent,
@@ -650,8 +755,152 @@ export class TrackionClient {
   }
 
   private _onPageHide = (): void => {
+    this._trackPageLeave();
     void this.flush({ useBeacon: true });
   };
+
+  private _onVisibilityChange = (): void => {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    if (document.visibilityState === "hidden") {
+      this._trackPageLeave();
+      void this.flush({ useBeacon: true });
+    }
+  };
+
+  private _onTrackedClick = (event: MouseEvent): void => {
+    const cfg = this._getTrackingConfig();
+    if (!cfg.trackClicks) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const el = target.closest("[data-track]") as HTMLElement | null;
+    if (!el) {
+      return;
+    }
+
+    this.track(EVENTS.CLICK, {
+      tag: el.tagName,
+      id: el.id || null,
+      text: (el.innerText || "").slice(0, 50),
+    });
+  };
+
+  private _trackPageLeave(): void {
+    const now = Date.now();
+    if (now - this.lastLeaveAt < 1000) {
+      return;
+    }
+
+    const cfg = this._getTrackingConfig();
+    if (cfg.trackTimeSpent) {
+      this.track(EVENTS.TIME_SPENT, {
+        duration_ms: now - this.pageStartedAt,
+      });
+    }
+
+    this.track(EVENTS.PAGE_LEAVE);
+
+    this.lastLeaveAt = now;
+    this.pageStartedAt = now;
+  }
+
+  private _sendHeartbeat(): void {
+    if (
+      typeof document !== "undefined" &&
+      document.visibilityState === "hidden"
+    ) {
+      return;
+    }
+
+    const now = Date.now();
+    if (now - this.lastHeartbeatAt < 25_000) {
+      return;
+    }
+
+    this.lastHeartbeatAt = now;
+    this.track(EVENTS.HEARTBEAT);
+  }
+
+  private _readBooleanConfig(keys: string[], fallback: boolean): boolean {
+    const scriptCfg = this.scriptConfig as Record<string, unknown>;
+
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(scriptCfg, key)) {
+        const value = scriptCfg[key];
+        if (typeof value === "boolean") {
+          return value;
+        }
+      }
+    }
+
+    for (const key of keys) {
+      if (Object.prototype.hasOwnProperty.call(this.runtime.config, key)) {
+        const value = this.runtime.config[key];
+        if (typeof value === "boolean") {
+          return value;
+        }
+        if (typeof value === "string") {
+          const normalized = value.toLowerCase().trim();
+          if (normalized === "true") return true;
+          if (normalized === "false") return false;
+        }
+      }
+    }
+
+    return fallback;
+  }
+
+  private _getTrackingConfig(): TrackingConfig {
+    return {
+      autoPageview:
+        this.autoPageview && this._readBooleanConfig(["auto_pageview"], true),
+      trackTimeSpent: this._readBooleanConfig(
+        ["track_time_spent", "time_spent"],
+        true,
+      ),
+      trackClicks: this._readBooleanConfig(["track_clicks", "clicks"], false),
+    };
+  }
+
+  private async _refreshScriptConfig(): Promise<void> {
+    const response = await fetch(`${this.serverUrl}/events/config`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Project-Key": this.apiKey,
+      },
+    });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = (await response.json()) as {
+      data?: {
+        auto_pageview?: boolean;
+        track_time_spent?: boolean;
+        track_clicks?: boolean;
+      };
+    };
+
+    if (!payload || !payload.data) {
+      return;
+    }
+
+    this.scriptConfig = {
+      auto_pageview: payload.data.auto_pageview,
+      track_time_spent: payload.data.track_time_spent,
+      track_clicks: payload.data.track_clicks,
+    };
+  }
 
   private _hydrateRuntimeFromStorage(): void {
     if (!this.runtimeStorageKey || typeof localStorage === "undefined") {

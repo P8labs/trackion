@@ -6,7 +6,10 @@ import type {
   ChartDataPoint,
   AreaChartDataPoint,
   RecentEventData,
+  PaginatedEventsResponse,
   CountryDataItem,
+  CountryMapData,
+  TrafficHeatmapData,
   UsageSummary,
   User,
   ServerHealth,
@@ -16,6 +19,7 @@ import type {
   UsagePlan,
   PlanInfo,
 } from "../types";
+import { SERVER_URL } from "./constants";
 
 const apiCall = async <T>(
   endpoint: string,
@@ -34,14 +38,10 @@ const apiCall = async <T>(
     headers,
   });
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.statusText}`);
-  }
-
   const data = await response.json();
 
   if (!data.status) {
-    throw new Error(`API Error: ${data.message}`);
+    throw new Error(data.message);
   }
   return data.data;
 };
@@ -64,11 +64,11 @@ export const loginWithToken = async (
   );
 };
 
-export const getGithubLoginUrl = (serverUrl: string): string => {
+export const getGithubLoginUrl = (serverUrl = SERVER_URL): string => {
   return `${serverUrl}/auth/login/github?client=web`;
 };
 
-export const getGoogleLoginUrl = (serverUrl: string): string => {
+export const getGoogleLoginUrl = (serverUrl = SERVER_URL): string => {
   return `${serverUrl}/auth/login/google?client=web`;
 };
 
@@ -272,6 +272,21 @@ export const getRecentEventsFormatted = async (
   );
 };
 
+export const getRecentEventsPaginated = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PaginatedEventsResponse> => {
+  return apiCall<PaginatedEventsResponse>(
+    `/api/analytics/${projectId}/recent-events-paginated?page=${page}&page_size=${pageSize}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
 export const getUsageSummary = async (
   serverUrl: string,
   authToken: string,
@@ -305,6 +320,32 @@ export const getCountryData = async (
 ): Promise<CountryDataItem[]> => {
   return apiCall(
     `/api/analytics/${projectId}/country-data`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getCountryMapData = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<CountryMapData> => {
+  return apiCall(
+    `/api/analytics/${projectId}/country-map-data`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getTrafficHeatmap = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<TrafficHeatmapData> => {
+  return apiCall(
+    `/api/analytics/${projectId}/traffic-heatmap`,
     {},
     serverUrl,
     authToken,
@@ -440,24 +481,14 @@ export const getUsage = async (
   serverUrl: string,
   authToken: string,
 ): Promise<UsagePlan> => {
-  return apiCall<UsagePlan>(
-    `/api/billing/usage`,
-    {},
-    serverUrl,
-    authToken,
-  );
+  return apiCall<UsagePlan>(`/api/billing/usage`, {}, serverUrl, authToken);
 };
 
 export const getPlanInfo = async (
   serverUrl: string,
   authToken: string,
 ): Promise<PlanInfo> => {
-  return apiCall<PlanInfo>(
-    `/api/billing/plan`,
-    {},
-    serverUrl,
-    authToken,
-  );
+  return apiCall<PlanInfo>(`/api/billing/plan`, {}, serverUrl, authToken);
 };
 
 export const upgradeToPro = async (

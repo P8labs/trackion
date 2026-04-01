@@ -48,7 +48,6 @@ func (h *handler) oauthLogin(w http.ResponseWriter, r *http.Request, provider st
 	q.Set("state", state)
 	q.Set("provider", provider)
 	r.URL.RawQuery = q.Encode()
-
 	gothic.BeginAuthHandler(w, r)
 }
 

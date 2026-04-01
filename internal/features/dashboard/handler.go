@@ -113,6 +113,35 @@ func (h *handler) GetRecentEventsFormatted(w http.ResponseWriter, r *http.Reques
 	res.Success(w, events, "Recent events fetched successfully.")
 }
 
+func (h *handler) GetRecentEventsPaginated(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+	pageStr := r.URL.Query().Get("page")
+	pageSizeStr := r.URL.Query().Get("page_size")
+
+	page := int32(1)
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = int32(p)
+		}
+	}
+
+	pageSize := int32(20)
+	if pageSizeStr != "" {
+		if ps, err := strconv.Atoi(pageSizeStr); err == nil && ps > 0 && ps <= 100 {
+			pageSize = int32(ps)
+		}
+	}
+
+	paginatedEvents, err := h.service.GetRecentEventsPaginated(r.Context(), projectId, page, pageSize)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, paginatedEvents, "Recent events fetched successfully.")
+}
+
 func (h *handler) GetAreaChartData(w http.ResponseWriter, r *http.Request) {
 	projectId := chi.URLParam(r, "id")
 	timeRange := r.URL.Query().Get("time_range")
@@ -156,4 +185,30 @@ func (h *handler) GetCountryData(w http.ResponseWriter, r *http.Request) {
 	}
 
 	res.Success(w, data, "Country data fetched successfully.")
+}
+
+func (h *handler) GetCountryMapData(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	data, err := h.service.GetCountryMapData(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Country map data fetched successfully.")
+}
+
+func (h *handler) GetTrafficHeatmap(w http.ResponseWriter, r *http.Request) {
+	projectId := chi.URLParam(r, "id")
+
+	data, err := h.service.GetTrafficHeatmap(r.Context(), projectId)
+	if err != nil {
+		log.Println(err)
+		res.Error(w, err.Error(), 500)
+		return
+	}
+
+	res.Success(w, data, "Traffic heatmap fetched successfully.")
 }

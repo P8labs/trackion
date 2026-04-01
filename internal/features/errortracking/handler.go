@@ -19,7 +19,6 @@ func NewHandler(service Service) *handler {
 	}
 }
 
-// ListErrors handles GET /api/errors?project_id={id}&time_range={range}
 func (h *handler) ListErrors(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("project_id")
 	if projectID == "" {
@@ -32,7 +31,6 @@ func (h *handler) ListErrors(w http.ResponseWriter, r *http.Request) {
 		timeRange = "7d" // default to 7 days
 	}
 
-	// Parse pagination
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
@@ -53,7 +51,6 @@ func (h *handler) ListErrors(w http.ResponseWriter, r *http.Request) {
 	res.Success(w, errors, "Errors fetched successfully.")
 }
 
-// GetErrorDetail handles GET /api/errors/{fingerprint}?project_id={id}
 func (h *handler) GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 	fingerprint := chi.URLParam(r, "fingerprint")
 	if fingerprint == "" {
@@ -67,7 +64,6 @@ func (h *handler) GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse pagination
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 
@@ -88,7 +84,6 @@ func (h *handler) GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 	res.Success(w, occurrences, "Error occurrences fetched successfully.")
 }
 
-// GetErrorStats handles GET /api/errors/stats?project_id={id}&time_range={range}
 func (h *handler) GetErrorStats(w http.ResponseWriter, r *http.Request) {
 	projectID := r.URL.Query().Get("project_id")
 	if projectID == "" {

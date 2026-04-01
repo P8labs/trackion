@@ -1,10 +1,27 @@
 import { cn } from "@/lib/utils";
 
-export function FullLine({ className }: { className?: string }) {
+export function FullLine({
+  className,
+  direction = "horizontal",
+}: {
+  className?: string;
+  direction?: "vertical" | "horizontal";
+}) {
+  if (direction === "vertical") {
+    return (
+      <div
+        className={cn(
+          "relative bottom-1/2 top-1/2 -my-[50vh] h-screen border translate-y-1/2 border-border/60 -z-10",
+          className,
+        )}
+      />
+    );
+  }
+
   return (
     <div
       className={cn(
-        "relative left-1/2 right-1/2 -mx-[50vw] w-screen border-b translate-y-1/2 dark:border-card",
+        "relative left-1/2 right-1/2 -mx-[50vw] max-w-screen border translate-y-1/2 border-border/60",
         className,
       )}
     />

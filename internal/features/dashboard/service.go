@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -58,6 +59,21 @@ type BreakdownItem struct {
 	Emoji       string `json:"emoji,omitempty"`
 }
 
+type CountryMapEntry struct {
+	Name           string `json:"name"`
+	Count          int64  `json:"count"`
+	CountryCode    string `json:"country_code,omitempty"`
+	Emoji          string `json:"emoji,omitempty"`
+	NormalizedName string `json:"normalized_name"`
+}
+
+type CountryMapData struct {
+	Countries []CountryMapEntry          `json:"countries"`
+	MaxCount  int64                      `json:"max_count"`
+	ByCode    map[string]CountryMapEntry `json:"by_code"`
+	ByName    map[string]CountryMapEntry `json:"by_name"`
+}
+
 type UTMBreakdown struct {
 	Source   string `json:"source"`
 	Medium   string `json:"medium"`
@@ -74,14 +90,30 @@ type PageBreakdown struct {
 type RecentEventData struct {
 	ID          int64       `json:"id"`
 	EventName   string      `json:"event_name"`
+	EventType   string      `json:"event_type,omitempty"`
+	UserID      string      `json:"user_id,omitempty"`
 	SessionID   string      `json:"session_id"`
+	Platform    string      `json:"platform,omitempty"`
+	Device      string      `json:"device,omitempty"`
+	OSVersion   string      `json:"os_version,omitempty"`
+	AppVersion  string      `json:"app_version,omitempty"`
+	Browser     string      `json:"browser,omitempty"`
 	PagePath    string      `json:"page_path,omitempty"`
+	PageTitle   string      `json:"page_title,omitempty"`
 	Referrer    string      `json:"referrer,omitempty"`
 	UTMSource   string      `json:"utm_source,omitempty"`
 	UTMMedium   string      `json:"utm_medium,omitempty"`
 	UTMCampaign string      `json:"utm_campaign,omitempty"`
 	Properties  interface{} `json:"properties,omitempty"`
 	CreatedAt   time.Time   `json:"created_at"`
+}
+
+type PaginatedEventsResponse struct {
+	Events     []RecentEventData `json:"events"`
+	Total      int64             `json:"total"`
+	Page       int32             `json:"page"`
+	PageSize   int32             `json:"page_size"`
+	TotalPages int32             `json:"total_pages"`
 }
 
 type DashboardCounts struct {
@@ -117,6 +149,18 @@ type TopPage struct {
 	AvgTimeSeconds float64 `json:"avg_time_seconds"`
 }
 
+type TrafficHeatmapStats struct {
+	Today      int64 `json:"today"`
+	WeeklyAvg  int64 `json:"weekly_avg"`
+	MonthlyAvg int64 `json:"monthly_avg"`
+}
+
+type TrafficHeatmapData struct {
+	DayHour  [][]int64           `json:"day_hour"`
+	MonthDay [][]int64           `json:"month_day"`
+	Stats    TrafficHeatmapStats `json:"stats"`
+}
+
 type Service interface {
 	GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error)
 	GetChartDataFlexible(ctx context.Context, projectId string, request ChartDataRequest) ([]ChartDataPoint, error)
@@ -125,8 +169,11 @@ type Service interface {
 	GetTrafficSources(ctx context.Context, projectId string) (*TrafficSourcesData, error)
 	GetTopPages(ctx context.Context, projectId string) ([]TopPage, error)
 	GetRecentEventsFormatted(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
+	GetRecentEventsPaginated(ctx context.Context, projectId string, page, pageSize int32) (*PaginatedEventsResponse, error)
 	GetOnlineUsers(ctx context.Context, projectId string) (int64, error)
 	GetCountryData(ctx context.Context, projectId string) ([]BreakdownItem, error)
+	GetCountryMapData(ctx context.Context, projectId string) (*CountryMapData, error)
+	GetTrafficHeatmap(ctx context.Context, projectId string) (*TrafficHeatmapData, error)
 }
 
 type svc struct {
@@ -147,6 +194,8 @@ var colorMap = map[string]string{
 var deviceColors = []string{
 	"#14b8a6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#84cc16",
 }
+
+var nonAlnumCountryName = regexp.MustCompile(`[^a-z0-9]+`)
 
 func formatTimeSpent(hours int64) string {
 	if hours == 0 {
@@ -307,7 +356,6 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 		return nil, fmt.Errorf("failed to get chart data: %w", err)
 	}
 
-	// map result
 	result := make([]ChartDataPoint, len(rows))
 	for i, r := range rows {
 		result[i] = ChartDataPoint{
@@ -618,13 +666,24 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 	projectUUID := uuid.MustParse(projectId)
 
 	var rows []struct {
-		ID         int64
-		EventName  string
-		SessionID  *string
-		PagePath   *string
-		Referrer   string
-		Properties datatypes.JSON
-		CreatedAt  time.Time
+		ID          int64
+		EventName   string
+		EventType   *string
+		UserID      *string
+		SessionID   *string
+		Platform    *string
+		Device      *string
+		OSVersion   *string
+		AppVersion  *string
+		Browser     *string
+		PagePath    *string
+		PageTitle   *string
+		Referrer    string
+		UTMSource   *string
+		UTMMedium   *string
+		UTMCampaign *string
+		Properties  datatypes.JSON
+		CreatedAt   time.Time
 	}
 
 	err := s.db.WithContext(ctx).
@@ -632,12 +691,23 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 		Select(`
 			id,
 			event_name,
+			event_type,
+			user_id,
 			session_id,
+			platform,
+			device,
+			os_version,
+			app_version,
+			browser,
 			page_path,
+			page_title,
 			CASE
 				WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
 				ELSE referrer
 			END AS referrer,
+			utm_source,
+			utm_medium,
+			utm_campaign,
 			properties,
 			created_at
 		`).
@@ -654,17 +724,140 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 
 	for i, r := range rows {
 		result[i] = RecentEventData{
-			ID:         r.ID,
-			EventName:  r.EventName,
-			SessionID:  deref(r.SessionID),
-			PagePath:   deref(r.PagePath),
-			Referrer:   r.Referrer,
-			Properties: r.Properties,
-			CreatedAt:  r.CreatedAt,
+			ID:          r.ID,
+			EventName:   r.EventName,
+			EventType:   deref(r.EventType),
+			UserID:      deref(r.UserID),
+			SessionID:   deref(r.SessionID),
+			Platform:    deref(r.Platform),
+			Device:      deref(r.Device),
+			OSVersion:   deref(r.OSVersion),
+			AppVersion:  deref(r.AppVersion),
+			Browser:     deref(r.Browser),
+			PagePath:    deref(r.PagePath),
+			PageTitle:   deref(r.PageTitle),
+			Referrer:    r.Referrer,
+			UTMSource:   deref(r.UTMSource),
+			UTMMedium:   deref(r.UTMMedium),
+			UTMCampaign: deref(r.UTMCampaign),
+			Properties:  r.Properties,
+			CreatedAt:   r.CreatedAt,
 		}
 	}
 
 	return result, nil
+}
+
+func (s *svc) GetRecentEventsPaginated(ctx context.Context, projectId string, page, pageSize int32) (*PaginatedEventsResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	projectUUID := uuid.MustParse(projectId)
+
+	var total int64
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Where("project_id = ?", projectUUID).
+		Count(&total).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to count events: %w", err)
+	}
+
+	offset := (page - 1) * pageSize
+
+	var rows []struct {
+		ID          int64
+		EventName   string
+		EventType   *string
+		UserID      *string
+		SessionID   *string
+		Platform    *string
+		Device      *string
+		OSVersion   *string
+		AppVersion  *string
+		Browser     *string
+		PagePath    *string
+		PageTitle   *string
+		Referrer    string
+		UTMSource   *string
+		UTMMedium   *string
+		UTMCampaign *string
+		Properties  datatypes.JSON
+		CreatedAt   time.Time
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			id,
+			event_name,
+			event_type,
+			user_id,
+			session_id,
+			platform,
+			device,
+			os_version,
+			app_version,
+			browser,
+			page_path,
+			page_title,
+			CASE
+				WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+				ELSE referrer
+			END AS referrer,
+			utm_source,
+			utm_medium,
+			utm_campaign,
+			properties,
+			created_at
+		`).
+		Where("project_id = ?", projectUUID).
+		Order("created_at DESC").
+		Offset(int(offset)).
+		Limit(int(pageSize)).
+		Scan(&rows).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get paginated events: %w", err)
+	}
+
+	events := make([]RecentEventData, len(rows))
+	for i, r := range rows {
+		events[i] = RecentEventData{
+			ID:          r.ID,
+			EventName:   r.EventName,
+			EventType:   deref(r.EventType),
+			UserID:      deref(r.UserID),
+			SessionID:   deref(r.SessionID),
+			Platform:    deref(r.Platform),
+			Device:      deref(r.Device),
+			OSVersion:   deref(r.OSVersion),
+			AppVersion:  deref(r.AppVersion),
+			Browser:     deref(r.Browser),
+			PagePath:    deref(r.PagePath),
+			PageTitle:   deref(r.PageTitle),
+			Referrer:    r.Referrer,
+			UTMSource:   deref(r.UTMSource),
+			UTMMedium:   deref(r.UTMMedium),
+			UTMCampaign: deref(r.UTMCampaign),
+			Properties:  r.Properties,
+			CreatedAt:   r.CreatedAt,
+		}
+	}
+
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+
+	return &PaginatedEventsResponse{
+		Events:     events,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: int32(totalPages),
+	}, nil
 }
 
 type areaRow struct {
@@ -684,8 +877,25 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 		Table("events").
 		Select(`
 			DATE_TRUNC(?, created_at)::timestamptz AS period,
-			COUNT(*) FILTER (WHERE device = 'desktop') AS desktop,
-			COUNT(*) FILTER (WHERE device = 'mobile') AS mobile
+			COUNT(*) FILTER (
+				WHERE
+					LOWER(COALESCE(NULLIF(device, ''), '')) = 'desktop'
+					OR LOWER(COALESCE(properties->>'device_type', '')) = 'desktop'
+			) AS desktop,
+			COUNT(*) FILTER (
+				WHERE
+					LOWER(COALESCE(NULLIF(device, ''), '')) IN (
+						'mobile',
+						'tablet',
+						'iphone',
+						'ipad',
+						'android phone',
+						'android tablet',
+						'windows phone',
+						'blackberry'
+					)
+					OR LOWER(COALESCE(properties->>'device_type', '')) IN ('mobile', 'tablet')
+			) AS mobile
 		`, granularity).
 		Where("project_id = ?", projectUUID).
 		Where("created_at >= ?", startTime)
@@ -774,6 +984,164 @@ func (s *svc) GetCountryData(ctx context.Context, projectId string) ([]Breakdown
 	}
 
 	return result, nil
+}
+
+func normalizeCountryKey(name string) string {
+	return strings.TrimSpace(nonAlnumCountryName.ReplaceAllString(strings.ToLower(name), " "))
+}
+
+func (s *svc) GetCountryMapData(ctx context.Context, projectId string) (*CountryMapData, error) {
+	countries, err := s.GetCountryData(ctx, projectId)
+	if err != nil {
+		return nil, err
+	}
+
+	maxCount := int64(1)
+	result := make([]CountryMapEntry, len(countries))
+	byCode := make(map[string]CountryMapEntry, len(countries))
+	byName := make(map[string]CountryMapEntry, len(countries))
+
+	for i, country := range countries {
+		entry := CountryMapEntry{
+			Name:           country.Name,
+			Count:          country.Count,
+			CountryCode:    strings.ToUpper(strings.TrimSpace(country.CountryCode)),
+			Emoji:          country.Emoji,
+			NormalizedName: normalizeCountryKey(country.Name),
+		}
+
+		if entry.Count > maxCount {
+			maxCount = entry.Count
+		}
+
+		result[i] = entry
+		if entry.CountryCode != "" {
+			byCode[entry.CountryCode] = entry
+		}
+		if entry.NormalizedName != "" {
+			byName[entry.NormalizedName] = entry
+		}
+	}
+
+	return &CountryMapData{
+		Countries: result,
+		MaxCount:  maxCount,
+		ByCode:    byCode,
+		ByName:    byName,
+	}, nil
+}
+
+func (s *svc) GetTrafficHeatmap(ctx context.Context, projectId string) (*TrafficHeatmapData, error) {
+	projectUUID := uuid.MustParse(projectId)
+
+	dayHour := make([][]int64, 7)
+	monthDay := make([][]int64, 7)
+	for i := 0; i < 7; i++ {
+		dayHour[i] = make([]int64, 24)
+		monthDay[i] = make([]int64, 12)
+	}
+
+	var dayHourRows []struct {
+		Day   int
+		Hour  int
+		Count int64
+	}
+
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			EXTRACT(DOW FROM created_at)::int AS day,
+			EXTRACT(HOUR FROM created_at)::int AS hour,
+			COUNT(*) AS count
+		`).
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= NOW() - INTERVAL '30 days'").
+		Group("day, hour").
+		Order("day ASC, hour ASC").
+		Scan(&dayHourRows).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build day/hour heatmap: %w", err)
+	}
+
+	for _, row := range dayHourRows {
+		if row.Day < 0 || row.Day > 6 || row.Hour < 0 || row.Hour > 23 {
+			continue
+		}
+		dayHour[row.Day][row.Hour] = row.Count
+	}
+
+	var monthDayRows []struct {
+		Day   int
+		Month int
+		Count int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			EXTRACT(DOW FROM created_at)::int AS day,
+			EXTRACT(MONTH FROM created_at)::int AS month,
+			COUNT(*) AS count
+		`).
+		Where("project_id = ?", projectUUID).
+		Where("created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '11 months'").
+		Group("day, month").
+		Order("day ASC, month ASC").
+		Scan(&monthDayRows).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build month/day heatmap: %w", err)
+	}
+
+	for _, row := range monthDayRows {
+		if row.Day < 0 || row.Day > 6 {
+			continue
+		}
+
+		monthIndex := row.Month - 1
+		if monthIndex < 0 || monthIndex > 11 {
+			continue
+		}
+
+		monthDay[row.Day][monthIndex] = row.Count
+	}
+
+	var statRow struct {
+		TodayCount    int64
+		LastWeekCount int64
+		LastYearCount int64
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			COUNT(*) FILTER (
+				WHERE created_at >= DATE_TRUNC('day', NOW())
+			) AS today_count,
+			COUNT(*) FILTER (
+				WHERE created_at >= NOW() - INTERVAL '7 days'
+			) AS last_week_count,
+			COUNT(*) FILTER (
+				WHERE created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '11 months'
+			) AS last_year_count
+		`).
+		Where("project_id = ?", projectUUID).
+		Scan(&statRow).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get heatmap stats: %w", err)
+	}
+
+	return &TrafficHeatmapData{
+		DayHour:  dayHour,
+		MonthDay: monthDay,
+		Stats: TrafficHeatmapStats{
+			Today:      statRow.TodayCount,
+			WeeklyAvg:  statRow.LastWeekCount / 7,
+			MonthlyAvg: statRow.LastYearCount / 12,
+		},
+	}, nil
 }
 
 func stringValue(v any) string {

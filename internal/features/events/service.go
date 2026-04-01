@@ -118,7 +118,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 		}
 	}
 
-	deviceInfo := core.ResolveDeviceInfo(params.Properties, params.UserAgent)
+	deviceInfo := resolveEventDeviceInfo(params)
 
 	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&db.Event{
@@ -137,6 +137,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 			Device:      &deviceInfo.Device,
 			OSVersion:   &deviceInfo.OS,
 			AppVersion:  &deviceInfo.AppVersion,
+			Browser:     &deviceInfo.Browser,
 		}).Error; err != nil {
 			return err
 		}
@@ -243,12 +244,11 @@ func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Locati
 }
 
 func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.Event, error) {
-	// Remove device-related properties to avoid duplication
+	deviceInfo := resolveEventDeviceInfo(e)
 	cleanedProps := make(map[string]any)
 	for k, v := range e.Properties {
 		switch k {
 		case "device", "platform", "browser", "user_agent", "device_type":
-			// Skip these as they're handled separately
 			continue
 		default:
 			cleanedProps[k] = v
@@ -256,7 +256,7 @@ func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.
 	}
 
 	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
-	deviceInfo := core.ResolveDeviceInfo(e.Properties, e.UserAgent)
+
 	if err != nil {
 		return db.Event{}, err
 	}
@@ -276,7 +276,24 @@ func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.
 		Device:      &deviceInfo.Device,
 		OSVersion:   &deviceInfo.OS,
 		AppVersion:  &deviceInfo.AppVersion,
+		Browser:     &deviceInfo.Browser,
 	}, nil
+}
+
+func resolveEventDeviceInfo(e EventParams) core.DeviceInfo {
+	info := core.ResolveDeviceInfo(e.Properties, e.UserAgent)
+
+	if e.Platform != nil && *e.Platform != "" && *e.Platform != "Unknown" {
+		info.Platform = *e.Platform
+	}
+	if e.Device != nil && *e.Device != "" && *e.Device != "Unknown" {
+		info.Device = *e.Device
+	}
+	if e.Browser != nil && *e.Browser != "" && *e.Browser != "Unknown" {
+		info.Browser = *e.Browser
+	}
+
+	return info
 }
 
 func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[string]any {
@@ -312,5 +329,4 @@ func applyDefaults(cfg *ProjectConfig) {
 	if !cfg.TrackCampaign {
 		cfg.TrackCampaign = true
 	}
-	// TrackClicks default is false → leave as-is
 }
