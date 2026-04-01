@@ -98,7 +98,7 @@ export function ProjectDashboardLayout() {
       },
       {
         name: "Remote Config",
-        path: `/projects/${projectId}/settings#remote-config`,
+        path: `/projects/${projectId}/remote-config`,
         icon: Braces,
       },
     ];
@@ -153,12 +153,7 @@ export function ProjectDashboardLayout() {
               </p>
               {projectLinks.map((item) => {
                 const Icon = item.icon;
-                const isRemoteConfig = item.path.includes("#remote-config");
-                const isSettingsPage =
-                  location.pathname === `/projects/${projectId}/settings`;
-                const isActive = isRemoteConfig
-                  ? isSettingsPage && location.hash === "#remote-config"
-                  : location.pathname === item.path;
+                const isActive = location.pathname === item.path;
 
                 return (
                   <Link

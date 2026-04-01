@@ -39,6 +39,11 @@ const ProjectDetailPage = lazy(() =>
     default: m.ProjectDetailPage,
   })),
 );
+const RemoteConfigPage = lazy(() =>
+  import("./pages/dashboard/RemoteConfigPage").then((m) => ({
+    default: m.RemoteConfigPage,
+  })),
+);
 const CreateProjectPage = lazy(() =>
   import("./pages/dashboard/CreateProjectPage").then((m) => ({
     default: m.CreateProjectPage,
@@ -108,6 +113,7 @@ export const projectRoutes = [
   { path: "/projects/:id/breakdown", element: <BreakdownPage /> },
   { path: "/projects/:id/realtime", element: <RealtimePage /> },
   { path: "/projects/:id/settings", element: <ProjectDetailPage /> },
+  { path: "/projects/:id/remote-config", element: <RemoteConfigPage /> },
   { path: "/projects/:id/errors", element: <ErrorListPage /> },
   { path: "/projects/:id/errors/:fingerprint", element: <ErrorDetailPage /> },
 ];

@@ -10,7 +10,7 @@ export function TopPages({ projectId }: TopPagesProps) {
   const { data, isLoading, error } = useTopPages(projectId);
 
   return (
-    <section className="h-[360px] flex flex-col">
+    <section className="h-90 flex flex-col">
       <div className="border-b border-border/60 px-4 py-3">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           Top Pages
