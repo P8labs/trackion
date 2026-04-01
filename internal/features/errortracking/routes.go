@@ -14,10 +14,9 @@ func newRouter(service Service) *chi.Mux {
 	r := chi.NewRouter()
 	handler := NewHandler(service)
 
-	// Error tracking endpoints
-	r.Get("/", handler.ListErrors)                  // GET /api/errors?project_id={id}
-	r.Get("/{fingerprint}", handler.GetErrorDetail) // GET /api/errors/{fingerprint}?project_id={id}
-	r.Get("/stats", handler.GetErrorStats)          // GET /api/errors/stats?project_id={id}
+	r.Get("/", handler.ListErrors)
+	r.Get("/{fingerprint}", handler.GetErrorDetail)
+	r.Get("/stats", handler.GetErrorStats)
 
 	return r
 }

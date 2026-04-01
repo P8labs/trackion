@@ -3,6 +3,7 @@ package errortracking
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -10,13 +11,8 @@ import (
 )
 
 type Service interface {
-	// ListGroupedErrors returns aggregated errors grouped by fingerprint
 	ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]GroupedError, error)
-
-	// GetErrorOccurrences returns individual error instances for a fingerprint
 	GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) ([]ErrorOccurrence, error)
-
-	// GetErrorCount returns total count of errors for a project
 	GetErrorCount(ctx context.Context, projectID string, timeRange string) (int64, error)
 }
 
@@ -28,14 +24,12 @@ func NewService(db *gorm.DB) Service {
 	return &svc{db: db}
 }
 
-// ListGroupedErrors retrieves errors grouped by fingerprint
 func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]GroupedError, error) {
 	projectID, err := uuid.Parse(req.ProjectID)
 	if err != nil {
 		return nil, err
 	}
 
-	// Calculate time filter
 	var startTime time.Time
 	switch req.TimeRange {
 	case "24h":
@@ -48,12 +42,10 @@ func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]Gr
 		startTime = time.Time{} // all time
 	}
 
-	// Set default limit
 	if req.Limit == 0 {
 		req.Limit = 100
 	}
 
-	// Query grouped errors using JSONB operators
 	type QueryResult struct {
 		Fingerprint string    `gorm:"column:fingerprint"`
 		Message     string    `gorm:"column:message"`
@@ -92,7 +84,6 @@ func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]Gr
 		return nil, err
 	}
 
-	// Convert to response format
 	groupedErrors := make([]GroupedError, len(results))
 	for i, r := range results {
 		groupedErrors[i] = GroupedError{
@@ -108,7 +99,6 @@ func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]Gr
 	return groupedErrors, nil
 }
 
-// GetErrorOccurrences retrieves individual error instances for a specific fingerprint
 func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) ([]ErrorOccurrence, error) {
 	projectID, err := uuid.Parse(req.ProjectID)
 	if err != nil {
@@ -119,19 +109,20 @@ func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) (
 		req.Limit = 50
 	}
 
-	// Query individual error occurrences
 	type QueryResult struct {
 		ID         int64     `gorm:"column:id"`
 		Properties []byte    `gorm:"column:properties"`
 		UserID     *string   `gorm:"column:user_id"`
 		SessionID  *string   `gorm:"column:session_id"`
+		Browser    *string   `gorm:"column:browser"`
+		Platform   *string   `gorm:"column:platform"`
 		CreatedAt  time.Time `gorm:"column:created_at"`
 	}
 
 	var results []QueryResult
 	err = s.db.WithContext(ctx).
 		Table("events").
-		Select("id, properties, user_id, session_id, created_at").
+		Select("id, properties, user_id, session_id, browser, platform, created_at").
 		Where("project_id = ?", projectID).
 		Where("event_type = ?", "error").
 		Where("properties->>'fingerprint' = ?", req.Fingerprint).
@@ -144,7 +135,6 @@ func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) (
 		return nil, err
 	}
 
-	// Parse properties and build response
 	occurrences := make([]ErrorOccurrence, 0, len(results))
 	for _, r := range results {
 		var metadata ErrorMetadata
@@ -153,15 +143,8 @@ func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) (
 			continue
 		}
 
-		// Extract browser and platform from properties, with fallbacks
-		browser := metadata.Browser
-		if browser == "" || browser == "Unknown" {
-			browser = "Unknown Browser"
-		}
-		platform := metadata.Platform
-		if platform == "" || platform == "Unknown" {
-			platform = "Unknown Platform"
-		}
+		browser := chooseDeviceValue(r.Browser, metadata.Browser, "Unknown Browser")
+		platform := chooseDeviceValue(r.Platform, metadata.Platform, "Unknown Platform")
 
 		occurrence := ErrorOccurrence{
 			ID:           r.ID,
@@ -183,7 +166,22 @@ func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) (
 	return occurrences, nil
 }
 
-// GetErrorCount returns the total number of error events
+func chooseDeviceValue(columnValue *string, metadataValue string, fallback string) string {
+	if columnValue != nil {
+		trimmed := strings.TrimSpace(*columnValue)
+		if trimmed != "" && !strings.EqualFold(trimmed, "unknown") {
+			return trimmed
+		}
+	}
+
+	meta := strings.TrimSpace(metadataValue)
+	if meta != "" && !strings.EqualFold(meta, "unknown") {
+		return meta
+	}
+
+	return fallback
+}
+
 func (s *svc) GetErrorCount(ctx context.Context, projectID string, timeRange string) (int64, error) {
 	pid, err := uuid.Parse(projectID)
 	if err != nil {

@@ -195,7 +195,7 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
     const project = projects?.find((p) => p.id === segment);
     if (project) return project.name;
 
-    return segment;
+    return segment.substring(0, 16);
   };
 
   return (

@@ -291,54 +291,17 @@ export function RemoteConfigPage() {
             <p className="text-sm font-medium">Remote Config</p>
             <p className="text-xs text-muted-foreground">Runtime JSON values</p>
           </div>
-          <div className="px-4 md:px-6 py-3 border-b border-border/60 space-y-2">
-            <div className="border border-border/60 bg-background">
-              <div className="flex items-center h-9 focus-within:border-primary/60 transition">
-                <Input
-                  value={configKey}
-                  onChange={(e) => setConfigKey(e.target.value)}
-                  placeholder="config.key"
-                  className="h-full border-0 rounded-none text-xs font-mono focus-visible:ring-0 bg-background!"
-                />
-
-                <Divider />
-
-                <Button
-                  onClick={handleSaveConfig}
-                  disabled={
-                    !configKey.trim() ||
-                    !isConfigJsonValid ||
-                    upsertConfigMutation.isPending
-                  }
-                  className="h-full rounded-none px-3 text-xs"
-                >
-                  {upsertConfigMutation.isPending ? "Saving…" : "Save"}
-                </Button>
-              </div>
-
-              <DividerHorizontal />
-
-              <Textarea
-                value={configValue}
-                onChange={(e) => {
-                  setConfigValue(e.target.value);
-                  if (configError) {
-                    setConfigError("");
-                  }
-                }}
-                rows={6}
-                className="font-mono text-xs leading-5 border-0 rounded-none resize-y min-h-30 focus-visible:ring-0"
-              />
-            </div>
-
-            {configError ? (
-              <p className="text-xs text-destructive">{configError}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                JSON must be valid before save.
-              </p>
-            )}
-          </div>
+          <RemoteConfigEditor
+            configKey={configKey}
+            setConfigKey={setConfigKey}
+            configValue={configValue}
+            setConfigValue={setConfigValue}
+            configError={configError}
+            setConfigError={setConfigError}
+            isConfigJsonValid={isConfigJsonValid}
+            isSaving={upsertConfigMutation.isPending}
+            onSave={handleSaveConfig}
+          />
 
           <div className="divide-y divide-border/40">
             {runtimeLoading ? (
@@ -406,4 +369,169 @@ function Divider() {
 
 function DividerHorizontal() {
   return <div className="h-px w-full bg-border/60" />;
+}
+
+type RemoteConfigEditorProps = {
+  configKey: string;
+  setConfigKey: (value: string) => void;
+  configValue: string;
+  setConfigValue: (value: string) => void;
+  configError: string;
+  setConfigError: (value: string) => void;
+  isConfigJsonValid: boolean;
+  isSaving: boolean;
+  onSave: () => Promise<void>;
+};
+
+function RemoteConfigEditor({
+  configKey,
+  setConfigKey,
+  configValue,
+  setConfigValue,
+  configError,
+  setConfigError,
+  isConfigJsonValid,
+  isSaving,
+  onSave,
+}: RemoteConfigEditorProps) {
+  const handleFormat = () => {
+    try {
+      const parsed = JSON.parse(configValue);
+      setConfigValue(JSON.stringify(parsed, null, 2));
+      setConfigError("");
+    } catch {
+      setConfigError("Invalid JSON format");
+    }
+  };
+
+  const handleMinify = () => {
+    try {
+      const parsed = JSON.parse(configValue);
+      setConfigValue(JSON.stringify(parsed));
+      setConfigError("");
+    } catch {
+      setConfigError("Invalid JSON format");
+    }
+  };
+
+  const handleInsertSnippet = (value: string) => {
+    if (!value) {
+      return;
+    }
+
+    setConfigValue(value);
+    setConfigError("");
+  };
+
+  const handleTextareaKeyDown = async (
+    e: React.KeyboardEvent<HTMLTextAreaElement>,
+  ) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      if (configKey.trim() && isConfigJsonValid && !isSaving) {
+        await onSave();
+      }
+      return;
+    }
+
+    if (e.key === "Tab") {
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const nextValue =
+        configValue.slice(0, start) + "  " + configValue.slice(end);
+      setConfigValue(nextValue);
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + 2;
+      }, 0);
+    }
+  };
+
+  return (
+    <div className="px-4 md:px-6 py-3 border-b border-border/60 space-y-2">
+      <div className="border border-border/60 bg-background">
+        <div className="flex items-center h-9 focus-within:border-primary/60 transition">
+          <Input
+            value={configKey}
+            onChange={(e) => setConfigKey(e.target.value)}
+            placeholder="config.key"
+            className="h-full border-0 rounded-none text-xs font-mono focus-visible:ring-0 bg-background!"
+          />
+
+          <Divider />
+
+          <Button
+            onClick={onSave}
+            disabled={!configKey.trim() || !isConfigJsonValid || isSaving}
+            className="h-full rounded-none px-3 text-xs"
+          >
+            {isSaving ? "Saving…" : "Save"}
+          </Button>
+        </div>
+
+        <DividerHorizontal />
+
+        <Textarea
+          value={configValue}
+          onChange={(e) => {
+            setConfigValue(e.target.value);
+            if (configError) {
+              setConfigError("");
+            }
+          }}
+          onKeyDown={handleTextareaKeyDown}
+          rows={6}
+          className="font-mono text-xs leading-5 border-0 rounded-none resize-y min-h-30 focus-visible:ring-0"
+        />
+
+        <DividerHorizontal />
+
+        <div className="flex flex-wrap items-center gap-2 px-2 py-1.5 text-xs">
+          <button
+            type="button"
+            onClick={handleFormat}
+            className="text-muted-foreground hover:text-foreground transition"
+          >
+            format
+          </button>
+          <span className="text-border">/</span>
+          <button
+            type="button"
+            onClick={handleMinify}
+            className="text-muted-foreground hover:text-foreground transition"
+          >
+            minify
+          </button>
+          <span className="text-border">/</span>
+          <select
+            defaultValue=""
+            onChange={(e) => {
+              handleInsertSnippet(e.target.value);
+              e.currentTarget.value = "";
+            }}
+            className="h-6 bg-transparent text-muted-foreground outline-none"
+          >
+            <option value="">insert snippet</option>
+            <option value={"{}"}>empty object</option>
+            <option value={"[]"}>empty array</option>
+            <option value={'{"enabled": true}'}>boolean flag</option>
+            <option value={'{"title": "", "description": ""}'}>
+              content block
+            </option>
+          </select>
+          <div className="ml-auto text-muted-foreground">
+            {configValue.length} chars
+          </div>
+        </div>
+      </div>
+
+      {configError ? (
+        <p className="text-xs text-destructive">{configError}</p>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Tip: use Tab for indent and Ctrl/Cmd + Enter to save.
+        </p>
+      )}
+    </div>
+  );
 }

@@ -8,6 +8,7 @@ import {
   Activity,
   Braces,
   SlidersHorizontal,
+  TriangleAlert,
 } from "lucide-react";
 import { useStore } from "../store";
 import { getProjects } from "../lib/api";
@@ -72,6 +73,11 @@ export function ProjectDashboardLayout() {
         icon: LayoutDashboard,
       },
       { name: "Events", path: `/projects/${projectId}/events`, icon: Activity },
+      {
+        name: "Errors",
+        path: `/projects/${projectId}/errors`,
+        icon: TriangleAlert,
+      },
       {
         name: "Breakdown",
         path: `/projects/${projectId}/breakdown`,

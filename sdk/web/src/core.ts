@@ -208,7 +208,6 @@ export class TrackionClient {
   private runtimeFetchedAt = 0;
   private runtimeListeners = new Set<RuntimeListener>();
 
-  // Error tracking state
   private errorDeduplicator = new ErrorDeduplicator(5000);
   private originalOnError: OnErrorEventHandler | null = null;
   private originalOnUnhandledRejection:

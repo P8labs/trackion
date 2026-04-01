@@ -5,7 +5,6 @@ import { TrackionProvider } from "@trackion/web/react";
 import App from "./App.tsx";
 import "./index.css";
 
-// Simple error boundary without the complex class component
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode; fallback: React.ReactNode },
   { hasError: boolean }
@@ -64,10 +63,9 @@ function ErrorFallback() {
   );
 }
 
-// Trackion configuration
 const trackionConfig = {
   serverUrl: "http://localhost:8000", // Update this to your Trackion server
-  apiKey: "c39bcd4a-9ba3-50ae-9d1d-99a9caf8abf9", // Update this to your API key
+  apiKey: "fe05b2f6-5532-5353-bf0a-dd6f9861680b", // Update this to your API key
   userId: "demo_user",
   autoPageview: true,
   batchSize: 10,

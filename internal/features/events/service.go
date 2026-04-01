@@ -137,6 +137,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 			Device:      &deviceInfo.Device,
 			OSVersion:   &deviceInfo.OS,
 			AppVersion:  &deviceInfo.AppVersion,
+			Browser:     &deviceInfo.Browser,
 		}).Error; err != nil {
 			return err
 		}
