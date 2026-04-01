@@ -6,6 +6,7 @@ import type {
   ChartDataPoint,
   AreaChartDataPoint,
   RecentEventData,
+  PaginatedEventsResponse,
   CountryDataItem,
   CountryMapData,
   TrafficHeatmapData,
@@ -265,6 +266,21 @@ export const getRecentEventsFormatted = async (
 ): Promise<RecentEventData[]> => {
   return apiCall<RecentEventData[]>(
     `/api/analytics/${projectId}/recent-events?limit=${limit}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getRecentEventsPaginated = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PaginatedEventsResponse> => {
+  return apiCall<PaginatedEventsResponse>(
+    `/api/analytics/${projectId}/recent-events-paginated?page=${page}&page_size=${pageSize}`,
     {},
     serverUrl,
     authToken,

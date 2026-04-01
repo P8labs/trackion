@@ -20,7 +20,6 @@ import {
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useAreaChartData } from "../../hooks/useApi";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import PlusDecor from "../PlusDecor";
 
 interface ChartDataProps {
   projectId: string;
@@ -232,7 +231,6 @@ export function DashboardChart({ projectId }: ChartDataProps) {
             </BarChart>
           </ChartContainer>
         )}
-        <PlusDecor />
       </div>
     </section>
   );
@@ -241,10 +239,8 @@ export function DashboardChart({ projectId }: ChartDataProps) {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div className="px-4 py-3 border-r border-b border-border/60 last:border-r-0 relative">
-      <PlusDecor position="top" />
       <p className="text-muted-foreground">{label}</p>
       <p className="text-sm font-medium mt-1">{value}</p>
-      <PlusDecor />
     </div>
   );
 }

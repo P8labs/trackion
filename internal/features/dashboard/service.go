@@ -90,14 +90,30 @@ type PageBreakdown struct {
 type RecentEventData struct {
 	ID          int64       `json:"id"`
 	EventName   string      `json:"event_name"`
+	EventType   string      `json:"event_type,omitempty"`
+	UserID      string      `json:"user_id,omitempty"`
 	SessionID   string      `json:"session_id"`
+	Platform    string      `json:"platform,omitempty"`
+	Device      string      `json:"device,omitempty"`
+	OSVersion   string      `json:"os_version,omitempty"`
+	AppVersion  string      `json:"app_version,omitempty"`
+	Browser     string      `json:"browser,omitempty"`
 	PagePath    string      `json:"page_path,omitempty"`
+	PageTitle   string      `json:"page_title,omitempty"`
 	Referrer    string      `json:"referrer,omitempty"`
 	UTMSource   string      `json:"utm_source,omitempty"`
 	UTMMedium   string      `json:"utm_medium,omitempty"`
 	UTMCampaign string      `json:"utm_campaign,omitempty"`
 	Properties  interface{} `json:"properties,omitempty"`
 	CreatedAt   time.Time   `json:"created_at"`
+}
+
+type PaginatedEventsResponse struct {
+	Events     []RecentEventData `json:"events"`
+	Total      int64             `json:"total"`
+	Page       int32             `json:"page"`
+	PageSize   int32             `json:"page_size"`
+	TotalPages int32             `json:"total_pages"`
 }
 
 type DashboardCounts struct {
@@ -153,6 +169,7 @@ type Service interface {
 	GetTrafficSources(ctx context.Context, projectId string) (*TrafficSourcesData, error)
 	GetTopPages(ctx context.Context, projectId string) ([]TopPage, error)
 	GetRecentEventsFormatted(ctx context.Context, projectId string, limit int32) ([]RecentEventData, error)
+	GetRecentEventsPaginated(ctx context.Context, projectId string, page, pageSize int32) (*PaginatedEventsResponse, error)
 	GetOnlineUsers(ctx context.Context, projectId string) (int64, error)
 	GetCountryData(ctx context.Context, projectId string) ([]BreakdownItem, error)
 	GetCountryMapData(ctx context.Context, projectId string) (*CountryMapData, error)
@@ -339,7 +356,6 @@ func (s *svc) GetChartDataFlexible(ctx context.Context, projectId string, reques
 		return nil, fmt.Errorf("failed to get chart data: %w", err)
 	}
 
-	// map result
 	result := make([]ChartDataPoint, len(rows))
 	for i, r := range rows {
 		result[i] = ChartDataPoint{
@@ -650,13 +666,24 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 	projectUUID := uuid.MustParse(projectId)
 
 	var rows []struct {
-		ID         int64
-		EventName  string
-		SessionID  *string
-		PagePath   *string
-		Referrer   string
-		Properties datatypes.JSON
-		CreatedAt  time.Time
+		ID          int64
+		EventName   string
+		EventType   *string
+		UserID      *string
+		SessionID   *string
+		Platform    *string
+		Device      *string
+		OSVersion   *string
+		AppVersion  *string
+		Browser     *string
+		PagePath    *string
+		PageTitle   *string
+		Referrer    string
+		UTMSource   *string
+		UTMMedium   *string
+		UTMCampaign *string
+		Properties  datatypes.JSON
+		CreatedAt   time.Time
 	}
 
 	err := s.db.WithContext(ctx).
@@ -664,12 +691,23 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 		Select(`
 			id,
 			event_name,
+			event_type,
+			user_id,
 			session_id,
+			platform,
+			device,
+			os_version,
+			app_version,
+			browser,
 			page_path,
+			page_title,
 			CASE
 				WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
 				ELSE referrer
 			END AS referrer,
+			utm_source,
+			utm_medium,
+			utm_campaign,
 			properties,
 			created_at
 		`).
@@ -686,17 +724,140 @@ func (s *svc) GetRecentEventsFormatted(ctx context.Context, projectId string, li
 
 	for i, r := range rows {
 		result[i] = RecentEventData{
-			ID:         r.ID,
-			EventName:  r.EventName,
-			SessionID:  deref(r.SessionID),
-			PagePath:   deref(r.PagePath),
-			Referrer:   r.Referrer,
-			Properties: r.Properties,
-			CreatedAt:  r.CreatedAt,
+			ID:          r.ID,
+			EventName:   r.EventName,
+			EventType:   deref(r.EventType),
+			UserID:      deref(r.UserID),
+			SessionID:   deref(r.SessionID),
+			Platform:    deref(r.Platform),
+			Device:      deref(r.Device),
+			OSVersion:   deref(r.OSVersion),
+			AppVersion:  deref(r.AppVersion),
+			Browser:     deref(r.Browser),
+			PagePath:    deref(r.PagePath),
+			PageTitle:   deref(r.PageTitle),
+			Referrer:    r.Referrer,
+			UTMSource:   deref(r.UTMSource),
+			UTMMedium:   deref(r.UTMMedium),
+			UTMCampaign: deref(r.UTMCampaign),
+			Properties:  r.Properties,
+			CreatedAt:   r.CreatedAt,
 		}
 	}
 
 	return result, nil
+}
+
+func (s *svc) GetRecentEventsPaginated(ctx context.Context, projectId string, page, pageSize int32) (*PaginatedEventsResponse, error) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 || pageSize > 100 {
+		pageSize = 20
+	}
+
+	projectUUID := uuid.MustParse(projectId)
+
+	var total int64
+	err := s.db.WithContext(ctx).
+		Table("events").
+		Where("project_id = ?", projectUUID).
+		Count(&total).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to count events: %w", err)
+	}
+
+	offset := (page - 1) * pageSize
+
+	var rows []struct {
+		ID          int64
+		EventName   string
+		EventType   *string
+		UserID      *string
+		SessionID   *string
+		Platform    *string
+		Device      *string
+		OSVersion   *string
+		AppVersion  *string
+		Browser     *string
+		PagePath    *string
+		PageTitle   *string
+		Referrer    string
+		UTMSource   *string
+		UTMMedium   *string
+		UTMCampaign *string
+		Properties  datatypes.JSON
+		CreatedAt   time.Time
+	}
+
+	err = s.db.WithContext(ctx).
+		Table("events").
+		Select(`
+			id,
+			event_name,
+			event_type,
+			user_id,
+			session_id,
+			platform,
+			device,
+			os_version,
+			app_version,
+			browser,
+			page_path,
+			page_title,
+			CASE
+				WHEN referrer = '' OR referrer IS NULL THEN 'Direct'
+				ELSE referrer
+			END AS referrer,
+			utm_source,
+			utm_medium,
+			utm_campaign,
+			properties,
+			created_at
+		`).
+		Where("project_id = ?", projectUUID).
+		Order("created_at DESC").
+		Offset(int(offset)).
+		Limit(int(pageSize)).
+		Scan(&rows).Error
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get paginated events: %w", err)
+	}
+
+	events := make([]RecentEventData, len(rows))
+	for i, r := range rows {
+		events[i] = RecentEventData{
+			ID:          r.ID,
+			EventName:   r.EventName,
+			EventType:   deref(r.EventType),
+			UserID:      deref(r.UserID),
+			SessionID:   deref(r.SessionID),
+			Platform:    deref(r.Platform),
+			Device:      deref(r.Device),
+			OSVersion:   deref(r.OSVersion),
+			AppVersion:  deref(r.AppVersion),
+			Browser:     deref(r.Browser),
+			PagePath:    deref(r.PagePath),
+			PageTitle:   deref(r.PageTitle),
+			Referrer:    r.Referrer,
+			UTMSource:   deref(r.UTMSource),
+			UTMMedium:   deref(r.UTMMedium),
+			UTMCampaign: deref(r.UTMCampaign),
+			Properties:  r.Properties,
+			CreatedAt:   r.CreatedAt,
+		}
+	}
+
+	totalPages := (total + int64(pageSize) - 1) / int64(pageSize)
+
+	return &PaginatedEventsResponse{
+		Events:     events,
+		Total:      total,
+		Page:       page,
+		PageSize:   pageSize,
+		TotalPages: int32(totalPages),
+	}, nil
 }
 
 type areaRow struct {

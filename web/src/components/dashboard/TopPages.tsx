@@ -1,19 +1,4 @@
-import { ExternalLink, Clock, Users, Eye } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../ui/table";
+import { Clock, Users, Eye } from "lucide-react";
 import { useTopPages } from "../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
 
@@ -25,80 +10,76 @@ export function TopPages({ projectId }: TopPagesProps) {
   const { data, isLoading, error } = useTopPages(projectId);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <ExternalLink className="h-4 w-4" />
+    <section className="h-[360px] flex flex-col">
+      <div className="border-b border-border/60 px-4 py-3">
+        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
           Top Pages
-        </CardTitle>
-        <CardDescription>Most popular pages on your site</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="space-y-2">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center justify-between p-2">
-                <div className="h-4 w-48 bg-muted rounded animate-pulse"></div>
-                <div className="h-4 w-16 bg-muted rounded animate-pulse"></div>
+        </h3>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Most popular pages on your site
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="divide-y divide-border/40 overflow-y-auto flex-1">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between px-4 py-3"
+            >
+              <div className="h-3 w-40 animate-pulse rounded bg-muted/50" />
+              <div className="h-3 w-24 animate-pulse rounded bg-muted/50" />
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Failed to load top pages data
+        </div>
+      ) : !data || data.length === 0 ? (
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          No page data available
+        </div>
+      ) : (
+        <div className="divide-y divide-border/40 overflow-y-auto flex-1">
+          {data.map((page, index) => (
+            <div
+              key={index}
+              className="grid grid-cols-12 items-center gap-3 px-4 py-2.5 transition hover:bg-muted/20"
+            >
+              <div className="col-span-6 min-w-0">
+                <p
+                  className="truncate text-sm font-medium text-foreground"
+                  title={page.path}
+                >
+                  {page.path || "/"}
+                </p>
               </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Failed to load top pages data
-          </div>
-        ) : !data || data.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No page data available
-          </div>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Page</TableHead>
-                <TableHead className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Eye className="h-3 w-3" />
-                    Views
-                  </div>
-                </TableHead>
-                <TableHead className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Users className="h-3 w-3" />
-                    Unique
-                  </div>
-                </TableHead>
-                <TableHead className="text-center">
-                  <div className="flex items-center justify-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Avg. Time
-                  </div>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((page, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">
-                    <div className="max-w-50 truncate" title={page.path}>
-                      {page.path || "/"}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {page.total_views.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {page.unique_visitors.toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {formatTimeSpent(page.avg_time_seconds)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+
+              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                <Eye className="h-3 w-3" />
+                <span className="font-mono text-foreground">
+                  {page.total_views.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                <Users className="h-3 w-3" />
+                <span className="font-mono text-foreground">
+                  {page.unique_visitors.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span className="font-mono text-foreground">
+                  {formatTimeSpent(page.avg_time_seconds)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

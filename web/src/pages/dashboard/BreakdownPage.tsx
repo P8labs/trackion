@@ -1,15 +1,16 @@
-import { RefreshCw } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "../../store";
 import { Button } from "../../components/ui/button";
-import { Card } from "../../components/ui/card";
 import { AnalyticsBreakdown } from "../../components/dashboard/AnalyticsBreakdown";
 import { TopPages } from "../../components/dashboard/TopPages";
-import { WorldMap } from "../../components/dashboard/WorldMap";
+import { TopCountries } from "../../components/dashboard/TopCountries";
 import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
 import { queryKeys, useProject } from "../../hooks/useApi";
+import { PLine } from "@/components/Line";
+import { RefreshIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 export function BreakdownPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +19,7 @@ export function BreakdownPage() {
   const navigate = useNavigate();
   const { data: projectFromRoute } = useProject(id || "");
 
+  const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
     if (!projectFromRoute || !id) {
       return;
@@ -35,7 +37,7 @@ export function BreakdownPage() {
   if (!activeProject) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <Card className="p-12 text-center max-w-md">
+        <div className="w-full max-w-md border border-border/60 bg-muted/10 p-10 text-center">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight mb-3">
               Select a project to continue
@@ -51,58 +53,74 @@ export function BreakdownPage() {
               Go to Projects
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     );
   }
 
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.deviceAnalytics(activeProject.id),
     });
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.trafficSources(activeProject.id),
     });
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.topPages(activeProject.id),
     });
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.countryData(activeProject.id),
     });
-    queryClient.invalidateQueries({
+    await queryClient.invalidateQueries({
       queryKey: queryKeys.onlineUsers(activeProject.id),
     });
+    setRefreshing(false);
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            {activeProject.name}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Traffic breakdown and page performance
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <OnlineUsers projectId={activeProject.id} />
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            className="h-10 px-4 gap-2 text-sm"
-          >
-            <RefreshCw className="h-5 w-5" />
-            Refresh
-          </Button>
+    <section className="max-w-7xl mx-auto relative">
+      <PLine />
+      <div className="px-4 md:px-6 py-5 border-b border-border/60 relative">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight md:text-2xl text-foreground">
+              Breakdown
+            </h1>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Traffic breakdown and performance insights
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <OnlineUsers projectId={activeProject.id} />
+            <Button
+              variant="ghost"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-8 gap-2 px-3 text-xs border border-border/60"
+            >
+              <HugeiconsIcon
+                icon={RefreshIcon}
+                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
+              />
+              {refreshing ? "Refreshing" : "Refresh"}
+            </Button>
+          </div>
         </div>
       </div>
 
-      <AnalyticsBreakdown projectId={activeProject.id} />
-      <div className="grid gap-4 lg:grid-cols-2">
-        <WorldMap projectId={activeProject.id} />
+      <div>
+        <AnalyticsBreakdown projectId={activeProject.id} />
+      </div>
+
+      <div className="grid lg:grid-cols-2 border-b border-border/60">
+        <div className="border-r border-border/60">
+          <TopCountries projectId={activeProject.id} />
+        </div>
+
         <TopPages projectId={activeProject.id} />
       </div>
-    </div>
+    </section>
   );
 }

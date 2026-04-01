@@ -6,7 +6,6 @@ import {
 } from "@hugeicons/core-free-icons";
 import { useDashboardCounts } from "../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
-import PlusDecor from "../PlusDecor";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 interface DashboardCountsProps {
@@ -83,9 +82,6 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
                   className="h-4 w-4 text-muted-foreground"
                   strokeWidth={2}
                 />
-
-                <PlusDecor position="top" />
-                <PlusDecor />
               </div>
             );
           })}

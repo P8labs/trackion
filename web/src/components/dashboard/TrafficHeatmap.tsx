@@ -1,5 +1,4 @@
 import type { TrafficHeatmapData } from "@/types";
-import PlusDecor from "../PlusDecor";
 
 interface TrafficHeatmapProps {
   data?: TrafficHeatmapData;
@@ -38,7 +37,6 @@ export function TrafficHeatmap({ data }: TrafficHeatmapProps) {
 
   return (
     <section className="flex flex-col relative">
-      <PlusDecor position="top" v="l" />
       <div className="px-4 md:px-6 py-3">
         <p className="text-sm font-medium">Traffic</p>
       </div>
@@ -51,7 +49,6 @@ export function TrafficHeatmap({ data }: TrafficHeatmapProps) {
       </div>
 
       <div className="px-4 md:px-6 py-4 border-t border-border/60 space-y-3 relative">
-        <PlusDecor position="top" v="r" />
         <HeatmapLegend />
 
         <div className="grid grid-cols-3 text-sm">

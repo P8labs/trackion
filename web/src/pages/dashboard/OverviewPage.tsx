@@ -122,7 +122,7 @@ export function OverviewPage() {
   };
 
   return (
-    <section className="max-w-6xl mx-auto relative">
+    <section className="max-w-7xl mx-auto relative">
       <PLine />
       <div className="px-4 md:px-6 py-6 border-b border-border/60 relative">
         <div className="flex flex-wrap items-start justify-between gap-4">

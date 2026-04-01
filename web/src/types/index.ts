@@ -151,14 +151,30 @@ export interface PageBreakdown {
 export interface RecentEventData {
   id: number;
   event_name: string;
+  event_type?: string;
+  user_id?: string;
   session_id: string;
+  platform?: string;
+  device?: string;
+  os_version?: string;
+  app_version?: string;
+  browser?: string;
   page_path?: string;
+  page_title?: string;
   referrer?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
   properties?: any;
   created_at: string;
+}
+
+export interface PaginatedEventsResponse {
+  events: RecentEventData[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface UsageSummary {

@@ -18,6 +18,7 @@ import {
   getTrafficSources,
   getTopPages,
   getRecentEventsFormatted,
+  getRecentEventsPaginated,
   getOnlineUsers,
   getCountryData,
   getCountryMapData,
@@ -44,6 +45,8 @@ export const queryKeys = {
   topPages: (projectId: string) => ["topPages", projectId] as const,
   recentEventsFormatted: (projectId: string, limit?: number) =>
     ["recentEventsFormatted", projectId, limit] as const,
+  recentEventsPaginated: (projectId: string, page: number, pageSize: number) =>
+    ["recentEventsPaginated", projectId, page, pageSize] as const,
   onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
   countryData: (projectId: string) => ["countryData", projectId] as const,
   countryMapData: (projectId: string) => ["countryMapData", projectId] as const,
@@ -381,7 +384,11 @@ export function useTopPages(projectId: string) {
   });
 }
 
-export function useRecentEventsFormatted(projectId: string, limit = 50) {
+export function useRecentEventsFormatted(
+  projectId: string,
+  limit = 50,
+  refetchIntervalMs = 30 * 1000,
+) {
   const { authToken, serverUrl } = useStore();
 
   return useQuery({
@@ -389,7 +396,29 @@ export function useRecentEventsFormatted(projectId: string, limit = 50) {
     queryFn: () =>
       getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
     enabled: !!authToken && !!projectId,
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+export function useRecentEventsPaginated(
+  projectId: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.recentEventsPaginated(projectId, page, pageSize),
+    queryFn: () =>
+      getRecentEventsPaginated(
+        projectId,
+        serverUrl,
+        authToken!,
+        page,
+        pageSize,
+      ),
+    enabled: !!authToken && !!projectId,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
