@@ -877,8 +877,25 @@ func (s *svc) GetAreaChartData(ctx context.Context, projectId string, timeRange 
 		Table("events").
 		Select(`
 			DATE_TRUNC(?, created_at)::timestamptz AS period,
-			COUNT(*) FILTER (WHERE device = 'desktop') AS desktop,
-			COUNT(*) FILTER (WHERE device = 'mobile') AS mobile
+			COUNT(*) FILTER (
+				WHERE
+					LOWER(COALESCE(NULLIF(device, ''), '')) = 'desktop'
+					OR LOWER(COALESCE(properties->>'device_type', '')) = 'desktop'
+			) AS desktop,
+			COUNT(*) FILTER (
+				WHERE
+					LOWER(COALESCE(NULLIF(device, ''), '')) IN (
+						'mobile',
+						'tablet',
+						'iphone',
+						'ipad',
+						'android phone',
+						'android tablet',
+						'windows phone',
+						'blackberry'
+					)
+					OR LOWER(COALESCE(properties->>'device_type', '')) IN ('mobile', 'tablet')
+			) AS mobile
 		`, granularity).
 		Where("project_id = ?", projectUUID).
 		Where("created_at >= ?", startTime)
