@@ -1,3 +1,4 @@
+import PlusDecor from "@/components/PlusDecor";
 import { PauseIcon, PlayIcon } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 
@@ -82,6 +83,7 @@ export default function DemoSection() {
   return (
     <div className="relative px-4 py-10">
       <div className="absolute inset-0 border-l border-r dark:border-card pointer-events-none"></div>
+      <PlusDecor />
 
       <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 z-20">
         <button

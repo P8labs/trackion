@@ -19,33 +19,6 @@ import PlusDecor from "@/components/PlusDecor";
 import { Footer } from "./components/Footer";
 
 export function LandingPage() {
-  const featureCards = [
-    {
-      icon: <Zap className="h-5 w-5" />,
-      title: "2-Minute Setup",
-      description:
-        "Drop a single script tag and start collecting product signals immediately.",
-    },
-    {
-      icon: <BarChart3 className="h-5 w-5" />,
-      title: "Live Dashboards",
-      description:
-        "Watch sessions, funnels, and page behavior update in real time.",
-    },
-    {
-      icon: <Code className="h-5 w-5" />,
-      title: "Custom Events API",
-      description:
-        "Instrument any backend or frontend action with language-agnostic calls.",
-    },
-    {
-      icon: <Shield className="h-5 w-5" />,
-      title: "Privacy by Design",
-      description:
-        "Self-hosted mode gives full data ownership with no third-party dependency.",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       <BackgroundEffects />
@@ -658,3 +631,30 @@ export function BackgroundEffects() {
     </div>
   );
 }
+
+const featureCards = [
+  {
+    icon: <Zap className="h-5 w-5" />,
+    title: "2-Minute Setup",
+    description:
+      "Drop a single script tag and start collecting product signals immediately.",
+  },
+  {
+    icon: <BarChart3 className="h-5 w-5" />,
+    title: "Live Dashboards",
+    description:
+      "Watch sessions, funnels, and page behavior update in real time.",
+  },
+  {
+    icon: <Code className="h-5 w-5" />,
+    title: "Custom Events API",
+    description:
+      "Instrument any backend or frontend action with language-agnostic calls.",
+  },
+  {
+    icon: <Shield className="h-5 w-5" />,
+    title: "Privacy by Design",
+    description:
+      "Self-hosted mode gives full data ownership with no third-party dependency.",
+  },
+];

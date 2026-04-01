@@ -3,7 +3,7 @@ import { Code, Zap, Database } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 import { Icons } from "@/lib/icons";
-import { PLine } from "@/components/Line";
+import { FullLine, PLine } from "@/components/Line";
 
 export function AboutPage() {
   return (
@@ -140,6 +140,7 @@ export function AboutPage() {
           </div>
         </div>
       </section>
+      <FullLine />
     </PublicPageLayout>
   );
 }

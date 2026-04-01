@@ -1,4 +1,4 @@
-import { PLine } from "@/components/Line";
+import { FullLine, PLine } from "@/components/Line";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function TermsPage() {
@@ -175,6 +175,7 @@ export function TermsPage() {
           </section>
         </div>
       </div>
+      <FullLine />
     </PublicPageLayout>
   );
 }

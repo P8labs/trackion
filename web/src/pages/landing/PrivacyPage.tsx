@@ -1,4 +1,4 @@
-import { PLine } from "@/components/Line";
+import { FullLine, PLine } from "@/components/Line";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function PrivacyPage() {
@@ -177,6 +177,7 @@ export function PrivacyPage() {
           </section>
         </div>
       </div>
+      <FullLine />
     </PublicPageLayout>
   );
 }

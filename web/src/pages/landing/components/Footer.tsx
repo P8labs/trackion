@@ -1,23 +1,23 @@
-import { PLine } from "@/components/Line";
+import { FullLine, PLine } from "@/components/Line";
 import PlusDecor from "@/components/PlusDecor";
 import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
-    <footer className="relative px-4">
-      <PlusDecor position="top" />
-
+    <footer>
       <div
-        className="absolute inset-0 opacity-[0.03] pointer-events-none
+        className="absolute z-10 inset-0 opacity-[0.03] pointer-events-none
         bg-[linear-gradient(to_right,black_1px,transparent_1px),
         linear-gradient(to_bottom,black_1px,transparent_1px)]
         dark:bg-[linear-gradient(to_right,white_1px,transparent_1px),
         linear-gradient(to_bottom,white_1px,transparent_1px)]
         bg-size-[40px_40px]"
       />
-      <PLine />
 
-      <div className="relative mx-auto py-16">
+      <div className="relative mx-auto py-16 px-4">
+        <PLine />
+
+        <PlusDecor position="top" />
         <div className="grid md:grid-cols-5 gap-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -98,8 +98,14 @@ export function Footer() {
             </div>
           ))}
         </div>
+      </div>
 
-        <div className="mt-12 pt-6 border-t border-border/60 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
+      <div className="relative">
+        <PLine />
+        <FullLine />
+        <PlusDecor position="top" />
+
+        <div className="py-6 px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>
             © {new Date().getFullYear()} Trackion. Built at{" "}
             <a
@@ -111,9 +117,6 @@ export function Footer() {
           </p>
 
           <div className="flex items-center gap-3 text-xs">
-            {/* <span className="px-2 py-1 border border-border/60 rounded-md">
-              v1 Beta
-            </span> */}
             <span className="text-muted-foreground/70">Open Source</span>
           </div>
         </div>
