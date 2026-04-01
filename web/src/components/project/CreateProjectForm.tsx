@@ -5,9 +5,9 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
 import { Checkbox } from "../ui/checkbox";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import type { ProjectSettings } from "../../types";
 import { parseDomainsInput } from "../../lib/domain";
+import PlusDecor from "../PlusDecor";
 
 interface CreateProjectFormProps {
   onSubmit: (data: {
@@ -69,14 +69,20 @@ export function CreateProjectForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card className="py-0">
-        <CardHeader className="border-b bg-muted/40 py-4">
-          <CardTitle className="text-sm font-semibold">Basics</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 py-4">
+    <form onSubmit={handleSubmit} className="border border-border/60">
+      <section className="border-b border-border/60 px-4 py-4 md:px-5 relative">
+        <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+          Basics
+        </p>
+
+        <div className="mt-4 space-y-5">
           <div className="space-y-2">
-            <Label htmlFor="projectName">Project Name</Label>
+            <Label
+              htmlFor="projectName"
+              className="text-xs uppercase tracking-[0.08em] text-muted-foreground"
+            >
+              Project Name
+            </Label>
             <Input
               id="projectName"
               value={name}
@@ -84,6 +90,7 @@ export function CreateProjectForm({
               placeholder="Marketing Website"
               autoFocus
               required
+              className="h-10 rounded-md border-border/60 bg-transparent focus-visible:border-primary focus-visible:ring-0"
             />
             <p className="text-xs text-muted-foreground">
               Use a clear name so your team can quickly identify this property.
@@ -91,20 +98,26 @@ export function CreateProjectForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="domains">Allowed Domains</Label>
+            <Label
+              htmlFor="domains"
+              className="text-xs uppercase tracking-[0.08em] text-muted-foreground"
+            >
+              Allowed Domains
+            </Label>
             <Input
               id="domains"
               value={domainsInput}
               onChange={(e) => setDomainsInput(e.target.value)}
               placeholder="example.com, app.example.com, localhost:5173"
               required
+              className="h-10 rounded-md border-border/60 bg-transparent focus-visible:border-primary focus-visible:ring-0"
             />
             <p className="text-xs text-muted-foreground">
               Comma-separated domains. Protocols like https:// are not needed.
             </p>
 
             {parsedDomains.length > 0 && (
-              <div className="rounded-lg border bg-muted/20 p-3">
+              <div className="border border-border/60 bg-muted/10 px-3 py-3">
                 <div className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                   <Globe className="h-3.5 w-3.5" />
                   Domain preview
@@ -133,16 +146,16 @@ export function CreateProjectForm({
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card className="py-0">
-        <CardHeader className="border-b bg-muted/40 py-4">
-          <CardTitle className="text-sm font-semibold">
-            Tracking Features
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 py-4 sm:grid-cols-2">
+        <PlusDecor />
+      </section>
+
+      <section className="border-b border-border/60 px-4 py-4 md:px-5 relative">
+        <p className="text-[11px] uppercase tracking-[0.08em] text-muted-foreground">
+          Tracking Features
+        </p>
+        <div className="mt-4 grid gap-0 border border-border/60 sm:grid-cols-2">
           <FeatureToggle
             title="Auto Pageview"
             description="Capture page views automatically on route changes."
@@ -167,27 +180,36 @@ export function CreateProjectForm({
             checked={settings.clicks}
             onChange={(checked) => toggleSetting("clicks", checked)}
           />
-        </CardContent>
-      </Card>
+        </div>
+        <PlusDecor />
+      </section>
 
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-destructive">
-          <p className="text-sm">{error}</p>
+        <div className="border-b border-border/60 px-4 py-3 md:px-5">
+          <div className="border border-destructive/30 bg-destructive/8 p-3 text-destructive">
+            <p className="text-sm">{error}</p>
+          </div>
         </div>
       )}
 
-      <div className="flex items-center justify-end gap-2">
+      <div className="h-full flex items-center justify-end gap-2 border-t border-border/60 bg-background/95 px-4 py-3 backdrop-blur supports-backdrop-filter:bg-background/80 md:px-5">
         <Button
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={loading}
+          className="h-9 rounded-md border-border/60 bg-transparent hover:bg-muted/20"
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={!canSubmit} className="min-w-36">
+        <Button
+          type="submit"
+          disabled={!canSubmit}
+          className="h-9 min-w-36 rounded-md"
+        >
           {loading ? "Creating..." : submitLabel}
         </Button>
+        <PlusDecor />
       </div>
     </form>
   );
@@ -207,7 +229,7 @@ function FeatureToggle({
   onChange,
 }: FeatureToggleProps) {
   return (
-    <label className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/30">
+    <label className="flex cursor-pointer items-start gap-3 border-b border-border/60 px-3 py-3 transition-colors odd:border-r hover:bg-muted/15 last:border-b-0 sm:nth-last-[-n+2]:border-b-0">
       <Checkbox
         checked={checked}
         onCheckedChange={(next) => onChange(!!next)}

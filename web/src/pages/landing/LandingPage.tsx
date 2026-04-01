@@ -20,7 +20,7 @@ import { Footer } from "./components/Footer";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-hidden">
       <BackgroundEffects />
       <div className="mx-auto relative md:max-w-5xl *:[[id]]:scroll-mt-22">
         <Header />

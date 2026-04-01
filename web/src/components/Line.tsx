@@ -21,7 +21,7 @@ export function FullLine({
   return (
     <div
       className={cn(
-        "relative left-1/2 right-1/2 -mx-[50vw] w-screen border translate-y-1/2 border-border/60",
+        "relative left-1/2 right-1/2 -mx-[50vw] max-w-screen border translate-y-1/2 border-border/60",
         className,
       )}
     />

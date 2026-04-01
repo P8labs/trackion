@@ -25,7 +25,7 @@ export function AuthCallbackPage() {
 
     if (isAuthenticated) {
       setStatus("success");
-      navigate("/dashboard", { replace: true });
+      navigate("/projects", { replace: true });
       return;
     }
 
@@ -37,7 +37,7 @@ export function AuthCallbackPage() {
       setAuth(authToken.trim(), serverUrl);
       setStatus("success");
       window.history.replaceState({}, document.title, window.location.pathname);
-      navigate("/dashboard", { replace: true });
+      navigate("/projects", { replace: true });
       return;
     }
 

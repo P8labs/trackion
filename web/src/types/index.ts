@@ -8,17 +8,17 @@ export interface Project {
   updated_at: string;
 }
 
-export interface UpdateProject {
-  name?: string;
-  domains?: string[];
-  settings?: ProjectSettings;
-}
-
 export interface ProjectSettings {
   auto_pageview: boolean;
   time_spent: boolean;
   campaign: boolean;
   clicks: boolean;
+}
+
+export interface UpdateProject {
+  name?: string;
+  domains?: string[];
+  settings?: ProjectSettings;
 }
 
 export interface Event {
@@ -202,11 +202,23 @@ export interface ErrorStats {
 
 // Billing and Usage Types
 export interface UsagePlan {
+  plan: "free" | "pro";
+  status: string;
+  current_period_end: string;
+  last_usage_reset: string;
   events_used: number;
   events_limit: number;
+  events_remaining: number;
   projects_used: number;
   projects_limit: number;
-  plan: "free" | "pro";
+  projects_remaining: number;
+  configs_used: number;
+  config_keys_limit: number;
+  config_keys_remaining: number;
+  config_unlimited: boolean;
+  feature_flags_used: number;
+  error_retention_days: number;
+  supports_rollout: boolean;
 }
 
 export interface PlanLimits {

@@ -63,7 +63,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <Button
                   variant="outline"
                   onClick={() => {
-                    window.location.href = "/dashboard";
+                    window.location.href = "/projects";
                   }}
                 >
                   Back to Dashboard

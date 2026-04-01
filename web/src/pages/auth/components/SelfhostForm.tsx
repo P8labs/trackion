@@ -54,7 +54,7 @@ export default function SelfhostForm() {
     },
     onSuccess: ({ result, serverUrl }) => {
       setAuth(result.token, serverUrl, result.user);
-      navigate("/dashboard");
+      navigate("/projects");
     },
   });
 

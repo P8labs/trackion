@@ -19,11 +19,23 @@ var (
 )
 
 type Usage struct {
-	EventsUsed    int    `json:"events_used"`
-	EventsLimit   int    `json:"events_limit"`
-	ProjectsUsed  int    `json:"projects_used"`
-	ProjectsLimit int    `json:"projects_limit"`
-	Plan          string `json:"plan"`
+	Plan                string    `json:"plan"`
+	Status              string    `json:"status"`
+	CurrentPeriodEnd    time.Time `json:"current_period_end"`
+	LastUsageReset      time.Time `json:"last_usage_reset"`
+	EventsUsed          int       `json:"events_used"`
+	EventsLimit         int       `json:"events_limit"`
+	EventsRemaining     int       `json:"events_remaining"`
+	ProjectsUsed        int       `json:"projects_used"`
+	ProjectsLimit       int       `json:"projects_limit"`
+	ProjectsRemaining   int       `json:"projects_remaining"`
+	ConfigsUsed         int       `json:"configs_used"`
+	ConfigKeysLimit     int       `json:"config_keys_limit"`
+	ConfigKeysRemaining int       `json:"config_keys_remaining"`
+	ConfigUnlimited     bool      `json:"config_unlimited"`
+	FeatureFlagsUsed    int       `json:"feature_flags_used"`
+	ErrorRetentionDays  int       `json:"error_retention_days"`
+	SupportsRollout     bool      `json:"supports_rollout"`
 }
 
 type Service interface {
@@ -192,15 +204,15 @@ func (s *service) IncrementEventUsage(ctx context.Context, userID uuid.UUID, cou
 	result := s.db.WithContext(ctx).Model(&db.Subscription{}).
 		Where("user_id = ? AND status = 'active'", userID).
 		Update("events_used_this_month", gorm.Expr("events_used_this_month + ?", count))
-	
+
 	if result.Error != nil {
 		return result.Error
 	}
-	
+
 	if result.RowsAffected == 0 {
 		return errors.New("no active subscription found for user")
 	}
-	
+
 	return nil
 }
 
@@ -231,19 +243,76 @@ func (s *service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additio
 func (s *service) GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error) {
 	var subscription db.Subscription
 	err := s.db.WithContext(ctx).
-		Select("events_used_this_month", "projects_used", "monthly_event_limit", "max_projects", "plan").
+		Select(
+			"events_used_this_month",
+			"projects_used",
+			"monthly_event_limit",
+			"max_projects",
+			"max_config_keys",
+			"error_retention_days",
+			"supports_rollout",
+			"plan",
+			"status",
+			"current_period_end",
+			"last_usage_reset",
+		).
 		Where("user_id = ? AND status = 'active'", userID).
 		First(&subscription).Error
 	if err != nil {
 		return nil, err
 	}
 
+	var configCount int64
+	err = s.db.WithContext(ctx).
+		Model(&db.Config{}).
+		Joins("JOIN projects ON projects.id = configs.project_id").
+		Where("projects.user_id = ? AND projects.deleted_at IS NULL", userID).
+		Count(&configCount).Error
+	if err != nil {
+		return nil, err
+	}
+
+	var flagCount int64
+	err = s.db.WithContext(ctx).
+		Model(&db.Flag{}).
+		Joins("JOIN projects ON projects.id = flags.project_id").
+		Where("projects.user_id = ? AND projects.deleted_at IS NULL", userID).
+		Count(&flagCount).Error
+	if err != nil {
+		return nil, err
+	}
+
+	eventsRemaining := max(subscription.MonthlyEventLimit-subscription.EventsUsedThisMonth, 0)
+
+	projectsRemaining := max(subscription.MaxProjects-subscription.ProjectsUsed, 0)
+
+	configUnlimited := subscription.MaxConfigKeys < 0
+	configKeysRemaining := -1
+	if !configUnlimited {
+		configKeysRemaining = subscription.MaxConfigKeys - int(configCount)
+		if configKeysRemaining < 0 {
+			configKeysRemaining = 0
+		}
+	}
+
 	return &Usage{
-		EventsUsed:    subscription.EventsUsedThisMonth,
-		EventsLimit:   subscription.MonthlyEventLimit,
-		ProjectsUsed:  subscription.ProjectsUsed,
-		ProjectsLimit: subscription.MaxProjects,
-		Plan:          subscription.Plan,
+		Plan:                subscription.Plan,
+		Status:              subscription.Status,
+		CurrentPeriodEnd:    subscription.CurrentPeriodEnd,
+		LastUsageReset:      subscription.LastUsageReset,
+		EventsUsed:          subscription.EventsUsedThisMonth,
+		EventsLimit:         subscription.MonthlyEventLimit,
+		EventsRemaining:     eventsRemaining,
+		ProjectsUsed:        subscription.ProjectsUsed,
+		ProjectsLimit:       subscription.MaxProjects,
+		ProjectsRemaining:   projectsRemaining,
+		ConfigsUsed:         int(configCount),
+		ConfigKeysLimit:     subscription.MaxConfigKeys,
+		ConfigKeysRemaining: configKeysRemaining,
+		ConfigUnlimited:     configUnlimited,
+		FeatureFlagsUsed:    int(flagCount),
+		ErrorRetentionDays:  subscription.ErrorRetentionDays,
+		SupportsRollout:     subscription.SupportsRollout,
 	}, nil
 }
 
@@ -264,15 +333,15 @@ func (s *service) IncrementProjectUsage(ctx context.Context, userID uuid.UUID) e
 	result := s.db.WithContext(ctx).Model(&db.Subscription{}).
 		Where("user_id = ? AND status = 'active'", userID).
 		Update("projects_used", gorm.Expr("projects_used + 1"))
-	
+
 	if result.Error != nil {
 		return result.Error
 	}
-	
+
 	if result.RowsAffected == 0 {
 		return errors.New("no active subscription found for user")
 	}
-	
+
 	return nil
 }
 
@@ -280,14 +349,14 @@ func (s *service) DecrementProjectUsage(ctx context.Context, userID uuid.UUID) e
 	result := s.db.WithContext(ctx).Model(&db.Subscription{}).
 		Where("user_id = ? AND status = 'active'", userID).
 		Update("projects_used", gorm.Expr("GREATEST(0, projects_used - 1)"))
-	
+
 	if result.Error != nil {
 		return result.Error
 	}
-	
+
 	if result.RowsAffected == 0 {
 		return errors.New("no active subscription found for user")
 	}
-	
+
 	return nil
 }

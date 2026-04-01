@@ -23,6 +23,7 @@ import {
   getUsage,
   getPlanInfo,
   upgradeToPro,
+  getCurrentUser,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
@@ -45,9 +46,19 @@ export const queryKeys = {
   countryData: (projectId: string) => ["countryData", projectId] as const,
   usage: ["usage"] as const,
   planInfo: ["planInfo"] as const,
+  user: ["current-user"] as const,
 };
 
 // Custom hooks for queries
+export function useUser() {
+  const { authToken, serverUrl } = useStore();
+  return useQuery({
+    queryKey: queryKeys.user,
+    queryFn: () => getCurrentUser(serverUrl, authToken!),
+    enabled: !!authToken,
+    retry: false,
+  });
+}
 export function useProjects() {
   const { authToken, serverUrl } = useStore();
 

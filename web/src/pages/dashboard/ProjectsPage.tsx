@@ -1,43 +1,20 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  AlertTriangle,
-  FolderKanban,
-  Plus,
-  Search,
-  Sparkles,
-} from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
+import { Search } from "lucide-react";
 import { Input } from "../../components/ui/input";
 import { Skeleton } from "../../components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "../../components/ui/alert-dialog";
-import { useProjects, useDeleteProject } from "../../hooks/useApi";
-import { ProjectListCard } from "../../components/project";
+
+import { useProjects } from "../../hooks/useApi";
+import { useStore } from "../../store";
+import { PLine } from "@/components/Line";
+import PlusDecor from "@/components/PlusDecor";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
+  const { setCurrentProject } = useStore();
   const { data: projects = [], isLoading, error } = useProjects();
-  const deleteProjectMutation = useDeleteProject();
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteModal, setDeleteModal] = useState<{
-    isOpen: boolean;
-    projectId: string | null;
-  }>({
-    isOpen: false,
-    projectId: null,
-  });
 
   const filteredProjects = useMemo(() => {
     const search = searchTerm.trim().toLowerCase();
@@ -56,181 +33,164 @@ export function ProjectsPage() {
     });
   }, [projects, searchTerm]);
 
-  const uniqueDomainCount = useMemo(
-    () =>
-      new Set(
-        projects.flatMap((project) => (project.domains || []).map((d) => d)),
-      ).size,
-    [projects],
-  );
-
-  const handleDeleteProject = async (projectId: string) => {
-    try {
-      await deleteProjectMutation.mutateAsync(projectId);
-      setDeleteModal({ isOpen: false, projectId: null });
-    } catch (err) {
-      console.error("Failed to delete project:", err);
-    }
-  };
-
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <Card className="py-0">
-          <CardContent className="space-y-4 py-5">
-            <Skeleton className="h-8 w-52" />
-            <Skeleton className="h-4 w-72" />
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
+      <div className="relative mx-auto w-full max-w-5xl px-4 md:px-6">
+        <div className="pointer-events-none absolute inset-y-0 left-4 border-l border-border/60 md:left-6" />
+        <div className="pointer-events-none absolute inset-y-0 right-4 border-l border-border/60 md:right-6" />
+
+        <div className="relative border-x border-border/60 py-5">
+          <div className="space-y-3 border-b border-border/60 px-4 pb-5 md:px-6">
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+
+          <div className="border-b border-border/60 px-4 py-4 md:px-6">
+            <div className="flex gap-6">
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
+              <Skeleton className="h-10 w-32" />
             </div>
-          </CardContent>
-        </Card>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, idx) => (
-            <Skeleton key={idx} className="h-56 rounded-xl" />
-          ))}
+          </div>
+
+          <div className="border-b border-border/60 px-4 py-4 md:px-6">
+            <Skeleton className="h-10 w-full max-w-xl" />
+          </div>
+
+          <div>
+            {Array.from({ length: 7 }).map((_, idx) => (
+              <div
+                key={idx}
+                className="border-b border-border/60 px-4 py-4 md:px-6"
+              >
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="mt-2 h-4 w-56" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Card className="border-foreground/10 py-0">
-        <CardContent className="space-y-5 py-5">
-          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border bg-muted/30 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                <Sparkles className="h-3.5 w-3.5" />
-                Project Workspace
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
-              <p className="text-muted-foreground">
-                Manage websites, configure domains, and control tracking.
-              </p>
-            </div>
-            <Button onClick={() => navigate("/projects/new")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Project
-            </Button>
-          </div>
+    <section className="relative max-w-4xl mx-auto py-4 h-full">
+      <PLine />
+      <div className="relative px-4 md:px-6 pb-4">
+        <h1 className="text-xl font-medium tracking-tight">Projects</h1>
+      </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <StatCard label="Total Projects" value={String(projects.length)} />
-            <StatCard
-              label="Unique Domains"
-              value={String(uniqueDomainCount)}
-            />
-            <StatCard
-              label="Search Results"
-              value={String(filteredProjects.length)}
-            />
-          </div>
-
-          <div className="relative max-w-xl">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Find by project name or domain"
-              className="pl-9"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="relative px-4 md:px-6 pb-6 border-b">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search projects or domains"
+            className="
+            h-11 pl-9
+            bg-muted/20
+            border-border/60
+            focus-visible:border-primary
+            focus-visible:ring-0
+            "
+          />
+        </div>
+        <PlusDecor />
+      </div>
 
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive">
-          <p className="text-sm">Failed to load projects. Please try again.</p>
+        <div className="px-4 md:px-6 pb-4 text-sm text-destructive">
+          Failed to load projects.
         </div>
       )}
 
       {projects.length === 0 ? (
-        <Card className="py-0">
-          <CardContent className="flex flex-col items-center py-14 text-center">
-            <div className="mb-4 rounded-full bg-muted p-3">
-              <FolderKanban className="h-6 w-6 text-muted-foreground" />
-            </div>
-            <h3 className="mb-2 text-lg font-semibold">No projects yet</h3>
-            <p className="mb-6 max-w-md text-muted-foreground">
-              Start with one project and add your domains to see real-time
-              analytics, traffic sources, and custom events.
-            </p>
-            <Button onClick={() => navigate("/projects/new")} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Create First Project
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="px-4 md:px-6 py-16 text-center text-sm text-muted-foreground">
+          No projects yet
+        </div>
       ) : filteredProjects.length === 0 ? (
-        <Card className="py-0">
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-muted-foreground">
-              No projects matched "{searchTerm}". Try a project name or domain.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="px-4 md:px-6 py-10 text-sm text-muted-foreground">
+          No results for "{searchTerm}"
+        </div>
       ) : (
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <ProjectListCard
-              key={project.id}
-              project={project}
-              onOpen={(projectId) => navigate(`/projects/${projectId}`)}
-              onDelete={(projectId) =>
-                setDeleteModal({ isOpen: true, projectId })
-              }
-            />
-          ))}
+        <div className="relative">
+          {filteredProjects.map((project) => {
+            const domain = project.domains?.[0] || "No domain";
+
+            const enabledFeatures = Object.entries(project.settings)
+              .filter(([_, v]) => v)
+              .map(([k]) => k);
+
+            const created = new Date(project.created_at);
+            const createdLabel = created.toLocaleDateString();
+
+            return (
+              <div
+                key={project.id}
+                onClick={() => {
+                  setCurrentProject(project);
+                  navigate(`/projects/${project.id}?section=overview`);
+                }}
+                className="
+                  px-4 md:px-6 py-4
+                  border-b border-border/60
+                  cursor-pointer
+                  transition
+                  hover:bg-muted/20
+                  relative
+                "
+              >
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {project.name}
+                    </p>
+
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <span className="px-2 py-0.5 text-[11px] rounded border border-border/60 text-muted-foreground">
+                        {domain}
+                      </span>
+
+                      <span className="px-2 py-0.5 text-[11px] rounded border border-border/60 text-muted-foreground">
+                        {createdLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                    {enabledFeatures.slice(0, 3).map((feature) => (
+                      <span
+                        key={feature}
+                        className="
+                          px-2 py-0.5 text-[11px] rounded
+                          bg-muted/30 border border-border/50
+                          text-muted-foreground
+                        "
+                      >
+                        {feature}
+                      </span>
+                    ))}
+
+                    {enabledFeatures.length > 3 && (
+                      <span className="text-[11px] text-muted-foreground">
+                        +{enabledFeatures.length - 3}
+                      </span>
+                    )}
+
+                    <span className="ml-1 flex items-center">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    </span>
+                  </div>
+                </div>
+
+                <PlusDecor position="bottom" />
+              </div>
+            );
+          })}
         </div>
       )}
-
-      <AlertDialog
-        open={deleteModal.isOpen}
-        onOpenChange={(open) =>
-          !open && setDeleteModal({ isOpen: false, projectId: null })
-        }
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <AlertTriangle className="h-6 w-6 text-destructive" />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Delete Project</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this project? It will be hidden
-              immediately and permanently removed later by scheduled cleanup.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteProjectMutation.isPending}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (deleteModal.projectId) {
-                  handleDeleteProject(deleteModal.projectId);
-                }
-              }}
-              disabled={deleteProjectMutation.isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {deleteProjectMutation.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border bg-muted/20 p-3">
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
-    </div>
+    </section>
   );
 }

@@ -341,7 +341,7 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="space-y-2 border-t pt-4">
+      <section id="project-settings" className="space-y-2 border-t pt-4">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <SlidersHorizontal className="h-4 w-4" />
           Feature Settings
@@ -364,7 +364,7 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="space-y-3 border-t pt-4">
+      <section id="feature-flags" className="space-y-3 border-t pt-4">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <Flag className="h-4 w-4" />
           Feature Flags
@@ -455,7 +455,7 @@ export function ProjectDetailPage() {
         )}
       </section>
 
-      <section className="space-y-3 border-t pt-4">
+      <section id="remote-config" className="space-y-3 border-t pt-4">
         <h2 className="flex items-center gap-2 text-sm font-medium">
           <Braces className="h-4 w-4" />
           Remote Config

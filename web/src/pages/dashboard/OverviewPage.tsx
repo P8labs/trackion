@@ -11,14 +11,32 @@ import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
 import { OverviewGeoTraffic } from "../../components/dashboard/OverviewGeoTraffic";
 import { WorldMap } from "../../components/dashboard/WorldMap";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../../hooks/useApi";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { queryKeys, useProject } from "../../hooks/useApi";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect } from "react";
 
 export function OverviewPage() {
-  const { currentProject } = useStore();
+  const { id } = useParams<{ id: string }>();
+  const { currentProject, setCurrentProject } = useStore();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { data: projectFromRoute } = useProject(id || "");
+
+  useEffect(() => {
+    if (!projectFromRoute || !id) {
+      return;
+    }
+
+    if (currentProject?.id !== projectFromRoute.id) {
+      setCurrentProject(projectFromRoute);
+    }
+  }, [currentProject?.id, id, projectFromRoute, setCurrentProject]);
+
+  const activeProject = id
+    ? projectFromRoute || (currentProject?.id === id ? currentProject : null)
+    : currentProject;
+
   const sectionParam = searchParams.get("section") || "overview";
   const section = ["overview", "events", "breakdown", "realtime"].includes(
     sectionParam,
@@ -26,23 +44,23 @@ export function OverviewPage() {
     ? sectionParam
     : "overview";
 
-  if (!currentProject) {
+  if (!activeProject) {
     return (
       <div className="flex items-center justify-center h-full min-h-[60vh]">
         <Card className="p-12 text-center max-w-md">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight mb-3">
-              Welcome to Trackion
+              Select a project to continue
             </h2>
             <p className="text-muted-foreground mb-6">
-              Create your first project to start tracking analytics and gain
-              insights into your website's performance.
+              Open the project list and choose a project to view analytics,
+              events, and usage insights.
             </p>
             <Button
-              onClick={() => navigate("/projects/new")}
+              onClick={() => navigate("/dashboard")}
               className="w-full h-11 text-base"
             >
-              Create Your First Project
+              Go to Projects
             </Button>
           </div>
         </Card>
@@ -52,30 +70,30 @@ export function OverviewPage() {
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({
-      queryKey: queryKeys.counts(currentProject.id),
+      queryKey: queryKeys.counts(activeProject.id),
     });
     queryClient.invalidateQueries({
-      queryKey: ["chartData", currentProject.id],
+      queryKey: ["chartData", activeProject.id],
       exact: false,
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.deviceAnalytics(currentProject.id),
+      queryKey: queryKeys.deviceAnalytics(activeProject.id),
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.trafficSources(currentProject.id),
+      queryKey: queryKeys.trafficSources(activeProject.id),
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.topPages(currentProject.id),
+      queryKey: queryKeys.topPages(activeProject.id),
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.recentEventsFormatted(currentProject.id),
+      queryKey: queryKeys.recentEventsFormatted(activeProject.id),
       exact: false,
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.onlineUsers(currentProject.id),
+      queryKey: queryKeys.onlineUsers(activeProject.id),
     });
     queryClient.invalidateQueries({
-      queryKey: queryKeys.countryData(currentProject.id),
+      queryKey: queryKeys.countryData(activeProject.id),
     });
   };
 
@@ -84,14 +102,14 @@ export function OverviewPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            {currentProject.name}
+            {activeProject.name}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
             Real-time analytics and insights
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <OnlineUsers projectId={currentProject.id} />
+          <OnlineUsers projectId={activeProject.id} />
           <Button
             variant="outline"
             onClick={handleRefresh}
@@ -106,25 +124,25 @@ export function OverviewPage() {
       <div className="space-y-4">
         {section === "overview" && (
           <>
-            <DashboardCounts projectId={currentProject.id} />
-            <DashboardChart projectId={currentProject.id} />
-            <OverviewGeoTraffic projectId={currentProject.id} />
+            <DashboardCounts projectId={activeProject.id} />
+            <DashboardChart projectId={activeProject.id} />
+            <OverviewGeoTraffic projectId={activeProject.id} />
           </>
         )}
 
         {section === "events" && (
           <>
-            <DashboardCounts projectId={currentProject.id} />
-            <RecentEvents projectId={currentProject.id} />
+            <DashboardCounts projectId={activeProject.id} />
+            <RecentEvents projectId={activeProject.id} />
           </>
         )}
 
         {section === "breakdown" && (
           <>
-            <AnalyticsBreakdown projectId={currentProject.id} />
+            <AnalyticsBreakdown projectId={activeProject.id} />
             <div className="grid gap-4 lg:grid-cols-2">
-              <WorldMap projectId={currentProject.id} />
-              <TopPages projectId={currentProject.id} />
+              <WorldMap projectId={activeProject.id} />
+              <TopPages projectId={activeProject.id} />
             </div>
           </>
         )}
@@ -139,11 +157,11 @@ export function OverviewPage() {
                     Active sessions and latest event activity
                   </p>
                 </div>
-                <OnlineUsers projectId={currentProject.id} />
+                <OnlineUsers projectId={activeProject.id} />
               </div>
             </Card>
 
-            <RecentEvents projectId={currentProject.id} />
+            <RecentEvents projectId={activeProject.id} />
           </>
         )}
       </div>

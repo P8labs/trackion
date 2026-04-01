@@ -1,9 +1,3 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { useStore } from "../../store";
 import {
@@ -16,18 +10,15 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../components/ui/avatar";
-import { Badge } from "../../components/ui/badge";
 import moment from "moment";
 import { WEB_VERSION } from "../../lib/constants";
+import { PLine } from "@/components/Line";
+import PlusDecor from "@/components/PlusDecor";
 
 export function SettingsPage() {
   const { serverUrl, authToken, user: storedUser } = useStore();
 
-  const {
-    data: usage,
-    isLoading: usageLoading,
-    isError: usageError,
-  } = useQuery({
+  const { data: usage } = useQuery({
     queryKey: ["settings-usage", serverUrl],
     queryFn: () => getUsageSummary(serverUrl, authToken!),
     enabled: !!authToken,
@@ -58,190 +49,144 @@ export function SettingsPage() {
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
 
-  const usagePercent =
-    usage && usage.monthly_limit > 0
-      ? Math.min((usage.current_usage / usage.monthly_limit) * 100, 100)
-      : 0;
-
   return (
-    <div className="space-y-6 max-w-2xl text-foreground">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Configure your dashboard</p>
+    <section className="relative max-w-4xl mx-auto py-4 h-full">
+      <PLine />
+      <div className="px-4 md:px-6 py-6 relative border-b">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+          Settings
+        </p>
+        <h1 className="text-xl font-medium mt-1">Workspace configuration</h1>
+        <PlusDecor />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {currentUser ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <Avatar data-size="lg">
-                  <AvatarImage
-                    src={currentUser.avatar_url}
-                    alt={currentUser.name || currentUser.email || "User avatar"}
-                  />
-                  <AvatarFallback>{userInitials || "TR"}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-base font-semibold text-foreground">
-                    {currentUser.name || "Trackion User"}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {currentUser.email || "No email available"}
-                  </p>
-                </div>
-              </div>
+      <div className="border-border/60">
+        <div className="px-4 md:px-6 py-6 relative border-b">
+          <p className="text-sm font-medium mb-4">Profile</p>
 
-              <div className="grid gap-3 text-sm md:grid-cols-2">
-                <div>
-                  <p className="font-medium mb-1 text-foreground">Joined</p>
-                  <p className="break-all text-muted-foreground">
-                    {moment(currentUser.created_at).fromNow()}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-medium mb-1 text-foreground">GitHub</p>
-                  <p className="text-muted-foreground">
-                    {currentUser.github_id ? "Connected" : "Not connected"}
-                  </p>
+          {currentUser ? (
+            <div className="flex items-center gap-4">
+              <Avatar data-size="lg">
+                <AvatarImage src={currentUser.avatar_url} />
+                <AvatarFallback>{userInitials || "TR"}</AvatarFallback>
+              </Avatar>
+
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {currentUser.name || "Trackion User"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {currentUser.email || "No email"}
+                </p>
+
+                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <span>Joined {moment(currentUser.created_at).fromNow()}</span>
                 </div>
               </div>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">
-              User profile details are not available for this authentication
-              mode.
+              No profile available for this mode.
             </p>
           )}
-        </CardContent>
-      </Card>
+          <PlusDecor />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>General</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4 text-sm text-muted-foreground">
+        <div className="px-4 md:px-6 py-6 relative border-b">
+          <p className="text-sm font-medium mb-4">System</p>
+
+          <div className="grid sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <div className="mb-1 flex items-center justify-between gap-2">
-                <p className="font-medium text-foreground">Server Status</p>
-                <Badge
-                  variant={healthError ? "destructive" : "secondary"}
-                  className="capitalize"
-                >
-                  {healthLoading ? "Checking" : healthError ? "Down" : "Up"}
-                </Badge>
+              <p className="text-muted-foreground">Server Status</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    healthError ? "bg-red-500" : "bg-emerald-500"
+                  }`}
+                />
+                <span className="text-foreground">
+                  {healthLoading
+                    ? "Checking..."
+                    : healthError
+                      ? "Down"
+                      : "Operational"}
+                </span>
               </div>
-              <p>
-                {healthError
-                  ? "Unable to reach server health endpoint"
-                  : `Last checked ${health?.timestamp ? moment(health.timestamp).fromNow() : "just now"}`}
+            </div>
+
+            <div>
+              <p className="text-muted-foreground">Server Version</p>
+              <p className="text-foreground mt-1">
+                {health?.server_version || "Unknown"}
               </p>
             </div>
+
             <div>
-              <p className="font-medium mb-1 text-foreground">Server Version</p>
-              <p>{health?.server_version || "Unknown"}</p>
-            </div>
-            <div>
-              <p className="font-medium mb-1 text-foreground">Web Version</p>
-              <p>{WEB_VERSION}</p>
+              <p className="text-muted-foreground">Web Version</p>
+              <p className="text-foreground mt-1">{WEB_VERSION}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <PlusDecor />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Data & Privacy</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 text-sm text-muted-foreground">
+        <div className="px-4 md:px-6 py-6 border-b border-border/60">
+          <p className="text-sm font-medium mb-4">Data & Privacy</p>
+
+          <div className="space-y-2 text-sm text-muted-foreground max-w-xl">
             <p>
-              All tracking data is stored on your server. Trackion does not
-              collect or transmit any data externally.
+              All tracking data is stored on your server. No external
+              collection.
             </p>
+            <p>Event retention: {usage?.retention_days ?? 30} days.</p>
             <p>
-              Event retention is set to {usage?.retention_days ?? 30} days.
-              Older events are removed automatically by background maintenance.
-            </p>
-            <p>
-              Deleted projects are kept for {usage?.delete_after_days ?? 7} days
-              before final cleanup (including related events).
+              Deleted projects removed after {usage?.delete_after_days ?? 7}{" "}
+              days.
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="px-4 md:px-6 py-6 border-t border-border/60">
+          <p className="text-sm font-medium mb-4">Resources</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+              <a
+                href="/docs/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted-foreground hover:text-foreground transition hover:underline"
+              >
+                Documentation
+              </a>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Usage & Billing</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {usageLoading && (
-            <p className="text-sm text-muted-foreground">Loading usage...</p>
-          )}
+              <a
+                href="/docs/quick-start/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-muted-foreground hover:text-foreground transition hover:underline"
+              >
+                Quick Start
+              </a>
 
-          {usageError && (
-            <p className="text-sm text-destructive">
-              Unable to load usage details right now.
-            </p>
-          )}
+              <a
+                href="/terms"
+                className="text-muted-foreground hover:text-foreground transition hover:underline"
+              >
+                Terms
+              </a>
 
-          {!usageLoading &&
-            !usageError &&
-            usage &&
-            usage.mode === "selfhost" && (
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Self-hosted mode</p>
-                <p>
-                  You are running Trackion in self-hosted mode. Event collection
-                  is unlimited and no SaaS billing limits are applied.
-                </p>
-              </div>
-            )}
-
-          {!usageLoading && !usageError && usage && usage.mode === "saas" && (
-            <div className="space-y-4 text-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground">Current Plan</p>
-                <p className="font-medium text-foreground capitalize">
-                  {usage.plan || "free"}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-muted-foreground">Subscription Status</p>
-                <p className="font-medium text-foreground capitalize">
-                  {usage.status || "active"}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-muted-foreground">
-                  <p>Monthly Usage</p>
-                  <p>
-                    {usage.current_usage.toLocaleString()} /{" "}
-                    {usage.monthly_limit.toLocaleString()} events
-                  </p>
-                </div>
-                <div className="h-2 rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${usagePercent}%` }}
-                  />
-                </div>
-                <p className="text-muted-foreground">
-                  {usage.remaining.toLocaleString()} events remaining this
-                  month.
-                </p>
-              </div>
+              <a
+                href="/privacy"
+                className="text-muted-foreground hover:text-foreground transition hover:underline"
+              >
+                Privacy
+              </a>
             </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Trackion. Built at P8labs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
