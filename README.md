@@ -52,7 +52,6 @@ trackion.track("button.click", {
 
 That’s it. Events will start appearing in your dashboard.
 
-
 ## Error Tracking
 
 Trackion automatically captures JavaScript errors and unhandled promise rejections:
@@ -66,11 +65,12 @@ window.onerror = (message, source, lineno, colno, error) => {
 // Manual capture
 trackion.captureError(new Error("Something went wrong"), {
   userId: "user123",
-  page: "checkout"
+  page: "checkout",
 });
 ```
 
 **Key Features:**
+
 - **Automatic capture** of uncaught errors and promise rejections
 - **Error grouping** by fingerprint (same errors grouped together)
 - **Stack traces** with source file and line numbers
@@ -111,6 +111,11 @@ Guides:
 Full docs: [https://trackion.tech/docs/](https://trackion.tech/docs/)
 
 SDK examples are available in `examples/` for web, react, vue, node, and script integrations.
+
+## Official SDK
+
+- JavaScript SDK (official): [@trackion/js](https://www.npmjs.com/package/@trackion/js)
+- Source: [P8labs/trackion-js](https://github.com/P8labs/trackion-js)
 
 ## License & Usage
 

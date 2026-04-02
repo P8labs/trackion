@@ -2,31 +2,32 @@
 
 Trackion supports two client integration styles:
 
-1. NPM SDK package family (`@trackion/web`)
+1. NPM SDK package family (`@trackion/js`)
 2. Hosted browser script (`/t.js`)
+
+Official package: [@trackion/js on npm](https://www.npmjs.com/package/@trackion/js)
 
 ## Install (NPM)
 
 ```bash
-npm install @trackion/web
+npm install @trackion/js
 ```
 
 Entrypoints:
 
-- `@trackion/web` (vanilla web)
-- `@trackion/web/react`
-- `@trackion/web/vue`
-- `@trackion/web/node`
+- `@trackion/js` (vanilla web)
+- `@trackion/js/react`
+- `@trackion/js/vue`
+- `@trackion/js/node`
 
 ## Vanilla Web (NPM)
 
 ```ts
-import { createTrackionClient } from "@trackion/web";
+import { createTrackionClient } from "@trackion/js";
 
 const trackion = createTrackionClient({
   serverUrl: "https://your-trackion-server.com",
-  projectKey: "PROJECT_API_KEY",
-  projectId: "PROJECT_UUID",
+  apiKey: "PROJECT_API_KEY",
   userId: "user-123",
 });
 
@@ -41,7 +42,7 @@ if (trackion.isEnabled("checkout_v2")) {
 ## React
 
 ```tsx
-import { TrackionProvider, useTrackion } from "@trackion/web/react";
+import { TrackionProvider, useTrackion } from "@trackion/js/react";
 
 function SaveButton() {
   const trackion = useTrackion();
@@ -53,8 +54,7 @@ export function App() {
     <TrackionProvider
       options={{
         serverUrl: "https://your-trackion-server.com",
-        projectKey: "PROJECT_API_KEY",
-        projectId: "PROJECT_UUID",
+        apiKey: "PROJECT_API_KEY",
       }}
     >
       <SaveButton />
@@ -67,14 +67,13 @@ export function App() {
 
 ```ts
 import { createApp, h } from "vue";
-import { createVueTrackion, provideTrackion } from "@trackion/web/vue";
+import { createVueTrackion, provideTrackion } from "@trackion/js/vue";
 
 createApp({
   setup() {
     const client = createVueTrackion({
       serverUrl: "https://your-trackion-server.com",
-      projectKey: "PROJECT_API_KEY",
-      projectId: "PROJECT_UUID",
+      apiKey: "PROJECT_API_KEY",
     });
     provideTrackion(client);
     return () => h("div", "Trackion enabled");
@@ -85,12 +84,11 @@ createApp({
 ## Node
 
 ```ts
-import { createTrackionNodeClient, trackServerEvent } from "@trackion/web/node";
+import { createTrackionNodeClient, trackServerEvent } from "@trackion/js/node";
 
 const client = createTrackionNodeClient({
   serverUrl: "https://your-trackion-server.com",
-  projectKey: "PROJECT_API_KEY",
-  projectId: "PROJECT_UUID",
+  apiKey: "PROJECT_API_KEY",
   userId: "worker-1",
 });
 
@@ -116,7 +114,7 @@ trackion.track("signup.click", { source: "hero" });
 ## Request Format Notes
 
 - Event ingestion payloads use `session_id`.
-- Runtime fetch endpoint: `GET /v1/runtime?project_id=<uuid>&user_id=<optional>`.
+- Runtime fetch endpoint: `GET /v1/runtime?user_id=<optional>`.
 - Dashboard runtime management endpoints are under `/api/runtime/projects/{id}/runtime`.
 
 ## Repository Examples

@@ -5,6 +5,7 @@ This document describes the Error Tracking API endpoints for querying and managi
 ## Base URL
 
 All API requests should be made to:
+
 ```
 https://api.trackion.tech/api/errors
 ```
@@ -30,12 +31,14 @@ GET /api/errors?project_id={project_id}&limit={limit}&offset={offset}&since={tim
 ```
 
 **Query Parameters:**
+
 - `project_id` (required): Project UUID
 - `limit` (optional): Number of results to return (default: 50, max: 100)
 - `offset` (optional): Number of results to skip (default: 0)
 - `since` (optional): ISO timestamp to filter errors after this date
 
 **Example Request:**
+
 ```bash
 curl -X GET \
   'https://api.trackion.tech/api/errors?project_id=550e8400-e29b-41d4-a716-446655440000&limit=20' \
@@ -43,6 +46,7 @@ curl -X GET \
 ```
 
 **Example Response:**
+
 ```json
 {
   "errors": [
@@ -57,7 +61,7 @@ curl -X GET \
       "fingerprint": "f6e5d4c3b2a1...",
       "message": "Failed to fetch user data",
       "count": 8,
-      "first_seen": "2024-01-15T09:15:00Z", 
+      "first_seen": "2024-01-15T09:15:00Z",
       "last_seen": "2024-01-15T14:20:00Z"
     }
   ],
@@ -78,14 +82,17 @@ GET /api/errors/{fingerprint}?project_id={project_id}&limit={limit}&offset={offs
 ```
 
 **Path Parameters:**
+
 - `fingerprint` (required): Error fingerprint (SHA256 hash)
 
 **Query Parameters:**
+
 - `project_id` (required): Project UUID
 - `limit` (optional): Number of occurrences to return (default: 20, max: 100)
 - `offset` (optional): Number of occurrences to skip (default: 0)
 
 **Example Request:**
+
 ```bash
 curl -X GET \
   'https://api.trackion.tech/api/errors/a1b2c3d4e5f6.../550e8400-e29b-41d4-a716-446655440000' \
@@ -93,6 +100,7 @@ curl -X GET \
 ```
 
 **Example Response:**
+
 ```json
 {
   "fingerprint": "a1b2c3d4e5f6...",
@@ -123,13 +131,14 @@ curl -X GET \
 
 ## Error Ingestion
 
-Errors are ingested through the standard events API with `event_type: "error"`. 
+Errors are ingested through the standard events API with `event_type: "error"`.
 
 **Error Event Structure:**
+
 ```json
 {
   "event_name": "error",
-  "event_type": "error", 
+  "event_type": "error",
   "properties": {
     "error_message": "Cannot read property 'user' of undefined",
     "stack_trace": "TypeError: Cannot read property...",
@@ -157,6 +166,7 @@ Errors are ingested through the standard events API with `event_type: "error"`.
 ## Rate Limiting
 
 Error tracking endpoints are subject to the same rate limits as other API endpoints:
+
 - 1000 requests per minute per API key
 - Burst allowance of 100 requests
 
@@ -172,5 +182,5 @@ Error tracking endpoints are subject to the same rate limits as other API endpoi
 
 Use the official Trackion SDKs for automatic error capture:
 
-- **Web/React**: `@trackion/web`
-- **Node.js**: `@trackion/web/node`
+- **Web/React**: `@trackion/js`
+- **Node.js**: `@trackion/js/node`
