@@ -98,10 +98,12 @@ Note: ingestion payloads require `session_id` (snake_case).
 
 SDK package family:
 
-- `@trackion/web`
-- `@trackion/web/react`
-- `@trackion/web/vue`
-- `@trackion/web/node`
+- `@trackion/js`
+- `@trackion/js/react`
+- `@trackion/js/vue`
+- `@trackion/js/node`
+
+Official package: [https://www.npmjs.com/package/@trackion/js](https://www.npmjs.com/package/@trackion/js)
 
 See [SDK Usage](/sdk-usage) for integration examples.
 
@@ -112,9 +114,9 @@ Runtime control is split into:
 - Public read endpoint for clients/SDKs
 - Authenticated management endpoints for dashboard users
 
-### GET /v1/runtime?project_id={project_id}&user_id={optional_user_id}
+### GET /v1/runtime?user_id={optional_user_id}
 
-Returns evaluated feature flags and remote config for a project.
+Returns evaluated feature flags and remote config for the project identified by `Authorization: Bearer <project_api_key>`.
 
 Example response:
 

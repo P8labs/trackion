@@ -2,26 +2,27 @@
 
 Trackion supports both:
 
-- NPM SDK package family (`@trackion/web`)
+- NPM SDK package family (`@trackion/js`)
 - Hosted tracker script (`/t.js`)
+
+Official package: [@trackion/js on npm](https://www.npmjs.com/package/@trackion/js)
 
 ## NPM SDK Quick Start
 
 Install:
 
 ```bash
-npm install @trackion/web
+npm install @trackion/js
 ```
 
 Vanilla usage:
 
 ```ts
-import { createTrackionClient } from "@trackion/web";
+import { createTrackionClient } from "@trackion/js";
 
 const trackion = createTrackionClient({
   serverUrl: "https://your-trackion-server.com",
-  projectKey: "PROJECT_API_KEY",
-  projectId: "PROJECT_UUID",
+  apiKey: "PROJECT_API_KEY",
   userId: "user-123",
 });
 
@@ -31,9 +32,9 @@ await trackion.refreshRuntime();
 
 Framework entrypoints:
 
-- `@trackion/web/react`
-- `@trackion/web/vue`
-- `@trackion/web/node`
+- `@trackion/js/react`
+- `@trackion/js/vue`
+- `@trackion/js/node`
 
 See [SDK Usage](/sdk-usage) for full examples.
 
@@ -124,8 +125,11 @@ Note: use `session_id` (snake_case) in ingestion payloads.
 Public runtime fetch:
 
 ```bash
-curl "https://your-trackion-server.com/v1/runtime?project_id=PROJECT_UUID&user_id=user-123"
+curl -H "Authorization: Bearer PROJECT_API_KEY" \
+  "https://your-trackion-server.com/v1/runtime?user_id=user-123"
 ```
+
+`user_id` is optional and used for rollout evaluation when provided.
 
 Dashboard management flow:
 
@@ -146,7 +150,7 @@ Repository examples for each integration style:
 
 NPM package variants:
 
-- `@trackion/web`
-- `@trackion/web/react`
-- `@trackion/web/vue`
-- `@trackion/web/node`
+- `@trackion/js`
+- `@trackion/js/react`
+- `@trackion/js/vue`
+- `@trackion/js/node`

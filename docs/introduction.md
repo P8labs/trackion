@@ -10,7 +10,7 @@ Trackion helps you collect product events and view analytics in a self-hosted st
 - Per-project tracker configuration from /events/config
 - Project CRUD under /api/projects/\*
 - Usage summary under /api/settings/usage
-- SDK package family: @trackion/web, @trackion/web/react, @trackion/web/vue, @trackion/web/node
+- SDK package family: @trackion/js, @trackion/js/react, @trackion/js/vue, @trackion/js/node
 - Browser tracker script at /t.js and /t.min.js
 
 ## Authentication Modes

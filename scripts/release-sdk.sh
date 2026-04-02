@@ -17,7 +17,7 @@ Examples:
 
 What it does:
   1) Bumps sdk/web/package.json version
-  2) Creates commit: chore(sdk): release @trackion/web v<version>
+  2) Creates commit: chore(sdk): release @trackion/js v<version>
   3) Creates tag: sdk-v<version>
   4) Optionally pushes branch + tag with --push
 EOF
@@ -80,9 +80,9 @@ echo "SDK version: $CURRENT_VERSION -> $NEW_VERSION"
 
 git -C "$REPO_ROOT" add sdk/web/package.json
 
-git -C "$REPO_ROOT" commit -m "chore(sdk): release @trackion/web v$NEW_VERSION"
+git -C "$REPO_ROOT" commit -m "chore(sdk): release @trackion/js v$NEW_VERSION"
 
-git -C "$REPO_ROOT" tag -a "$TAG" -m "Release @trackion/web v$NEW_VERSION"
+git -C "$REPO_ROOT" tag -a "$TAG" -m "Release @trackion/js v$NEW_VERSION"
 
 echo "Created commit and tag: $TAG"
 

@@ -8,5 +8,7 @@ docs/.vitepress/dist
 docs/.vitepress/cache
 trackion.wiki/*
 *.dump
+scripts/db/*
 
+dbinit/
 dist/
