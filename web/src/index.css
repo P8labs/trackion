@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -7,6 +7,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
+  --accent-soft: color-mix(in oklab, var(--primary) 12%, transparent);
+  --accent-medium: color-mix(in oklab, var(--primary) 30%, transparent);
+  --accent-strong: var(--primary);
+
   --background: oklch(1 0 0);
   --foreground: oklch(0.147 0.004 49.3);
   --theme: oklab(70.45% 0.14919 0.12175);
@@ -77,7 +81,8 @@
 }
 
 @theme inline {
-  --font-sans: "Manrope", "Avenir Next", "Segoe UI", sans-serif;
+  --font-sans: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", "Menlo", monospace;
   --color-theme: var(--theme);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -124,7 +129,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   html {
     @apply font-sans;

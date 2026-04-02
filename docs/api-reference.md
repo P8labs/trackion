@@ -76,7 +76,7 @@ Example single event body:
 ```json
 {
   "event": "button_click",
-  "session_Id": "session-1",
+  "session_id": "session-1",
   "user_agent": "Mozilla/5.0",
   "page": {
     "path": "/pricing",
@@ -94,7 +94,86 @@ Example single event body:
 }
 ```
 
-Note: ingestion payloads currently require `session_Id` (capital `I`).
+Note: ingestion payloads require `session_id` (snake_case).
+
+SDK package family:
+
+- `@trackion/web`
+- `@trackion/web/react`
+- `@trackion/web/vue`
+- `@trackion/web/node`
+
+See [SDK Usage](/sdk-usage) for integration examples.
+
+## Runtime Control
+
+Runtime control is split into:
+
+- Public read endpoint for clients/SDKs
+- Authenticated management endpoints for dashboard users
+
+### GET /v1/runtime?project_id={project_id}&user_id={optional_user_id}
+
+Returns evaluated feature flags and remote config for a project.
+
+Example response:
+
+```json
+{
+  "status": true,
+  "message": "Runtime fetched successfully.",
+  "data": {
+    "flags": {
+      "checkout_v2": true,
+      "new_paywall": false
+    },
+    "config": {
+      "paywall.copy": {
+        "title": "Upgrade",
+        "cta": "Start trial"
+      },
+      "limits": {
+        "max_upload_mb": 25
+      }
+    }
+  }
+}
+```
+
+Rollout behavior:
+
+- If a flag is disabled, result is false.
+- If rollout is 100, result is true.
+- If rollout is between 1-99, evaluation uses deterministic hashing on user_id.
+- If user_id is missing for partial rollout, result is false.
+
+### Runtime Management (Protected)
+
+- GET /api/runtime/projects/{id}/runtime
+- PUT /api/runtime/projects/{id}/runtime/flags/{key}
+- DELETE /api/runtime/projects/{id}/runtime/flags/{key}
+- PUT /api/runtime/projects/{id}/runtime/config/{key}
+- DELETE /api/runtime/projects/{id}/runtime/config/{key}
+
+Example flag upsert body:
+
+```json
+{
+  "enabled": true,
+  "rollout_percentage": 50
+}
+```
+
+Example config upsert body:
+
+```json
+{
+  "value": {
+    "title": "Upgrade",
+    "cta": "Start trial"
+  }
+}
+```
 
 ## Projects API
 

@@ -8,32 +8,31 @@ import (
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/core"
-	"trackion/internal/repository"
+	"trackion/internal/db"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
+	"gorm.io/gorm"
 )
 
 type Service interface {
 	UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error)
-	GetUser(ctx context.Context, userID string) (repository.User, error)
+	GetUser(ctx context.Context, userID string) (db.User, error)
 	CreateSession(ctx context.Context, userID string) (string, error)
 	DeleteSession(ctx context.Context, token string) error
-	VerifyToken(ctx context.Context, token string) (repository.User, error)
+	VerifyToken(ctx context.Context, token string) (db.User, error)
 }
 
 type service struct {
-	repo repository.Querier
-	cfg  config.Config
+	db  *gorm.DB
+	cfg config.Config
 }
 
-const defaultMonthlyEventLimit int32 = 10000
+const defaultMonthlyEventLimit int = 10000
 
-func NewService(repo repository.Querier, cfg config.Config) Service {
+func NewService(db *gorm.DB, cfg config.Config) Service {
 	return &service{
-		repo: repo,
-		cfg:  cfg,
+		db:  db,
+		cfg: cfg,
 	}
 }
 
@@ -64,11 +63,11 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 		return user.ID.String(), nil
 	}
 
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
 
-	emailUser, err := s.repo.GetUserByEmail(ctx, email)
+	emailUser, err := gorm.G[db.User](s.db).Where("email = ?", email).First(ctx)
 	if err == nil {
 		if err := s.linkProviderToUser(ctx, provider, externalID, emailUser.ID); err != nil {
 			return "", err
@@ -87,7 +86,7 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 		return emailUser.ID.String(), nil
 	}
 
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
 
@@ -100,14 +99,15 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 		googleID = core.StrPtr(externalID)
 	}
 
-	u, err := s.repo.CreateUser(ctx, repository.CreateUserParams{
-		ID:        uuid.New(),
+	u := db.User{
 		GithubID:  githubID,
 		GoogleID:  googleID,
 		Email:     email,
 		Name:      core.StrPtr(name),
 		AvatarUrl: core.StrPtr(avatarURL),
-	})
+	}
+
+	err = gorm.G[db.User](s.db).Create(ctx, &u)
 
 	if err != nil {
 		return "", err
@@ -122,33 +122,37 @@ func (s *service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 	return u.ID.String(), nil
 }
 
-func (s *service) findUserByProvider(ctx context.Context, provider, externalID string) (repository.User, error) {
+func (s *service) findUserByProvider(ctx context.Context, provider, externalID string) (db.User, error) {
+
 	switch provider {
 	case "github":
-		return s.repo.GetUserByGithubId(ctx, core.StrPtr(externalID))
+		return gorm.G[db.User](s.db).Where("github_id = ?", externalID).First(ctx)
+
 	case "google":
-		return s.repo.GetUserByGoogleId(ctx, core.StrPtr(externalID))
+		return gorm.G[db.User](s.db).Where("google_id = ?", externalID).First(ctx)
 	default:
-		return repository.User{}, errors.New("unsupported oauth provider")
+		return db.User{}, errors.New("unsupported oauth provider")
 	}
 }
 
 func (s *service) updateUserFromProvider(ctx context.Context, provider, externalID, email, name, avatarURL string) error {
 	switch provider {
 	case "github":
-		return s.repo.UpdateUserFromGithub(ctx, repository.UpdateUserFromGithubParams{
+		_, err := gorm.G[db.User](s.db).Where("github_id = ?", externalID).Updates(ctx, db.User{
 			Email:     email,
 			Name:      core.StrPtr(name),
 			AvatarUrl: core.StrPtr(avatarURL),
 			GithubID:  core.StrPtr(externalID),
 		})
+		return err
 	case "google":
-		return s.repo.UpdateUserFromGoogle(ctx, repository.UpdateUserFromGoogleParams{
+		_, err := gorm.G[db.User](s.db).Where("google_id = ?", externalID).Updates(ctx, db.User{
 			Email:     email,
 			Name:      core.StrPtr(name),
 			AvatarUrl: core.StrPtr(avatarURL),
 			GoogleID:  core.StrPtr(externalID),
 		})
+		return err
 	default:
 		return errors.New("unsupported oauth provider")
 	}
@@ -157,22 +161,24 @@ func (s *service) updateUserFromProvider(ctx context.Context, provider, external
 func (s *service) linkProviderToUser(ctx context.Context, provider, externalID string, userID uuid.UUID) error {
 	switch provider {
 	case "github":
-		return s.repo.LinkGithubIDToUser(ctx, repository.LinkGithubIDToUserParams{
+		_, err := gorm.G[db.User](s.db).Where("id = ?", userID).Updates(ctx, db.User{
 			GithubID: core.StrPtr(externalID),
-			ID:       userID,
 		})
+		return err
+
 	case "google":
-		return s.repo.LinkGoogleIDToUser(ctx, repository.LinkGoogleIDToUserParams{
+		_, err := gorm.G[db.User](s.db).Where("id = ?", userID).Updates(ctx, db.User{
 			GoogleID: core.StrPtr(externalID),
-			ID:       userID,
 		})
+		return err
+
 	default:
 		return errors.New("unsupported oauth provider")
 	}
 }
 
-func (s *service) GetUser(ctx context.Context, userID string) (repository.User, error) {
-	return s.repo.GetUser(ctx, uuid.MustParse(userID))
+func (s *service) GetUser(ctx context.Context, userID string) (db.User, error) {
+	return gorm.G[db.User](s.db).Where("id = ?", userID).First(ctx)
 }
 
 func (s *service) CreateSession(ctx context.Context, userID string) (string, error) {
@@ -187,12 +193,13 @@ func (s *service) CreateSession(ctx context.Context, userID string) (string, err
 		return "", err
 	}
 
-	_, err = s.repo.CreateSession(ctx, repository.CreateSessionParams{
-		ID:        uuid.New(),
+	session := db.Session{
 		UserID:    uid,
 		Token:     token,
 		ExpiresAt: time.Now().Add(30 * 24 * time.Hour),
-	})
+	}
+
+	err = gorm.G[db.Session](s.db).Create(ctx, &session)
 
 	if err != nil {
 		return "", err
@@ -202,18 +209,19 @@ func (s *service) CreateSession(ctx context.Context, userID string) (string, err
 }
 
 func (s *service) DeleteSession(ctx context.Context, token string) error {
-	return s.repo.DeleteSession(ctx, token)
+	_, err := gorm.G[db.Session](s.db).Where("token = ?", token).Delete(ctx)
+	return err
 }
 
-func (s *service) VerifyToken(ctx context.Context, token string) (repository.User, error) {
+func (s *service) VerifyToken(ctx context.Context, token string) (db.User, error) {
 	if s.cfg.IsSelfHost() {
 		if token != s.cfg.AdminToken {
-			return repository.User{}, errors.New("unauthorized")
+			return db.User{}, errors.New("unauthorized")
 		}
 
 		name := "Self Hosted Admin"
 
-		return repository.User{
+		return db.User{
 			ID:        uuid.MustParse(SystemUserID),
 			Email:     "admin@trackion.local",
 			Name:      &name,
@@ -224,44 +232,51 @@ func (s *service) VerifyToken(ctx context.Context, token string) (repository.Use
 		}, nil
 	}
 
-	session, err := s.repo.GetSessionByToken(ctx, token)
+	session, err := gorm.G[db.Session](s.db).Preload("User", nil).Where("token = ? AND expires_at > ?", token, time.Now()).First(ctx)
 	if err != nil {
-		return repository.User{}, err
+		return db.User{}, err
 	}
-
-	return s.repo.GetUser(ctx, session.UserID)
+	return (*session.User), nil
 }
 
 func (s *service) createDefaultSubscription(ctx context.Context, userID uuid.UUID) error {
 	periodEnd := time.Now().AddDate(0, 1, 0)
 
-	_, err := s.repo.CreateSubscription(ctx, repository.CreateSubscriptionParams{
-		ID:                uuid.New(),
+	sub := db.Subscription{
 		UserID:            userID,
 		Plan:              "free",
 		MonthlyEventLimit: defaultMonthlyEventLimit,
 		Status:            "active",
-		CurrentPeriodEnd: pgtype.Timestamptz{
-			Time:  periodEnd,
-			Valid: true,
-		},
-	})
+		CurrentPeriodEnd:  periodEnd,
+	}
+
+	err := gorm.G[db.Subscription](s.db).Create(ctx, &sub)
 
 	return err
 }
 
 func (s *service) ensureActiveSubscription(ctx context.Context, userID uuid.UUID) error {
-	subscription, err := s.repo.GetActiveSubscriptionByUser(ctx, userID)
+	subscription, err := gorm.G[db.Subscription](s.db).Where("user_id = ?", userID).First(ctx)
 	if err == nil {
 		if subscription.Plan == "free" {
-			if err := s.repo.RenewUserFreeSubscriptionIfNeeded(ctx, userID); err != nil {
+			_, err := gorm.G[db.Subscription](s.db).
+				Where("user_id = ?", userID).
+				Where("status = ?", "active").
+				Where("plan = ?", "free").
+				Where("(current_period_end IS NULL OR current_period_end <= now())").
+				Update(ctx,
+					"current_period_end",
+					gorm.Expr("date_trunc('month', now()) + INTERVAL '1 month'"),
+				)
+
+			if err != nil {
 				return err
 			}
 		}
 		return nil
 	}
 
-	if errors.Is(err, pgx.ErrNoRows) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return s.createDefaultSubscription(ctx, userID)
 	}
 

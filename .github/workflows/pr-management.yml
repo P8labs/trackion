@@ -1,0 +1,104 @@
+name: PR Management
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  triage-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ensure PR labels exist
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [
+              { name: "needs-review", color: "0e8a16", description: "PR is ready for review" },
+              { name: "size/s", color: "0e8a16", description: "Small PR (0-49 changed lines)" },
+              { name: "size/m", color: "fbca04", description: "Medium PR (50-249 changed lines)" },
+              { name: "size/l", color: "d93f0b", description: "Large PR (250-999 changed lines)" },
+              { name: "size/xl", color: "b60205", description: "Extra-large PR (1000+ changed lines)" }
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.getLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name
+                });
+              } catch (error) {
+                if (error.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ...label
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            }
+
+      - name: Add review + size labels
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const changedLines = (pr.additions || 0) + (pr.deletions || 0);
+
+            let sizeLabel = "size/xl";
+            if (changedLines < 50) sizeLabel = "size/s";
+            else if (changedLines < 250) sizeLabel = "size/m";
+            else if (changedLines < 1000) sizeLabel = "size/l";
+
+            const removeLabels = ["size/s", "size/m", "size/l", "size/xl"];
+            for (const label of removeLabels) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: pr.number,
+                  name: label
+                });
+              } catch (error) {
+                if (error.status !== 404) {
+                  throw error;
+                }
+              }
+            }
+
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              labels: ["needs-review", sizeLabel]
+            });
+
+      - name: Assign PR author
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const assignees = [pr.user.login];
+
+            try {
+              await github.rest.issues.addAssignees({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                assignees
+              });
+            } catch (error) {
+              core.warning(`Could not assign PR author: ${error.message}`);
+            }

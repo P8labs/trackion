@@ -1,15 +1,15 @@
 package projects
 
 import (
-	"trackion/internal/repository"
-
+	"trackion/internal/config"
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-func Routes(repo repository.Querier) *chi.Mux {
+func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	service := NewService(repo)
+	service := NewService(db, cfg)
 	handler := NewHandler(service)
 
 	r.Get("/", handler.ListUserProjects)

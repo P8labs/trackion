@@ -1,13 +1,7 @@
 import { useMemo, useState } from "react";
-import { Calendar, Filter } from "lucide-react";
+import { Calendar01Icon, FilterIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../ui/card";
 import {
   Select,
   SelectContent,
@@ -15,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { Button } from "../ui/button";
 import {
   ChartContainer,
   ChartLegend,
@@ -26,7 +19,7 @@ import {
 } from "../ui/chart";
 import { LoadingSpinner } from "../LoadingSpinner";
 import { useAreaChartData } from "../../hooks/useApi";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 interface ChartDataProps {
   projectId: string;
@@ -57,6 +50,7 @@ const chartConfig = {
     color: "var(--chart-2)",
   },
 } satisfies ChartConfig;
+
 export function DashboardChart({ projectId }: ChartDataProps) {
   const [timeRange, setTimeRange] = useState("24h");
   const [eventFilter, setEventFilter] = useState("");
@@ -86,126 +80,90 @@ export function DashboardChart({ projectId }: ChartDataProps) {
   }, [data]);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <CardTitle>Events Over Time</CardTitle>
-            <CardDescription>
-              Real-time analytics for your project
-            </CardDescription>
-          </div>
-          <div className="flex gap-2">
-            <Select
-              value={timeRange}
-              onValueChange={(v) => setTimeRange(v || "")}
-            >
-              <SelectTrigger className="h-8 w-34 text-xs">
-                <Calendar className="h-4 w-4" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_RANGES.map((range) => (
-                  <SelectItem key={range.value} value={range.value}>
-                    {range.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <section className="border-b border-border/60">
+      <div className="px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-medium">Events</p>
+          <p className="text-xs text-muted-foreground">
+            Device distribution over time
+          </p>
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="mb-4 flex flex-wrap items-center gap-1.5">
-          <span className="mr-1 inline-flex items-center gap-1 text-xs text-muted-foreground">
-            <Filter className="h-3.5 w-3.5" />
-            Group
-          </span>
-          {EVENT_FILTERS.map((filter) => {
-            const selected = (eventFilter || "all") === filter.value;
-            return (
-              <Button
-                key={filter.value}
-                type="button"
-                size="sm"
-                variant={selected ? "default" : "outline"}
-                className="h-7 cursor-pointer rounded-full px-2.5 text-[11px]"
-                onClick={() =>
-                  setEventFilter(filter.value === "all" ? "" : filter.value)
+
+        <Select value={timeRange} onValueChange={(v) => setTimeRange(v || "")}>
+          <SelectTrigger className="h-8 w-36 text-xs">
+            <HugeiconsIcon icon={Calendar01Icon} className="h-4 w-4" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIME_RANGES.map((range) => (
+              <SelectItem key={range.value} value={range.value}>
+                {range.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="px-4 md:px-6 pb-4 flex flex-wrap items-center gap-2 text-xs">
+        <span className="inline-flex items-center gap-1 text-muted-foreground mr-1">
+          <HugeiconsIcon icon={FilterIcon} className="h-3.5 w-3.5" />
+          Group
+        </span>
+
+        {EVENT_FILTERS.map((filter) => {
+          const selected = (eventFilter || "all") === filter.value;
+
+          return (
+            <button
+              key={filter.value}
+              onClick={() =>
+                setEventFilter(filter.value === "all" ? "" : filter.value)
+              }
+              className={`
+                px-2 py-1 rounded border text-[11px] transition
+                ${
+                  selected
+                    ? "border-primary text-foreground bg-muted/30"
+                    : "border-border/60 text-muted-foreground hover:bg-muted/20"
                 }
-              >
-                {filter.label}
-              </Button>
-            );
-          })}
-        </div>
+              `}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
+      </div>
 
-        <div className="mb-4 grid grid-cols-3 gap-2 text-xs">
-          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
-            <p className="text-muted-foreground">Total</p>
-            <p className="font-semibold text-foreground">
-              {chartSummary.total}
-            </p>
-          </div>
-          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
-            <p className="text-muted-foreground">Peak</p>
-            <p className="font-semibold text-foreground">{chartSummary.peak}</p>
-          </div>
-          <div className="rounded-md border border-border/70 bg-muted/40 px-2 py-1.5">
-            <p className="text-muted-foreground">Latest</p>
-            <p className="font-semibold text-foreground">
-              {chartSummary.latest}
-            </p>
-          </div>
-        </div>
+      <div className="relative grid grid-cols-3 border-t border-border/60 text-xs">
+        <Stat label="Total" value={chartSummary.total} />
 
+        <Stat label="Peak" value={chartSummary.peak} />
+        <Stat label="Latest" value={chartSummary.latest} />
+      </div>
+
+      <div className="px-4 md:px-6 py-6 relative">
         {isLoading ? (
-          <div className="h-75 flex items-center justify-center">
+          <div className="h-72 flex items-center justify-center">
             <LoadingSpinner />
           </div>
         ) : error ? (
-          <div className="h-75 flex items-center justify-center text-muted-foreground">
-            Failed to load chart data
+          <div className="h-72 flex items-center justify-center text-muted-foreground">
+            Failed to load chart
           </div>
         ) : !data ? (
-          <div className="h-75 flex items-center justify-center text-muted-foreground">
-            No data available for the selected period
+          <div className="h-72 flex items-center justify-center text-muted-foreground">
+            No data available
           </div>
         ) : (
-          <ChartContainer config={chartConfig} className="min-h-64 w-full">
-            <AreaChart accessibilityLayer data={data}>
-              <defs>
-                <linearGradient id="fillDesktop" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-desktop)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-desktop)"
-                    stopOpacity={0.1}
-                  />
-                </linearGradient>
-                <linearGradient id="fillMobile" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="5%"
-                    stopColor="var(--color-mobile)"
-                    stopOpacity={0.8}
-                  />
-                  <stop
-                    offset="95%"
-                    stopColor="var(--color-mobile)"
-                    stopOpacity={0.1}
-                  />
-                </linearGradient>
-              </defs>
+          <ChartContainer config={chartConfig} className="h-72 w-full">
+            <BarChart data={data} barGap={2} barCategoryGap="20%">
               <CartesianGrid vertical={false} />
+
               <XAxis
                 dataKey="period"
                 tickLine={false}
-                tickMargin={10}
                 axisLine={false}
+                tickMargin={8}
                 tickFormatter={(value) => {
                   const d = new Date(value);
 
@@ -235,39 +193,54 @@ export function DashboardChart({ projectId }: ChartDataProps) {
                   });
                 }}
               />
+
               <YAxis tickLine={false} axisLine={false} />
+
               <ChartTooltip
-                cursor={false}
-                labelFormatter={(value) => {
-                  const d = new Date(value);
+                content={
+                  <ChartTooltipContent
+                    indicator="dot"
+                    labelFormatter={(value) => {
+                      const d = new Date(value);
 
-                  if (timeRange === "30m" || timeRange === "1h") {
-                    return d.toLocaleTimeString();
-                  }
+                      if (timeRange === "30m" || timeRange === "1h") {
+                        return d.toLocaleTimeString();
+                      }
 
-                  return d.toLocaleString();
-                }}
-                content={<ChartTooltipContent indicator="dot" />}
+                      return d.toLocaleString();
+                    }}
+                  />
+                }
               />
-              <Area
+
+              <Bar
                 dataKey="mobile"
-                type="natural"
-                fill="url(#fillMobile)"
-                stroke="var(--color-mobile)"
+                fill="var(--color-mobile)"
                 stackId="a"
+                radius={[2, 2, 0, 0]}
               />
-              <Area
+
+              <Bar
                 dataKey="desktop"
-                type="natural"
-                fill="url(#fillDesktop)"
-                stroke="var(--color-desktop)"
+                fill="var(--color-desktop)"
                 stackId="a"
+                radius={[2, 2, 0, 0]}
               />
+
               <ChartLegend content={<ChartLegendContent />} />
-            </AreaChart>
+            </BarChart>
           </ChartContainer>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </section>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="px-4 py-3 border-r border-b border-border/60 last:border-r-0 relative">
+      <p className="text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium mt-1">{value}</p>
+    </div>
   );
 }

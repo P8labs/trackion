@@ -1,19 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import {
-  AlertTriangle,
-  ChevronRight,
-  Copy,
-  Check,
-  Code,
-  KeyRound,
-  Pencil,
-  SlidersHorizontal,
-} from "lucide-react";
+import { useParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Badge } from "../../components/ui/badge";
-import { Card, CardContent } from "../../components/ui/card";
 import CodeBox from "../../components/CodeBox";
 import { useProject, useUpdateProject } from "../../hooks/useApi";
 import { parseDomainsInput } from "../../lib/domain";
@@ -62,16 +51,16 @@ const settingOptions = [
 
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { serverUrl } = useStore();
   const updateProjectMutation = useUpdateProject(id || "");
+
   const [copied, setCopied] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDomains, setEditDomains] = useState("");
   const [editSettings, setEditSettings] = useState(defaultSettings);
 
-  const { data: project, isLoading, error } = useProject(id!);
+  const { data: project, isLoading, error } = useProject(id || "");
 
   useEffect(() => {
     if (!project) {
@@ -83,43 +72,6 @@ export function ProjectDetailPage() {
     setEditSettings(project.settings || defaultSettings);
   }, [project]);
 
-  if (isLoading) {
-    return (
-      <div className="max-w-5xl space-y-6">
-        <Card className="py-0">
-          <CardContent className="space-y-4 py-5">
-            <Skeleton className="h-7 w-36" />
-            <Skeleton className="h-10 w-72" />
-            <div className="grid gap-3 sm:grid-cols-3">
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="py-0">
-          <CardContent className="space-y-3 py-4">
-            <Skeleton className="h-5 w-40" />
-            <div className="grid gap-3 md:grid-cols-3">
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-              <Skeleton className="h-16" />
-            </div>
-          </CardContent>
-        </Card>
-        {Array.from({ length: 2 }).map((_, i) => (
-          <Card key={i} className="py-0">
-            <CardContent className="space-y-3 py-5">
-              <Skeleton className="h-5 w-40" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-28 w-full" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
   const { domains: parsedDomains, invalidDomains } =
     parseDomainsInput(editDomains);
 
@@ -129,7 +81,6 @@ export function ProjectDetailPage() {
     }
 
     const currentName = project.name || "";
-
     const currentSettings = project.settings || defaultSettings;
     const settingsChanged = settingOptions.some(
       ({ key }) => editSettings[key] !== currentSettings[key],
@@ -142,28 +93,32 @@ export function ProjectDetailPage() {
     );
   }, [editDomains, editName, editSettings, project]);
 
+  if (isLoading) {
+    return (
+      <div className="max-w-5xl mx-auto border-b border-border/60">
+        <div className="px-4 py-4 md:px-6 border-b border-border/60">
+          <Skeleton className="h-5 w-40" />
+          <Skeleton className="mt-2 h-4 w-72" />
+        </div>
+        <div className="px-4 py-4 md:px-6 border-b border-border/60">
+          <Skeleton className="h-24 w-full" />
+        </div>
+        <div className="grid lg:grid-cols-2 border-b border-border/60">
+          <div className="px-4 py-4 md:px-6 border-r border-border/60">
+            <Skeleton className="h-28 w-full" />
+          </div>
+          <div className="px-4 py-4 md:px-6">
+            <Skeleton className="h-28 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !project) {
     return (
-      <div className="mx-auto flex min-h-[60vh] max-w-xl items-center">
-        <Card className="w-full border-destructive/20 bg-linear-to-b from-destructive/8 to-background py-0">
-          <CardContent className="py-6 text-center">
-            <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-              <AlertTriangle className="h-6 w-6" />
-            </div>
-            <h2 className="text-xl font-semibold">Project not found</h2>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-              The project might have been deleted or you may not have access to
-              it anymore.
-            </p>
-            <Button
-              onClick={() => navigate("/projects")}
-              className="mt-5 gap-2"
-            >
-              Back to Projects
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="max-w-5xl mx-auto px-4 py-6 md:px-6">
+        <p className="text-sm text-muted-foreground">Project not found.</p>
       </div>
     );
   }
@@ -197,39 +152,33 @@ export function ProjectDetailPage() {
   };
 
   return (
-    <div className="max-w-4xl space-y-5">
-      <section className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
-        <div className="space-y-2">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/projects")}
-            className="-ml-2 h-7 gap-1.5 px-2 text-xs"
-          >
-            <ChevronRight className="h-3.5 w-3.5 rotate-180" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">
-              {project.name}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Project settings and integration details.
-            </p>
-          </div>
+    <div className="max-w-7xl mx-auto">
+      <section className="px-4 py-3 md:px-6 border-b border-border/60 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+            Project
+          </p>
+          <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
+            {project.name}
+          </h1>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Settings and integration details
+          </p>
         </div>
 
-        <Button onClick={() => setEditOpen(true)} className="gap-2">
-          <Pencil className="h-4 w-4" />
-          Edit Project
+        <Button onClick={() => setEditOpen(true)} className="h-8 px-3 text-xs">
+          Edit
         </Button>
       </section>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-medium">Domains</h2>
-        <div className="flex flex-wrap gap-2">
+      <section className="px-4 py-2.5 md:px-6 border-b border-border/60">
+        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          Domains
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
           {(project.domains || []).length > 0 ? (
             (project.domains || []).map((domain) => (
-              <Badge key={domain} variant="outline">
+              <Badge key={domain} variant="outline" className="text-xs">
                 {domain}
               </Badge>
             ))
@@ -241,56 +190,71 @@ export function ProjectDetailPage() {
         </div>
       </section>
 
-      <section className="space-y-2 border-t pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-medium">
-          <Code className="h-4 w-4" />
-          Script Integration
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Add this script to your website head to start tracking analytics.
-        </p>
-        <CodeBox code={scriptSnippet} language="html" />
-      </section>
+      <section className="grid lg:grid-cols-2 border-b border-border/60">
+        <div className="border-r border-border/60">
+          <div className="px-4 py-2.5 md:px-6 border-b border-border/60">
+            <h2 className="text-sm font-semibold text-foreground">
+              Script Integration
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add this snippet to your site head
+            </p>
+          </div>
+          <div className="px-4 py-2.5 md:px-6">
+            <CodeBox code={scriptSnippet} language="html" />
+          </div>
+        </div>
 
-      <section className="space-y-2 border-t pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-medium">
-          <KeyRound className="h-4 w-4" />
-          API Key
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Use this key in your client integration. Keep it private.
-        </p>
-        <div className="flex items-center gap-2">
-          <code className="flex-1 rounded-md bg-muted px-3 py-2 font-mono text-sm">
-            {project.api_key}
-          </code>
-          <Button variant="outline" className="gap-2" onClick={copyApiKey}>
-            {copied ? (
-              <Check className="h-4 w-4" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-            {copied ? "Copied" : "Copy"}
-          </Button>
+        <div>
+          <div className="px-4 py-2.5 md:px-6 border-b border-border/60">
+            <h2 className="text-sm font-semibold text-foreground">API Key</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Use this key in your client integration
+            </p>
+          </div>
+          <div className="px-4 py-2.5 md:px-6">
+            <div className="flex items-center gap-2">
+              <code className="flex-1 border border-border/60 bg-muted/20 px-3 py-2 font-mono text-sm text-foreground overflow-x-auto">
+                {project.api_key}
+              </code>
+              <Button
+                variant="outline"
+                className="h-8 px-3 text-xs"
+                onClick={copyApiKey}
+              >
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+          </div>
         </div>
       </section>
 
-      <section className="space-y-2 border-t pt-4">
-        <h2 className="flex items-center gap-2 text-sm font-medium">
-          <SlidersHorizontal className="h-4 w-4" />
+      <section className="px-4 py-2.5 md:px-6 border-b border-border/60">
+        <h2 className="text-sm font-semibold text-foreground">
           Feature Settings
         </h2>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {settingOptions.map(({ key, title }) => {
+        <p className="mt-1 text-xs text-muted-foreground">
+          Current tracking behavior for this project
+        </p>
+        <div className="mt-3 border border-border/60">
+          {settingOptions.map(({ key, title, description }) => {
             const enabled = (project.settings || defaultSettings)[key];
             return (
               <div
                 key={key}
-                className="flex items-center justify-between rounded-md bg-muted/40 px-3 py-2"
+                className="flex items-start justify-between gap-3 border-b border-border/60 px-3 py-2.5 last:border-b-0"
               >
-                <span className="text-sm">{title}</span>
-                <Badge variant={enabled ? "secondary" : "outline"}>
-                  {enabled ? "Enabled" : "Disabled"}
+                <div>
+                  <p className="text-sm text-foreground">{title}</p>
+                  <p className="text-xs text-muted-foreground">{description}</p>
+                </div>
+                <Badge
+                  variant="outline"
+                  className={
+                    enabled ? "border-emerald-500/30 text-emerald-600" : ""
+                  }
+                >
+                  {enabled ? "On" : "Off"}
                 </Badge>
               </div>
             );
@@ -303,7 +267,7 @@ export function ProjectDetailPage() {
           <DialogHeader>
             <DialogTitle>Edit Project</DialogTitle>
             <DialogDescription>
-              Update name, domains, and feature settings in one place.
+              Update name, domains, and feature settings.
             </DialogDescription>
           </DialogHeader>
 
@@ -341,7 +305,7 @@ export function ProjectDetailPage() {
                 {settingOptions.map(({ key, title, description }) => (
                   <label
                     key={key}
-                    className="flex items-start gap-3 rounded-lg border px-3 py-2.5"
+                    className="flex items-start gap-3 border border-border/60 px-3 py-2.5"
                   >
                     <Checkbox
                       checked={editSettings[key]}

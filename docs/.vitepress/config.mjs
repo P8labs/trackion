@@ -17,6 +17,7 @@ export default defineConfig({
     nav: [
       { text: "Introduction", link: "/introduction" },
       { text: "Quick Start", link: "/quick-start" },
+      { text: "SDK Usage", link: "/sdk-usage" },
       { text: "API Reference", link: "/api-reference" },
       { text: "Architecture", link: "/architecture" },
     ],
@@ -35,6 +36,7 @@ export default defineConfig({
         text: "Reference",
         items: [
           { text: "API Reference", link: "/api-reference" },
+          { text: "SDK Usage", link: "/sdk-usage" },
           { text: "JavaScript API", link: "/javascript-api" },
           { text: "Architecture", link: "/architecture" },
           { text: "Database Schema", link: "/database-schema" },

@@ -2,16 +2,16 @@ package events
 
 import (
 	"trackion/internal/config"
-	"trackion/internal/repository"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-func Routes(repo repository.Querier, cfg config.Config) *chi.Mux {
+func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	mw := NewMiddlewareWithConfig(repo, cfg)
-	eventService := NewService(repo, cfg)
+	mw := NewMiddlewareWithConfig(db, cfg)
+	eventService := NewService(db, cfg)
 	eventHandler := NewHandler(eventService)
 
 	r.With(mw.ProjectIDValidation, mw.OriginDomainValidation).Post("/collect", eventHandler.CollectEvent)

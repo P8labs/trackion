@@ -9,29 +9,43 @@ import (
 	"trackion/internal/config"
 	"trackion/internal/core"
 	"trackion/internal/core/geoip"
-	"trackion/internal/repository"
+	"trackion/internal/db"
+	"trackion/internal/features/billing"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type EventParams struct {
-	ProjectKey string    `json:"project_key"`
-	Event      string    `json:"event" validate:"required"`
-	SessionID  string    `json:"session_Id" validate:"required"`
-	UserAgent  string    `json:"user_agent"`
-	ClientIP   string    `json:"-"`
-	Timestamp  time.Time `json:"timestamp"`
-	Page       struct {
+	ProjectKey string `json:"project_key"`
+	Event      string `json:"event" validate:"required"`
+	Type       string `json:"type,omitempty"`
+
+	SessionID string  `json:"session_id" validate:"required"`
+	UserID    *string `json:"user_id,omitempty"`
+
+	UserAgent string `json:"user_agent"`
+	ClientIP  string `json:"-"`
+
+	Timestamp time.Time `json:"timestamp"`
+
+	Device   *string `json:"device,omitempty"`
+	Platform *string `json:"platform,omitempty"`
+	Browser  *string `json:"browser,omitempty"`
+
+	Page struct {
 		Title    string `json:"title"`
 		Path     string `json:"path"`
 		Referrer string `json:"referrer"`
 	} `json:"page"`
+
 	Utm struct {
-		Source   string `json:"source"`
-		Medium   string `json:"medium"`
-		Campaign string `json:"campaign"`
+		Source   string `json:"source,omitempty"`
+		Medium   string `json:"medium,omitempty"`
+		Campaign string `json:"campaign,omitempty"`
 	} `json:"utm"`
-	Properties map[string]any `json:"properties"`
+
+	Properties map[string]any `json:"properties,omitempty"`
 }
 
 type BatchEventsParams struct {
@@ -39,67 +53,109 @@ type BatchEventsParams struct {
 	Events     []EventParams `json:"events" validate:"required"`
 }
 
-type ProjectConfig = repository.GetProjectConfigRow
+type ProjectConfig struct {
+	AutoPageview   bool `json:"auto_pageview"`
+	TrackTimeSpent bool `json:"track_time_spent"`
+	TrackCampaign  bool `json:"track_campaign"`
+	TrackClicks    bool `json:"track_clicks"`
+}
 
 type Service interface {
-	CreateEvent(ctx context.Context, params EventParams) (int64, error)
+	CreateEvent(ctx context.Context, params EventParams) error
 	GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error)
-	CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error)
+	CreateBatchEvents(ctx context.Context, params BatchEventsParams) error
 }
 
 type svc struct {
-	repo        repository.Querier
+	db          *gorm.DB
 	cfg         config.Config
 	geoResolver geoip.Resolver
+	billing     billing.Service
 }
 
 var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")
 
-func NewService(repo repository.Querier, cfg config.Config) Service {
-	return &svc{repo: repo, cfg: cfg, geoResolver: geoip.New(cfg)}
+func NewService(db *gorm.DB, cfg config.Config) Service {
+	return &svc{
+		db:          db,
+		cfg:         cfg,
+		geoResolver: geoip.New(cfg),
+		billing:     billing.NewService(db),
+	}
 }
 
-func (s *svc) CreateEvent(ctx context.Context, params EventParams) (int64, error) {
+func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 	geo, err := s.geoResolver.Resolve(ctx, params.ClientIP)
 	if err != nil {
 		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
 	}
 
-	props, err := json.Marshal(mergeGeoProperties(params.Properties, geo))
+	cleanedProps := make(map[string]any)
+	for k, v := range params.Properties {
+		switch k {
+		case "device", "platform", "browser", "user_agent", "device_type":
+			continue
+		default:
+			cleanedProps[k] = v
+		}
+	}
+
+	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
+	var project db.Project
+	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+		return err
+	}
+
 	if s.cfg.IsSaaS() {
-		if err := s.checkUsageLimit(ctx, projectId, 1); err != nil {
-			return 0, err
+		if err := s.billing.CheckEventLimit(ctx, project.UserID, 1); err != nil {
+			return ErrMonthlyLimitReached
 		}
 	}
 
-	id, err := s.repo.InsertEvent(ctx, repository.InsertEventParams{
-		ProjectID:   projectId,
-		EventName:   params.Event,
-		UserAgent:   core.StrPtr(params.UserAgent),
-		SessionID:   core.StrPtr(params.SessionID),
-		PagePath:    core.StrPtr(params.Page.Path),
-		PageTitle:   core.StrPtr(params.Page.Title),
-		Referrer:    core.StrPtr(params.Page.Referrer),
-		UtmSource:   core.StrPtr(params.Utm.Source),
-		UtmMedium:   core.StrPtr(params.Utm.Medium),
-		UtmCampaign: core.StrPtr(params.Utm.Campaign),
-		Properties:  props,
+	deviceInfo := resolveEventDeviceInfo(params)
+
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&db.Event{
+			ProjectID:   projectId,
+			EventName:   params.Event,
+			EventType:   params.Type,
+			SessionID:   core.StrPtr(params.SessionID),
+			PagePath:    core.StrPtr(params.Page.Path),
+			PageTitle:   core.StrPtr(params.Page.Title),
+			Referrer:    core.StrPtr(params.Page.Referrer),
+			UTMSource:   core.StrPtr(params.Utm.Source),
+			UTMMedium:   core.StrPtr(params.Utm.Medium),
+			UTMCampaign: core.StrPtr(params.Utm.Campaign),
+			Properties:  props,
+			Platform:    &deviceInfo.Platform,
+			Device:      &deviceInfo.Device,
+			OSVersion:   &deviceInfo.OS,
+			AppVersion:  &deviceInfo.AppVersion,
+			Browser:     &deviceInfo.Browser,
+		}).Error; err != nil {
+			return err
+		}
+
+		if s.cfg.IsSaaS() {
+			if err := s.billing.IncrementEventUsage(ctx, project.UserID, 1); err != nil {
+				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+				// Don't fail the request if usage tracking fails
+			}
+		}
+
+		return nil
 	})
 
-	if err != nil {
-		return 0, err
-	}
-	return id, nil
-
+	return err
 }
 
-func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (int, error) {
+func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	var geo *geoip.Location
@@ -111,61 +167,70 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) (
 		}
 	}
 
+	eventCount := len(params.Events)
+	if eventCount == 0 {
+		return nil
+	}
+
+	var project db.Project
+	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+		return err
+	}
+
 	if s.cfg.IsSaaS() {
-		if err := s.checkUsageLimit(ctx, projectId, len(params.Events)); err != nil {
-			return 0, err
+		if err := s.billing.CheckEventLimit(ctx, project.UserID, eventCount); err != nil {
+			return ErrMonthlyLimitReached
 		}
 	}
 
 	events, err := ToInsertEvents(projectId, params.Events, geo)
-
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	err = s.repo.InsertEventsBatch(ctx, events).Close()
+	err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.CreateInBatches(&events, len(events)).Error; err != nil {
+			return err
+		}
 
-	if err != nil {
-		return 0, err
+		if s.cfg.IsSaaS() {
+			if err := s.billing.IncrementEventUsage(ctx, project.UserID, eventCount); err != nil {
+				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+				// Don't fail the request if usage tracking fails
+			}
+		}
 
-	}
-	return len(events), nil
-
-}
-
-func (s *svc) checkUsageLimit(ctx context.Context, projectID uuid.UUID, incoming int) error {
-	if incoming <= 0 {
 		return nil
-	}
+	})
 
-	limit, err := s.repo.GetActiveSubscriptionLimitByProject(ctx, projectID)
-	if err != nil {
-		return errors.New("subscription not found for project owner")
-	}
-
-	usage, err := s.repo.GetMonthlyUsageByProject(ctx, projectID)
-	if err != nil {
-		return errors.New("unable to verify usage limit")
-	}
-
-	if usage+int64(incoming) > int64(limit) {
-		return ErrMonthlyLimitReached
-	}
-
-	return nil
+	return err
 }
 
 func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {
-	cfg, err := s.repo.GetProjectConfig(ctx, uuid.MustParse(projectId))
+	p, err := gorm.G[db.Project](s.db).
+		Select("properties").
+		Where("id = ?", projectId).
+		First(ctx)
+
 	if err != nil {
-		return ProjectConfig{}, errors.New("Unable to get project config with this key")
+		return ProjectConfig{}, err
 	}
+
+	var cfg ProjectConfig
+
+	if len(p.Properties) > 0 {
+		if err := json.Unmarshal(p.Properties, &cfg); err != nil {
+			return ProjectConfig{}, err
+		}
+	}
+
+	applyDefaults(&cfg)
 	return cfg, nil
 
 }
 
-func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Location) ([]repository.InsertEventsBatchParams, error) {
-	out := make([]repository.InsertEventsBatchParams, 0, len(events))
+func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Location) ([]db.Event, error) {
+	out := make([]db.Event, 0, len(events))
 
 	for _, e := range events {
 		p, err := ToInsertEvent(projectID, e, geo)
@@ -178,25 +243,57 @@ func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Locati
 	return out, nil
 }
 
-func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (repository.InsertEventsBatchParams, error) {
-	props, err := json.Marshal(mergeGeoProperties(e.Properties, geo))
-	if err != nil {
-		return repository.InsertEventsBatchParams{}, err
+func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.Event, error) {
+	deviceInfo := resolveEventDeviceInfo(e)
+	cleanedProps := make(map[string]any)
+	for k, v := range e.Properties {
+		switch k {
+		case "device", "platform", "browser", "user_agent", "device_type":
+			continue
+		default:
+			cleanedProps[k] = v
+		}
 	}
 
-	return repository.InsertEventsBatchParams{
+	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
+
+	if err != nil {
+		return db.Event{}, err
+	}
+	return db.Event{
 		ProjectID:   projectID,
 		EventName:   e.Event,
+		EventType:   e.Type,
 		SessionID:   core.StrPtr(e.SessionID),
-		UserAgent:   core.StrPtr(e.UserAgent),
 		PagePath:    core.StrPtr(e.Page.Path),
 		PageTitle:   core.StrPtr(e.Page.Title),
 		Referrer:    core.StrPtr(e.Page.Referrer),
-		UtmSource:   core.StrPtr(e.Utm.Source),
-		UtmMedium:   core.StrPtr(e.Utm.Medium),
-		UtmCampaign: core.StrPtr(e.Utm.Campaign),
+		UTMSource:   core.StrPtr(e.Utm.Source),
+		UTMMedium:   core.StrPtr(e.Utm.Medium),
+		UTMCampaign: core.StrPtr(e.Utm.Campaign),
 		Properties:  props,
+		Platform:    &deviceInfo.Platform,
+		Device:      &deviceInfo.Device,
+		OSVersion:   &deviceInfo.OS,
+		AppVersion:  &deviceInfo.AppVersion,
+		Browser:     &deviceInfo.Browser,
 	}, nil
+}
+
+func resolveEventDeviceInfo(e EventParams) core.DeviceInfo {
+	info := core.ResolveDeviceInfo(e.Properties, e.UserAgent)
+
+	if e.Platform != nil && *e.Platform != "" && *e.Platform != "Unknown" {
+		info.Platform = *e.Platform
+	}
+	if e.Device != nil && *e.Device != "" && *e.Device != "Unknown" {
+		info.Device = *e.Device
+	}
+	if e.Browser != nil && *e.Browser != "" && *e.Browser != "Unknown" {
+		info.Browser = *e.Browser
+	}
+
+	return info
 }
 
 func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[string]any {
@@ -219,4 +316,17 @@ func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[stri
 	}
 
 	return properties
+}
+
+func applyDefaults(cfg *ProjectConfig) {
+
+	if !cfg.AutoPageview {
+		cfg.AutoPageview = true
+	}
+	if !cfg.TrackTimeSpent {
+		cfg.TrackTimeSpent = true
+	}
+	if !cfg.TrackCampaign {
+		cfg.TrackCampaign = true
+	}
 }

@@ -8,6 +8,7 @@ import (
 	"trackion/internal/features/dashboard"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/runtime"
 	"trackion/internal/features/settings"
 
 	"github.com/go-chi/chi/v5"
@@ -54,7 +55,14 @@ func TestDashboardRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 }
 
 func TestProjectsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
-	routes := collectRoutes(t, projects.Routes(nil))
+	cfg := config.Config{
+		BatchProjectRPS:   10,
+		BatchProjectBurst: 20,
+		BatchIPRPM:        100,
+		RateLimitTTLMin:   10,
+		RateLimitCleanupS: 60,
+	}
+	routes := collectRoutes(t, projects.Routes(nil, cfg))
 	assertHasRoutes(t, routes, []string{
 		"GET /",
 		"POST /",
@@ -85,6 +93,24 @@ func TestEventsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 		"POST /collect",
 		"POST /batch",
 		"GET /config",
+	})
+}
+
+func TestRuntimeProtectedRoutes_AllAPIEndpointsRegistered(t *testing.T) {
+	cfg := config.Config{
+		BatchProjectRPS:   10,
+		BatchProjectBurst: 20,
+		BatchIPRPM:        100,
+		RateLimitTTLMin:   10,
+		RateLimitCleanupS: 60,
+	}
+	routes := collectRoutes(t, runtime.Routes(nil, cfg))
+	assertHasRoutes(t, routes, []string{
+		"GET /projects/{id}/runtime",
+		"PUT /projects/{id}/runtime/flags/{key}",
+		"DELETE /projects/{id}/runtime/flags/{key}",
+		"PUT /projects/{id}/runtime/config/{key}",
+		"DELETE /projects/{id}/runtime/config/{key}",
 	})
 }
 

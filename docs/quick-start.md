@@ -99,7 +99,7 @@ curl -X POST http://localhost:8000/events/collect \
   -H "X-Project-Key: your-project-api-key" \
   -d '{
     "event": "quick_start_test",
-    "session_Id": "session-1",
+    "session_id": "session-1",
     "page": {
       "path": "/quick-start",
       "title": "Quick Start"

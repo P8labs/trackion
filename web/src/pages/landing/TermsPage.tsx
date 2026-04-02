@@ -1,9 +1,12 @@
+import { FullLine, PLine } from "@/components/Line";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function TermsPage() {
   return (
     <PublicPageLayout>
-      <div className="container mx-auto px-4 py-16 max-w-4xl">
+      <PLine />
+      <div className="p-6">
+        {" "}
         <div className="prose prose-lg max-w-none">
           <h1 className="text-3xl font-bold mb-8">Terms of Service</h1>
 
@@ -162,16 +165,17 @@ export function TermsPage() {
             <p className="text-muted-foreground leading-relaxed">
               For any questions regarding these Terms, contact{" "}
               <a
-                href="mailto:hello@P8labs.tech"
+                href="mailto:hello@P8labs.in"
                 className="text-primary hover:underline"
               >
-                hello@P8labs.tech
+                hello@P8labs.in
               </a>
               .
             </p>
           </section>
         </div>
       </div>
+      <FullLine />
     </PublicPageLayout>
   );
 }

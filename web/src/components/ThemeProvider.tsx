@@ -20,14 +20,14 @@ interface ThemeProviderProps {
 
 export function ThemeProvider({
   children,
-  defaultTheme = "system",
+  defaultTheme = "dark",
   storageKey = "trackion-theme",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
     () => (localStorage.getItem(storageKey) as Theme) || defaultTheme,
   );
 
-  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
+  const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
     const root = window.document.documentElement;

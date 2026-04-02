@@ -21,6 +21,9 @@ features:
   - icon: 📡
     title: Event Ingestion
     details: Collect single or batch events via /events/collect and /events/batch with project-key auth.
+  - icon: 🚩
+    title: Runtime Controls
+    details: Use feature flags and remote config via /v1/runtime and protected runtime management APIs.
   - icon: 📊
     title: Built-in Analytics
     details: Use dashboard APIs for counts, charts, top pages, traffic sources, and recent events.
@@ -36,6 +39,7 @@ features:
 - [Quick Start](/quick-start)
 - [Self Hosting](/self-hosting)
 - [API Reference](/api-reference)
+- [SDK Usage](/sdk-usage)
 - [JavaScript API](/javascript-api)
 - [Architecture](/architecture)
 - [Database Schema](/database-schema)
@@ -44,6 +48,7 @@ features:
 
 - Go backend with PostgreSQL
 - Event ingestion endpoints for browser/server tracking
+- Runtime control APIs (feature flags + remote config)
 - Dashboard APIs for projects, analytics, and usage
 - Token login for self-host mode and GitHub OAuth for SaaS mode
 - Tracker script served by your own server at /t.js and /t.min.js

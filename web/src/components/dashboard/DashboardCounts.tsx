@@ -1,96 +1,91 @@
-import { TrendingUp, Eye, Users, Clock } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import { LoadingSpinner } from "../LoadingSpinner";
+import {
+  AnalyticsUpIcon,
+  Clock01Icon,
+  EyeIcon,
+  UserGroupIcon,
+} from "@hugeicons/core-free-icons";
 import { useDashboardCounts } from "../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
+import { HugeiconsIcon } from "@hugeicons/react";
 
 interface DashboardCountsProps {
   projectId: string;
 }
-
 export function DashboardCounts({ projectId }: DashboardCountsProps) {
   const { data, isLoading, error } = useDashboardCounts(projectId);
 
-  if (isLoading) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <LoadingSpinner className="h-4 w-4" />
-            </CardHeader>
-            <CardContent>
-              <div className="h-6 w-20 bg-muted rounded animate-pulse mb-1"></div>
-              <div className="h-3 w-16 bg-muted rounded animate-pulse"></div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="md:col-span-2 lg:col-span-4">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground text-center">
-              Failed to load dashboard counts
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   const counts = [
     {
-      title: "Total Events",
+      title: "Events",
       value: data?.total_events.toLocaleString() || "0",
-      description: "All tracked events",
-      icon: TrendingUp,
+      icon: AnalyticsUpIcon,
     },
     {
       title: "Views",
       value: data?.views.toLocaleString() || "0",
-      description: "Page views",
-      icon: Eye,
+      icon: EyeIcon,
     },
     {
-      title: "Unique Views",
+      title: "Unique",
       value: data?.unique_views.toLocaleString() || "0",
-      description: "Unique visitors",
-      icon: Users,
+      icon: UserGroupIcon,
     },
     {
-      title: "Avg. Time",
+      title: "Avg Time",
       value: formatTimeSpent(data?.avg_time_spent_seconds || 0),
-      description: "Time spent on site",
-      icon: Clock,
+      icon: Clock01Icon,
     },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {counts.map((stat) => {
-        const Icon = stat.icon;
-        return (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                {stat.title}
-              </CardTitle>
-              <Icon className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {stat.description}
-              </p>
-            </CardContent>
-          </Card>
-        );
-      })}
+    <div className="border-b border-border/60 relative">
+      <div className="grid grid-cols-2 md:grid-cols-4">
+        {isLoading &&
+          [...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="px-4 py-4 border-r last:border-r-0 border-border/60"
+            >
+              <div className="h-5 w-16 bg-muted animate-pulse mb-2 rounded" />
+              <div className="h-3 w-12 bg-muted animate-pulse rounded" />
+            </div>
+          ))}
+
+        {!isLoading && error && (
+          <div className="col-span-full px-4 py-6 text-sm text-muted-foreground text-center">
+            Failed to load stats
+          </div>
+        )}
+
+        {!isLoading &&
+          !error &&
+          counts.map((stat) => {
+            return (
+              <div
+                key={stat.title}
+                className="
+                  px-4 py-4
+                  border-r border-border/60
+                  flex items-center justify-between relative
+                  first:border-l
+                  last:border-r
+                "
+              >
+                <div>
+                  <p className="text-xs text-muted-foreground">{stat.title}</p>
+
+                  <p className="text-lg font-medium mt-1">{stat.value}</p>
+                </div>
+
+                <HugeiconsIcon
+                  icon={stat.icon}
+                  className="h-4 w-4 text-muted-foreground"
+                  strokeWidth={2}
+                />
+              </div>
+            );
+          })}
+      </div>
     </div>
   );
 }

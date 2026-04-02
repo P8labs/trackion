@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"trackion/internal/config"
+	"trackion/internal/db"
 	"trackion/internal/features/auth"
-	"trackion/internal/repository"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type UsageSummary struct {
@@ -27,12 +28,12 @@ type Service interface {
 }
 
 type service struct {
-	repo repository.Querier
-	cfg  config.Config
+	db  *gorm.DB
+	cfg config.Config
 }
 
-func NewService(repo repository.Querier, cfg config.Config) Service {
-	return &service{repo: repo, cfg: cfg}
+func NewService(db *gorm.DB, cfg config.Config) Service {
+	return &service{db: db, cfg: cfg}
 }
 
 func (s *service) GetUsageSummary(ctx context.Context) (UsageSummary, error) {
@@ -58,12 +59,13 @@ func (s *service) GetUsageSummary(ctx context.Context) (UsageSummary, error) {
 		return UsageSummary{}, errors.New("invalid user id")
 	}
 
-	subscription, err := s.repo.GetActiveSubscriptionByUser(ctx, userID)
+	subscription, err := gorm.G[db.Subscription](s.db).Where("user_id = ?", userID).
+		Where("status = ?", "active").First(ctx)
 	if err != nil {
 		return UsageSummary{}, errors.New("active subscription not found")
 	}
 
-	usage, err := s.repo.GetMonthlyUsageByUser(ctx, userID)
+	usage, err := s.GetMonthlyUsageByUser(ctx, userID)
 	if err != nil {
 		return UsageSummary{}, errors.New("unable to read usage")
 	}
@@ -81,4 +83,21 @@ func (s *service) GetUsageSummary(ctx context.Context) (UsageSummary, error) {
 		RetentionDays:   s.cfg.EventRetentionDays,
 		DeleteAfterDays: s.cfg.ProjectDeleteAfter,
 	}, nil
+}
+
+func (s *service) GetMonthlyUsageByUser(ctx context.Context, userID uuid.UUID) (int64, error) {
+	var count int64
+
+	err := s.db.WithContext(ctx).
+		Table("events AS e").
+		Joins("JOIN projects p ON p.id = e.project_id").
+		Where("p.user_id = ?", userID).
+		Where("e.created_at >= date_trunc('month', now())").
+		Count(&count).Error
+
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

@@ -1,10 +1,10 @@
 # Database Schema
 
-Complete documentation of Trackion PostgreSQL schema, including tables, indexes, and relationships.
+Documentation of Trackion PostgreSQL schema, including core tables, runtime-control tables, and common index patterns.
 
 ## Overview
 
-Trackion uses PostgreSQL 15+ with a normalized schema designed for analytics workloads. It stores users, projects, and events with index patterns optimized for read-heavy dashboards.
+Trackion uses PostgreSQL 15+ with a normalized schema designed for analytics workloads. It stores users, projects, events, sessions, and runtime-control data (feature flags/config) with indexes optimized for dashboard reads.
 
 ## Core Tables
 
@@ -18,6 +18,8 @@ CREATE TABLE users (
     email TEXT NOT NULL UNIQUE,
     name TEXT,
     github_id TEXT UNIQUE,
+    google_id TEXT,
+    avatar_url TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
@@ -48,10 +50,9 @@ CREATE TABLE projects (
     owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     api_key TEXT NOT NULL UNIQUE,
-    auto_pageview BOOLEAN NOT NULL DEFAULT true,
-    track_time_spent BOOLEAN NOT NULL DEFAULT true,
-    track_campaign BOOLEAN NOT NULL DEFAULT true,
-    track_clicks BOOLEAN NOT NULL DEFAULT false,
+    domains TEXT[],
+    status TEXT NOT NULL DEFAULT 'active',
+    deleted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
@@ -65,6 +66,8 @@ CREATE TABLE events (
     id BIGSERIAL PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     event_name TEXT NOT NULL,
+    event_type TEXT,
+    user_id TEXT,
     session_id TEXT,
     page_path TEXT,
     page_title TEXT,
@@ -72,8 +75,54 @@ CREATE TABLE events (
     utm_source TEXT,
     utm_medium TEXT,
     utm_campaign TEXT,
+    user_agent TEXT,
     properties JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+### sessions
+
+Stores authenticated SaaS user sessions.
+
+```sql
+CREATE TABLE sessions (
+    id UUID PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+```
+
+### flags
+
+Project-scoped feature flags for runtime evaluation.
+
+```sql
+CREATE TABLE flags (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    enabled BOOLEAN NOT NULL DEFAULT false,
+    rollout_percentage SMALLINT NOT NULL DEFAULT 100,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+### configs
+
+Project-scoped runtime JSON config values.
+
+```sql
+CREATE TABLE configs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    key TEXT NOT NULL,
+    value JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 ```
 
@@ -82,6 +131,8 @@ CREATE TABLE events (
 - `users` -> `subscriptions` (one-to-many)
 - `users` -> `projects` (one-to-many)
 - `projects` -> `events` (one-to-many)
+- `projects` -> `flags` (one-to-many)
+- `projects` -> `configs` (one-to-many)
 
 ## Performance Indexes
 
@@ -93,6 +144,10 @@ CREATE INDEX idx_events_event_name ON events(event_name);
 CREATE INDEX idx_events_project_event ON events(project_id, event_name);
 CREATE INDEX idx_events_created_at ON events(created_at);
 CREATE INDEX idx_projects_owner_id ON projects(owner_id);
+CREATE INDEX idx_projects_status ON projects(status);
+CREATE INDEX idx_projects_deleted_at ON projects(deleted_at);
+CREATE INDEX idx_flags_project_id ON flags(project_id);
+CREATE INDEX idx_configs_project_id ON configs(project_id);
 ```
 
 These cover common usage patterns:

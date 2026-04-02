@@ -2,16 +2,16 @@ package auth
 
 import (
 	"trackion/internal/config"
-	"trackion/internal/repository"
 
 	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
-func Routes(repo repository.Querier) *chi.Mux {
+func Routes(db *gorm.DB) *chi.Mux {
 	r := chi.NewRouter()
 	cfg := config.Load()
-	mw := NewMiddleware(repo, *cfg)
-	authService := NewService(repo, *cfg)
+	mw := NewMiddleware(db, *cfg)
+	authService := NewService(db, *cfg)
 	authHandler := NewHandler(authService, *cfg)
 
 	r.Get("/login/github", authHandler.GithubLogin)

@@ -1,6 +1,41 @@
 # JavaScript API
 
-Trackion ships a client tracker script from your own server.
+Trackion supports both:
+
+- NPM SDK package family (`@trackion/web`)
+- Hosted tracker script (`/t.js`)
+
+## NPM SDK Quick Start
+
+Install:
+
+```bash
+npm install @trackion/web
+```
+
+Vanilla usage:
+
+```ts
+import { createTrackionClient } from "@trackion/web";
+
+const trackion = createTrackionClient({
+  serverUrl: "https://your-trackion-server.com",
+  projectKey: "PROJECT_API_KEY",
+  projectId: "PROJECT_UUID",
+  userId: "user-123",
+});
+
+trackion.track("signup.started", { source: "landing" });
+await trackion.refreshRuntime();
+```
+
+Framework entrypoints:
+
+- `@trackion/web/react`
+- `@trackion/web/vue`
+- `@trackion/web/node`
+
+See [SDK Usage](/sdk-usage) for full examples.
 
 ## Script Setup
 
@@ -23,6 +58,11 @@ The tracker:
 - Loads project config from /events/config
 - Sends events to /events/batch
 - Authenticates ingestion with X-Project-Key
+
+Runtime control:
+
+- Clients can fetch evaluated flags/config from /v1/runtime
+- Dashboard users manage values in project Runtime Control sections
 
 ## What Is Auto-Tracked
 
@@ -57,7 +97,7 @@ curl -X POST https://your-trackion-server.com/events/batch \
     "events": [
       {
         "event": "order_created",
-        "session_Id": "system-session",
+        "session_id": "system-session",
         "page": {
           "path": "/orders",
           "title": "Orders",
@@ -69,7 +109,7 @@ curl -X POST https://your-trackion-server.com/events/batch \
   }'
 ```
 
-Note: use `session_Id` (capital `I`) in ingestion payloads.
+Note: use `session_id` (snake_case) in ingestion payloads.
 
 ## Validation Checklist
 
@@ -78,3 +118,35 @@ Note: use `session_Id` (capital `I`) in ingestion payloads.
 - X-Project-Key reaches API requests
 - /events/config responds 200 for your project
 - /events/batch responds 200 and events appear in dashboard
+
+## Runtime Control Quick Usage
+
+Public runtime fetch:
+
+```bash
+curl "https://your-trackion-server.com/v1/runtime?project_id=PROJECT_UUID&user_id=user-123"
+```
+
+Dashboard management flow:
+
+1. Open Project Detail.
+2. Add or update Feature Flags with enabled state + rollout percentage.
+3. Add or update Remote Config using JSON values.
+4. Clients fetch runtime and read flags/config immediately.
+
+## SDK Examples
+
+Repository examples for each integration style:
+
+- Web module: `examples/web/index.ts`
+- React: `examples/react/App.tsx`
+- Vue 3: `examples/vue/main.ts`
+- Node: `examples/node/index.ts`
+- Script tag: `examples/script/index.html`
+
+NPM package variants:
+
+- `@trackion/web`
+- `@trackion/web/react`
+- `@trackion/web/vue`
+- `@trackion/web/node`

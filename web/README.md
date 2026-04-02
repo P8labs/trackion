@@ -68,7 +68,6 @@ src/
 │   └── Layout.tsx
 ├── pages/           # Page components
 │   ├── AuthPage.tsx
-│   ├── DashboardPage.tsx
 │   ├── ProjectsPage.tsx
 │   ├── ProjectDetailPage.tsx
 │   └── SettingsPage.tsx

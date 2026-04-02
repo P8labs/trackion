@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trackion Script Example</title>
+
+    <script
+      src="https://your-trackion-server.com/t.js"
+      data-api-key="PROJECT_API_KEY"
+    ></script>
+  </head>
+  <body>
+    <button id="signup">Track signup click</button>
+
+    <script>
+      const button = document.getElementById("signup");
+      button.addEventListener("click", () => {
+        trackion.track("signup.click", {
+          source: "script-example",
+        });
+      });
+    </script>
+  </body>
+</html>

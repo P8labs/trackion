@@ -50,15 +50,50 @@
   }
 
   function getSession() {
-    let s = localStorage.getItem(STORAGE.session);
-    if (!s) {
-      s = uuid();
-      localStorage.setItem(STORAGE.session, s);
+    const raw = safeJSONParse(localStorage.getItem(STORAGE.session));
+
+    if (raw && Date.now() < raw.exp) {
+      return raw.id;
     }
-    return s;
+
+    const id = uuid();
+    localStorage.setItem(
+      STORAGE.session,
+      JSON.stringify({
+        id,
+        exp: Date.now() + 30 * 60 * 1000,
+      }),
+    );
+
+    return id;
   }
 
   const sessionId = getSession();
+
+  function getDeviceInfo() {
+    const ua = navigator.userAgent;
+
+    let device = "desktop";
+    if (/Tablet|iPad/i.test(ua)) device = "tablet";
+    else if (/Mobi|Android/i.test(ua)) device = "mobile";
+
+    let platform = "unknown";
+    if (/Win/i.test(ua)) platform = "windows";
+    else if (/Mac/i.test(ua)) platform = "mac";
+    else if (/Linux/i.test(ua)) platform = "linux";
+    else if (/Android/i.test(ua)) platform = "android";
+    else if (/iPhone|iPad/i.test(ua)) platform = "ios";
+
+    let browser = "unknown";
+    if (/Chrome/i.test(ua)) browser = "chrome";
+    else if (/Safari/i.test(ua)) browser = "safari";
+    else if (/Firefox/i.test(ua)) browser = "firefox";
+
+    return { device, platform, browser };
+  }
+
+  const DEVICE_INFO = getDeviceInfo();
+  const TIMEZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const utm = (() => {
     const p = new URLSearchParams(location.search);
@@ -74,15 +109,40 @@
       event: name,
       session_id: customSessionId || sessionId,
       timestamp: new Date().toISOString(),
+
+      device: DEVICE_INFO.device,
+      platform: DEVICE_INFO.platform,
+      browser: DEVICE_INFO.browser,
+
       user_agent: USER_AGENT,
+
       page: {
         path: location.pathname,
         title: document.title,
         referrer: document.referrer,
       },
+
       utm,
-      properties: props || {},
+
+      properties: {
+        ...(props || {}),
+        tz: TIMEZONE,
+      },
     };
+  }
+
+  function enqueue(event) {
+    if (queue.length > 1000) return;
+
+    if (event.event === EVENTS.PAGE_VIEW) {
+      queue.unshift(event);
+    } else {
+      queue.push(event);
+    }
+
+    if (queue.length >= LIMITS.batch) {
+      flush();
+    }
   }
 
   function flush() {
@@ -95,14 +155,10 @@
     });
 
     if (payload.length > LIMITS.payloadKB * 1024) {
-      console.warn("[trackion] payload too large, dropped");
-      return;
+      queue.splice(0, Math.floor(queue.length / 2));
+      return flush();
     }
 
-    // navigator.sendBeacon?.(
-    //   ENDPOINTS.ingest,
-    //   new Blob([payload], { type: "application/json" }),
-    // ) ||
     fetch(ENDPOINTS.ingest, {
       method: "POST",
       headers: {
@@ -114,19 +170,9 @@
     }).catch(() => {});
   }
 
-  function enqueue(event) {
-    if (queue.length > 1000) return;
-    queue.push(event);
-
-    if (queue.length >= LIMITS.batch) {
-      flush();
-    }
-  }
-
   const api = {
     track(name, properties, sessionOverride) {
       if (!name || typeof name !== "string") return;
-
       enqueue(buildEvent(name, properties, sessionOverride));
     },
 
@@ -148,7 +194,6 @@
     },
 
     flush,
-
     getSession() {
       return sessionId;
     },
@@ -237,14 +282,21 @@
       });
     }
 
-    // Send heartbeat every 30 seconds to track as online user
-    const heartbeatInterval = setInterval(function () {
+    let lastHeartbeat = 0;
+
+    function sendHeartbeat() {
+      const now = Date.now();
+      if (now - lastHeartbeat < 25000) return;
+
+      lastHeartbeat = now;
+
       if (document.visibilityState !== "hidden") {
         api.track(EVENTS.HEARTBEAT);
       }
-    }, 30000);
+    }
 
-    // Cleanup on unload
+    const heartbeatInterval = setInterval(sendHeartbeat, 30000);
+
     window.addEventListener("beforeunload", function () {
       clearInterval(heartbeatInterval);
     });

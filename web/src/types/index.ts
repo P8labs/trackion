@@ -8,17 +8,17 @@ export interface Project {
   updated_at: string;
 }
 
-export interface UpdateProject {
-  name?: string;
-  domains?: string[];
-  settings?: ProjectSettings;
-}
-
 export interface ProjectSettings {
   auto_pageview: boolean;
   time_spent: boolean;
   campaign: boolean;
   clicks: boolean;
+}
+
+export interface UpdateProject {
+  name?: string;
+  domains?: string[];
+  settings?: ProjectSettings;
 }
 
 export interface Event {
@@ -110,6 +110,31 @@ export interface CountryDataItem {
   emoji?: string;
 }
 
+export interface CountryMapEntry {
+  name: string;
+  count: number;
+  country_code?: string;
+  emoji?: string;
+  normalized_name: string;
+}
+
+export interface CountryMapData {
+  countries: CountryMapEntry[];
+  max_count: number;
+  by_code: Record<string, CountryMapEntry>;
+  by_name: Record<string, CountryMapEntry>;
+}
+
+export interface TrafficHeatmapData {
+  day_hour: number[][];
+  month_day: number[][];
+  stats: {
+    today: number;
+    weekly_avg: number;
+    monthly_avg: number;
+  };
+}
+
 export interface UTMBreakdown {
   source: string;
   medium: string;
@@ -126,14 +151,30 @@ export interface PageBreakdown {
 export interface RecentEventData {
   id: number;
   event_name: string;
+  event_type?: string;
+  user_id?: string;
   session_id: string;
+  platform?: string;
+  device?: string;
+  os_version?: string;
+  app_version?: string;
+  browser?: string;
   page_path?: string;
+  page_title?: string;
   referrer?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
   properties?: any;
   created_at: string;
+}
+
+export interface PaginatedEventsResponse {
+  events: RecentEventData[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
 }
 
 export interface UsageSummary {
@@ -152,4 +193,85 @@ export interface ServerHealth {
   status: string;
   timestamp: string;
   server_version: string;
+}
+
+export interface RuntimeFlag {
+  key: string;
+  enabled: boolean;
+  rollout_percentage: number;
+}
+
+export interface RuntimeConfig {
+  key: string;
+  value: unknown;
+}
+
+export interface ProjectRuntime {
+  flags: RuntimeFlag[];
+  configs: RuntimeConfig[];
+}
+
+// Error Tracking Types
+export interface GroupedError {
+  fingerprint: string;
+  message: string;
+  count: number;
+  first_seen: string;
+  last_seen: string;
+  last_url?: string;
+}
+
+export interface ErrorOccurrence {
+  id: number;
+  timestamp: string;
+  message: string;
+  stack_trace: string;
+  url: string;
+  user_id?: string;
+  session_id?: string;
+  browser?: string;
+  platform?: string;
+  line_number?: number;
+  column_number?: number;
+  context?: Record<string, any>;
+}
+
+export interface ErrorStats {
+  total_errors: number;
+  time_range: string;
+}
+
+// Billing and Usage Types
+export interface UsagePlan {
+  plan: "free" | "pro";
+  status: string;
+  current_period_end: string;
+  last_usage_reset: string;
+  events_used: number;
+  events_limit: number;
+  events_remaining: number;
+  projects_used: number;
+  projects_limit: number;
+  projects_remaining: number;
+  configs_used: number;
+  config_keys_limit: number;
+  config_keys_remaining: number;
+  config_unlimited: boolean;
+  feature_flags_used: number;
+  error_retention_days: number;
+  supports_rollout: boolean;
+}
+
+export interface PlanLimits {
+  monthly_events: number;
+  max_projects: number;
+  max_config_keys: number;
+  error_retention: number; // hours
+  supports_rollout: boolean;
+}
+
+export interface PlanInfo {
+  plan: "free" | "pro";
+  status: string;
+  limits: PlanLimits;
 }

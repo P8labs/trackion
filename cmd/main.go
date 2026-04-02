@@ -1,24 +1,17 @@
 package main
 
 import (
-	"context"
-	"embed"
 	"log"
 	"log/slog"
 	"os"
 	"trackion/internal/config"
-	"trackion/internal/repository"
+	types "trackion/internal/db"
 	"trackion/internal/worker"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/joho/godotenv"
-
-	"github.com/pressly/goose/v3"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
-
-//go:embed migrations/*.sql
-var embedMigrations embed.FS
 
 var version = "dev"
 
@@ -29,34 +22,35 @@ func main() {
 		log.Printf("No .env file loaded (%v), falling back to system environment", err)
 	}
 
-	ctx := context.Background()
-
 	cfg := config.Load()
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 	logger.Info("starting trackion server", "version", version)
 
-	dbpool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
-		panic(err)
-	}
-	defer dbpool.Close()
-
-	if err := dbpool.Ping(ctx); err != nil {
-		panic(err)
+		panic("failed to connect database")
 	}
 
-	if err := runMigrations(dbpool); err != nil {
-		panic(err)
+	db.AutoMigrate(
+		&types.User{},
+		&types.Subscription{},
+		&types.Session{},
+		&types.Project{},
+		&types.Event{},
+		&types.Flag{},
+		&types.Config{},
+	)
+
+	// Run custom migrations for error tracking indexes
+	if err := types.RunMigrations(db, logger); err != nil {
+		panic("failed to run custom migrations")
 	}
 
-	logger.Info("connected to database with connection pool")
-
-	repo := repository.New(dbpool)
 	workerManager := worker.NewManager(logger)
 
-	if err := workerManager.Register(worker.NewMaintenanceJob(repo, *cfg, logger)); err != nil {
+	if err := workerManager.Register(worker.NewMaintenanceJob(db, *cfg, logger)); err != nil {
 		panic(err)
 	}
 
@@ -65,28 +59,11 @@ func main() {
 
 	api := application{
 		config: cfg,
-		db:     dbpool,
+		db:     db,
 		logger: logger,
 	}
 	if err := api.run(api.mount()); err != nil {
 		slog.Error("server failed to start", "error", err)
 		os.Exit(1)
 	}
-}
-func runMigrations(dbpool *pgxpool.Pool) error {
-	sqlDB := stdlib.OpenDBFromPool(dbpool)
-	defer sqlDB.Close()
-
-	goose.SetBaseFS(embedMigrations)
-
-	if err := goose.SetDialect("postgres"); err != nil {
-		return err
-	}
-
-	if err := goose.Up(sqlDB, "migrations"); err != nil {
-		return err
-	}
-
-	slog.Info("migrations applied successfully")
-	return nil
 }

@@ -8,18 +8,20 @@ import (
 	"time"
 	"trackion/internal/config"
 	"trackion/internal/features/auth"
+	"trackion/internal/features/billing"
 	"trackion/internal/features/dashboard"
+	"trackion/internal/features/errortracking"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/runtime"
 	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
-	"trackion/internal/repository"
 	"trackion/internal/res"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 func (app *application) mount() http.Handler {
@@ -35,35 +37,32 @@ func (app *application) mount() http.Handler {
 
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	repo := repository.New(app.db)
-	authService := auth.NewService(repo, *app.config)
+	authService := auth.NewService(app.db, *app.config)
 	authHandler := auth.NewHandler(authService, *app.config)
 
-	r.Mount("/events", events.Routes(repo, *app.config))
+	r.Mount("/events", events.Routes(app.db, *app.config))
+	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
 	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
-	// auth related
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
-		r.Mount("/auth", auth.Routes(repo))
+		r.Mount("/auth", auth.Routes(app.db))
 	}
 
 	// authenticated APIs
-	mw := auth.NewMiddleware(repo, *app.config)
+	mw := auth.NewMiddleware(app.db, *app.config)
 
 	r.Route("/api", func(r chi.Router) {
 		r.Use(mw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(repo))
-		r.Mount("/analytics", dashboard.Routes(repo))
-		r.Mount("/settings", settings.Routes(repo, *app.config))
+		r.Mount("/projects", projects.Routes(app.db, *app.config))
+		r.Mount("/runtime", runtime.Routes(app.db, *app.config))
+		r.Mount("/analytics", dashboard.Routes(app.db))
+		r.Mount("/errors", errortracking.Routes(app.db))
+		r.Mount("/settings", settings.Routes(app.db, *app.config))
+		r.Mount("/billing", billing.Routes(app.db, *app.config))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		if err := app.db.Ping(r.Context()); err != nil {
-			res.Error(w, "Database unavailable", 503)
-			return
-		}
-
 		res.Success(w, map[string]string{
 			"status":         "ok",
 			"timestamp":      time.Now().Format(time.RFC3339),
@@ -98,5 +97,5 @@ func (app *application) run(h http.Handler) error {
 type application struct {
 	config *config.Config
 	logger *slog.Logger
-	db     *pgxpool.Pool
+	db     *gorm.DB
 }

@@ -3,9 +3,14 @@ import { useStore } from "../store";
 import {
   getProjects,
   getProject,
+  getProjectRuntime,
   createProject,
   updateProject,
   deleteProject,
+  upsertFeatureFlag,
+  deleteFeatureFlag,
+  upsertRemoteConfig,
+  deleteRemoteConfig,
   getDashboardCounts,
   getChartDataFlexible,
   getAreaChartData,
@@ -13,14 +18,22 @@ import {
   getTrafficSources,
   getTopPages,
   getRecentEventsFormatted,
+  getRecentEventsPaginated,
   getOnlineUsers,
   getCountryData,
+  getCountryMapData,
+  getTrafficHeatmap,
+  getUsage,
+  getPlanInfo,
+  upgradeToPro,
+  getCurrentUser,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
 export const queryKeys = {
   projects: ["projects"] as const,
   project: (id: string) => ["projects", id] as const,
+  projectRuntime: (projectId: string) => ["projectRuntime", projectId] as const,
   counts: (projectId: string) => ["counts", projectId] as const,
   chartData: (projectId: string, timeRange: string, eventFilter: string) =>
     ["chartData", projectId, timeRange, eventFilter] as const,
@@ -32,11 +45,27 @@ export const queryKeys = {
   topPages: (projectId: string) => ["topPages", projectId] as const,
   recentEventsFormatted: (projectId: string, limit?: number) =>
     ["recentEventsFormatted", projectId, limit] as const,
+  recentEventsPaginated: (projectId: string, page: number, pageSize: number) =>
+    ["recentEventsPaginated", projectId, page, pageSize] as const,
   onlineUsers: (projectId: string) => ["onlineUsers", projectId] as const,
   countryData: (projectId: string) => ["countryData", projectId] as const,
+  countryMapData: (projectId: string) => ["countryMapData", projectId] as const,
+  trafficHeatmap: (projectId: string) => ["trafficHeatmap", projectId] as const,
+  usage: ["usage"] as const,
+  planInfo: ["planInfo"] as const,
+  user: ["current-user"] as const,
 };
 
 // Custom hooks for queries
+export function useUser() {
+  const { authToken, serverUrl } = useStore();
+  return useQuery({
+    queryKey: queryKeys.user,
+    queryFn: () => getCurrentUser(serverUrl, authToken!),
+    enabled: !!authToken,
+    retry: false,
+  });
+}
 export function useProjects() {
   const { authToken, serverUrl } = useStore();
 
@@ -54,6 +83,16 @@ export function useProject(id: string) {
     queryKey: queryKeys.project(id),
     queryFn: () => getProject(id, serverUrl, authToken!),
     enabled: !!authToken && !!id,
+  });
+}
+
+export function useProjectRuntime(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.projectRuntime(projectId),
+    queryFn: () => getProjectRuntime(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
   });
 }
 
@@ -143,6 +182,85 @@ export function useDeleteProject() {
       });
       // Invalidate projects list to refetch
       queryClient.invalidateQueries({ queryKey: queryKeys.projects });
+    },
+  });
+}
+
+export function useUpsertFeatureFlag(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (data: {
+      key: string;
+      enabled: boolean;
+      rollout_percentage: number;
+    }) =>
+      upsertFeatureFlag(
+        projectId,
+        data.key,
+        {
+          enabled: data.enabled,
+          rollout_percentage: data.rollout_percentage,
+        },
+        serverUrl,
+        authToken!,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useDeleteFeatureFlag(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (key: string) =>
+      deleteFeatureFlag(projectId, key, serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useUpsertRemoteConfig(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (data: { key: string; value: unknown }) =>
+      upsertRemoteConfig(
+        projectId,
+        data.key,
+        data.value,
+        serverUrl,
+        authToken!,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
+    },
+  });
+}
+
+export function useDeleteRemoteConfig(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (key: string) =>
+      deleteRemoteConfig(projectId, key, serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.projectRuntime(projectId),
+      });
     },
   });
 }
@@ -266,7 +384,11 @@ export function useTopPages(projectId: string) {
   });
 }
 
-export function useRecentEventsFormatted(projectId: string, limit = 50) {
+export function useRecentEventsFormatted(
+  projectId: string,
+  limit = 50,
+  refetchIntervalMs = 30 * 1000,
+) {
   const { authToken, serverUrl } = useStore();
 
   return useQuery({
@@ -274,7 +396,29 @@ export function useRecentEventsFormatted(projectId: string, limit = 50) {
     queryFn: () =>
       getRecentEventsFormatted(projectId, serverUrl, authToken!, limit),
     enabled: !!authToken && !!projectId,
-    refetchInterval: 30 * 1000, // Refetch every 30 seconds
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+export function useRecentEventsPaginated(
+  projectId: string,
+  page: number = 1,
+  pageSize: number = 20,
+) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.recentEventsPaginated(projectId, page, pageSize),
+    queryFn: () =>
+      getRecentEventsPaginated(
+        projectId,
+        serverUrl,
+        authToken!,
+        page,
+        pageSize,
+      ),
+    enabled: !!authToken && !!projectId,
+    staleTime: 30 * 1000, // 30 seconds
   });
 }
 
@@ -298,5 +442,63 @@ export function useCountryData(projectId: string) {
     queryFn: () => getCountryData(projectId, serverUrl, authToken!),
     enabled: !!authToken && !!projectId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useCountryMapData(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.countryMapData(projectId),
+    queryFn: () => getCountryMapData(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useTrafficHeatmap(projectId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.trafficHeatmap(projectId),
+    queryFn: () => getTrafficHeatmap(projectId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+// Billing hooks
+export function useUsage() {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.usage,
+    queryFn: () => getUsage(serverUrl, authToken!),
+    enabled: !!authToken,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function usePlanInfo() {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.planInfo,
+    queryFn: () => getPlanInfo(serverUrl, authToken!),
+    enabled: !!authToken,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+export function useUpgradeToPro() {
+  const { authToken, serverUrl } = useStore();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => upgradeToPro(serverUrl, authToken!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.usage });
+      queryClient.invalidateQueries({ queryKey: queryKeys.planInfo });
+    },
   });
 }
