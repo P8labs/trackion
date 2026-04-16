@@ -27,6 +27,9 @@ import {
   getPlanInfo,
   upgradeToPro,
   getCurrentUser,
+  getReplaySessions,
+  getReplaySession,
+  deleteReplaySession,
 } from "../lib/api";
 import type { ProjectSettings, UpdateProject } from "../types";
 
@@ -51,6 +54,10 @@ export const queryKeys = {
   countryData: (projectId: string) => ["countryData", projectId] as const,
   countryMapData: (projectId: string) => ["countryMapData", projectId] as const,
   trafficHeatmap: (projectId: string) => ["trafficHeatmap", projectId] as const,
+  replaySessions: (projectId: string, limit: number) =>
+    ["replaySessions", projectId, limit] as const,
+  replaySession: (projectId: string, sessionId: string) =>
+    ["replaySession", projectId, sessionId] as const,
   usage: ["usage"] as const,
   planInfo: ["planInfo"] as const,
   user: ["current-user"] as const,
@@ -499,6 +506,53 @@ export function useUpgradeToPro() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.usage });
       queryClient.invalidateQueries({ queryKey: queryKeys.planInfo });
+    },
+  });
+}
+
+export function useReplaySessions(
+  projectId: string,
+  limit = 50,
+  refetchIntervalMs = 15000,
+) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.replaySessions(projectId, limit),
+    queryFn: () => getReplaySessions(projectId, serverUrl, authToken!, limit),
+    enabled: !!authToken && !!projectId,
+    staleTime: 10 * 1000,
+    refetchInterval: refetchIntervalMs,
+  });
+}
+
+export function useReplaySession(projectId: string, sessionId: string) {
+  const { authToken, serverUrl } = useStore();
+
+  return useQuery({
+    queryKey: queryKeys.replaySession(projectId, sessionId),
+    queryFn: () =>
+      getReplaySession(projectId, sessionId, serverUrl, authToken!),
+    enabled: !!authToken && !!projectId && !!sessionId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useDeleteReplaySession(projectId: string) {
+  const queryClient = useQueryClient();
+  const { authToken, serverUrl } = useStore();
+
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      deleteReplaySession(projectId, sessionId, serverUrl, authToken!),
+    onSuccess: (_, sessionId) => {
+      queryClient.invalidateQueries({
+        queryKey: ["replaySessions", projectId],
+        exact: false,
+      });
+      queryClient.removeQueries({
+        queryKey: queryKeys.replaySession(projectId, sessionId),
+      });
     },
   });
 }

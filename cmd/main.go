@@ -39,6 +39,8 @@ func main() {
 		&types.Session{},
 		&types.Project{},
 		&types.Event{},
+		&types.ReplaySession{},
+		&types.ReplayChunk{},
 		&types.Flag{},
 		&types.Config{},
 	)

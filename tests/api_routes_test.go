@@ -8,6 +8,7 @@ import (
 	"trackion/internal/features/dashboard"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/replay"
 	"trackion/internal/features/runtime"
 	"trackion/internal/features/settings"
 
@@ -93,6 +94,30 @@ func TestEventsRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 		"POST /collect",
 		"POST /batch",
 		"GET /config",
+	})
+}
+
+func TestReplayRoutes_AllAPIEndpointsRegistered(t *testing.T) {
+	cfg := config.Config{
+		BatchProjectRPS:   10,
+		BatchProjectBurst: 20,
+		BatchIPRPM:        100,
+		RateLimitTTLMin:   10,
+		RateLimitCleanupS: 60,
+	}
+
+	routes := collectRoutes(t, replay.Routes(nil, cfg))
+	assertHasRoutes(t, routes, []string{
+		"POST /",
+	})
+}
+
+func TestReplayPrivateRoutes_AllAPIEndpointsRegistered(t *testing.T) {
+	routes := collectRoutes(t, replay.PrivateRoutes(nil))
+	assertHasRoutes(t, routes, []string{
+		"GET /projects/{id}/sessions",
+		"GET /projects/{id}/sessions/{sessionId}",
+		"DELETE /projects/{id}/sessions/{sessionId}",
 	})
 }
 

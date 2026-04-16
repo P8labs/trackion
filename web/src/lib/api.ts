@@ -18,6 +18,8 @@ import type {
   ErrorStats,
   UsagePlan,
   PlanInfo,
+  ReplaySessionSummary,
+  ReplaySessionPayload,
 } from "../types";
 import { SERVER_URL } from "./constants";
 
@@ -499,6 +501,50 @@ export const upgradeToPro = async (
     `/api/billing/upgrade`,
     {
       method: "POST",
+    },
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getReplaySessions = async (
+  projectId: string,
+  serverUrl: string,
+  authToken: string,
+  limit = 50,
+): Promise<ReplaySessionSummary[]> => {
+  return apiCall<ReplaySessionSummary[]>(
+    `/api/replay/projects/${projectId}/sessions?limit=${limit}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const getReplaySession = async (
+  projectId: string,
+  sessionId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<ReplaySessionPayload> => {
+  return apiCall<ReplaySessionPayload>(
+    `/api/replay/projects/${projectId}/sessions/${encodeURIComponent(sessionId)}`,
+    {},
+    serverUrl,
+    authToken,
+  );
+};
+
+export const deleteReplaySession = async (
+  projectId: string,
+  sessionId: string,
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  return apiCall<void>(
+    `/api/replay/projects/${projectId}/sessions/${encodeURIComponent(sessionId)}`,
+    {
+      method: "DELETE",
     },
     serverUrl,
     authToken,
