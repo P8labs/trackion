@@ -275,3 +275,16 @@ export interface PlanInfo {
   status: string;
   limits: PlanLimits;
 }
+
+export interface ReplaySessionSummary {
+  session_id: string;
+  project_id: string;
+  started_at: string;
+  last_seen_at: string;
+  chunk_count: number;
+}
+
+export interface ReplaySessionPayload {
+  session_id: string;
+  events: Record<string, unknown>[];
+}

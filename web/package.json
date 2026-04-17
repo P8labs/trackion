@@ -1,5 +1,5 @@
 {
-  "name": "@trackion/js",
+  "name": "@trackion/web",
   "private": true,
   "version": "2.0.0",
   "type": "module",
@@ -30,6 +30,8 @@
     "react-router-dom": "^7.13.1",
     "react-simple-maps": "^3.0.0",
     "recharts": "2.15.4",
+    "rrweb": "2.0.0-alpha.4",
+    "rrweb-player": "1.0.0-alpha.4",
     "shadcn": "^4.0.8",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",

@@ -29,6 +29,11 @@ const RealtimePage = lazy(() =>
     default: m.RealtimePage,
   })),
 );
+const SessionReplayPage = lazy(() =>
+  import("./pages/dashboard/SessionReplayPage").then((m) => ({
+    default: m.SessionReplayPage,
+  })),
+);
 const ProjectsPage = lazy(() =>
   import("./pages/dashboard/ProjectsPage").then((m) => ({
     default: m.ProjectsPage,
@@ -112,6 +117,7 @@ export const projectRoutes = [
   { path: "/projects/:id/events", element: <EventsPage /> },
   { path: "/projects/:id/breakdown", element: <BreakdownPage /> },
   { path: "/projects/:id/realtime", element: <RealtimePage /> },
+  { path: "/projects/:id/replays", element: <SessionReplayPage /> },
   { path: "/projects/:id/settings", element: <ProjectDetailPage /> },
   { path: "/projects/:id/remote-config", element: <RemoteConfigPage /> },
   { path: "/projects/:id/errors", element: <ErrorListPage /> },

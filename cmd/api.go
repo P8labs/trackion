@@ -13,6 +13,7 @@ import (
 	"trackion/internal/features/errortracking"
 	"trackion/internal/features/events"
 	"trackion/internal/features/projects"
+	"trackion/internal/features/replay"
 	"trackion/internal/features/runtime"
 	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
@@ -41,6 +42,7 @@ func (app *application) mount() http.Handler {
 	authHandler := auth.NewHandler(authService, *app.config)
 
 	r.Mount("/events", events.Routes(app.db, *app.config))
+	r.Mount("/replay", replay.Routes(app.db, *app.config))
 	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
 	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
@@ -57,6 +59,7 @@ func (app *application) mount() http.Handler {
 		r.Mount("/projects", projects.Routes(app.db, *app.config))
 		r.Mount("/runtime", runtime.Routes(app.db, *app.config))
 		r.Mount("/analytics", dashboard.Routes(app.db))
+		r.Mount("/replay", replay.PrivateRoutes(app.db))
 		r.Mount("/errors", errortracking.Routes(app.db))
 		r.Mount("/settings", settings.Routes(app.db, *app.config))
 		r.Mount("/billing", billing.Routes(app.db, *app.config))

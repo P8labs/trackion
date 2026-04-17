@@ -115,6 +115,23 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 		return err
 	}
 
+	// Create indexes for replay session listing and chunk playback reads
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_replay_sessions_project_last_seen
+		ON replay_sessions (project_id, last_seen_at DESC)
+	`).Error; err != nil {
+		logger.Error("failed to create replay sessions index", "error", err)
+		return err
+	}
+
+	if err := db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_replay_chunks_project_session_created
+		ON replay_chunks (project_id, session_id, created_at)
+	`).Error; err != nil {
+		logger.Error("failed to create replay chunks index", "error", err)
+		return err
+	}
+
 	logger.Info("custom migrations completed successfully")
 	return nil
 }

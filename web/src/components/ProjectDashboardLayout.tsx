@@ -9,9 +9,11 @@ import {
   Braces,
   SlidersHorizontal,
   TriangleAlert,
+  PlaySquare,
 } from "lucide-react";
 import { useStore } from "../store";
 import { getProjects } from "../lib/api";
+import { useReplaySessions } from "@/hooks/useApi";
 import type { Project } from "../types";
 import Topbar from "@/pages/dashboard/components/Topbar";
 import { cn } from "@/lib/utils";
@@ -22,6 +24,43 @@ export function ProjectDashboardLayout() {
   const { currentProject, setCurrentProject, authToken, serverUrl } =
     useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const { data: replaySessions = [] } = useReplaySessions(projectId, 1, 15000);
+
+  const latestReplaySeenAt = replaySessions[0]?.last_seen_at || "";
+
+  const lastReplaySeenAt = useMemo(() => {
+    if (!projectId) {
+      return "";
+    }
+
+    return localStorage.getItem(`replay-last-seen-${projectId}`) || "";
+  }, [latestReplaySeenAt, location.pathname, projectId]);
+
+  useEffect(() => {
+    if (!projectId || !latestReplaySeenAt) {
+      return;
+    }
+
+    if (location.pathname === `/projects/${projectId}/replays`) {
+      localStorage.setItem(`replay-last-seen-${projectId}`, latestReplaySeenAt);
+    }
+  }, [latestReplaySeenAt, location.pathname, projectId]);
+
+  const hasNewReplay = useMemo(() => {
+    if (!latestReplaySeenAt) {
+      return false;
+    }
+
+    if (!lastReplaySeenAt) {
+      return true;
+    }
+
+    return (
+      new Date(latestReplaySeenAt).getTime() >
+      new Date(lastReplaySeenAt).getTime()
+    );
+  }, [lastReplaySeenAt, latestReplaySeenAt]);
 
   const { data: projectsData } = useQuery({
     queryKey: ["projects", serverUrl, authToken],
@@ -88,6 +127,11 @@ export function ProjectDashboardLayout() {
         path: `/projects/${projectId}/realtime`,
         icon: Radio,
       },
+      {
+        name: "Session Replay",
+        path: `/projects/${projectId}/replays`,
+        icon: PlaySquare,
+      },
     ];
   }, [projectId]);
 
@@ -147,7 +191,15 @@ export function ProjectDashboardLayout() {
                     }`}
                   >
                     <Icon size={15} />
-                    <span>{item.name}</span>
+                    <span className="inline-flex items-center gap-2">
+                      {item.name}
+                      {item.path.endsWith("/replays") && hasNewReplay ? (
+                        <span
+                          className="inline-block h-2 w-2 rounded-full bg-orange-500 animate-pulse"
+                          aria-label="new replay sessions"
+                        />
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}

@@ -17,6 +17,8 @@ type MaintenanceJob struct {
 	log *slog.Logger
 }
 
+const freeTierReplaySessionLimit = 50
+
 func NewMaintenanceJob(db *gorm.DB, cfg config.Config, logger *slog.Logger) *MaintenanceJob {
 	if logger == nil {
 		logger = slog.Default()
@@ -63,12 +65,21 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 		return fmt.Errorf("cleanup deleted projects: %w", err)
 	}
 
+	deletedReplaySessions := int64(0)
+	if j.cfg.IsSaaS() {
+		deletedReplaySessions, err = j.cleanupFreeTierReplaySessions(jobCtx)
+		if err != nil {
+			return fmt.Errorf("cleanup free-tier replay sessions: %w", err)
+		}
+	}
+
 	j.log.Info("maintenance cleanup summary",
 		"renewed_subscriptions", renewedSubscriptions,
 		"reset_usage_count", resetUsage,
 		"updated_project_counts", updatedProjectCounts,
 		"deleted_events", deletedEvents,
 		"deleted_projects", deletedProjects,
+		"deleted_free_tier_replay_sessions", deletedReplaySessions,
 		"project_cutoff", projectCutoff.Format(time.RFC3339),
 	)
 
@@ -169,4 +180,85 @@ func (j *MaintenanceJob) cleanupExpiredSessions(ctx context.Context) (int64, err
 	}
 
 	return res.RowsAffected, nil
+}
+
+func (j *MaintenanceJob) cleanupFreeTierReplaySessions(ctx context.Context) (int64, error) {
+	// Keep only the most recent replay sessions per project for free tier users.
+	deleteChunksQuery := `
+		WITH ranked AS (
+			SELECT
+				rs.project_id,
+				rs.session_id,
+				ROW_NUMBER() OVER (
+					PARTITION BY rs.project_id
+					ORDER BY rs.last_seen_at DESC, rs.started_at DESC, rs.session_id DESC
+				) AS rn
+			FROM replay_sessions rs
+			JOIN projects p ON p.id = rs.project_id
+			WHERE EXISTS (
+				SELECT 1
+				FROM subscriptions s
+				WHERE s.user_id = p.user_id
+					AND s.status = 'active'
+					AND s.plan = 'free'
+			)
+		), target AS (
+			SELECT project_id, session_id
+			FROM ranked
+			WHERE rn > ?
+		)
+		DELETE FROM replay_chunks rc
+		USING target t
+		WHERE rc.project_id = t.project_id
+			AND rc.session_id = t.session_id
+	`
+
+	deleteSessionsQuery := `
+		WITH ranked AS (
+			SELECT
+				rs.project_id,
+				rs.session_id,
+				ROW_NUMBER() OVER (
+					PARTITION BY rs.project_id
+					ORDER BY rs.last_seen_at DESC, rs.started_at DESC, rs.session_id DESC
+				) AS rn
+			FROM replay_sessions rs
+			JOIN projects p ON p.id = rs.project_id
+			WHERE EXISTS (
+				SELECT 1
+				FROM subscriptions s
+				WHERE s.user_id = p.user_id
+					AND s.status = 'active'
+					AND s.plan = 'free'
+			)
+		), target AS (
+			SELECT project_id, session_id
+			FROM ranked
+			WHERE rn > ?
+		)
+		DELETE FROM replay_sessions rs
+		USING target t
+		WHERE rs.project_id = t.project_id
+			AND rs.session_id = t.session_id
+	`
+
+	deletedSessions := int64(0)
+	err := j.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Exec(deleteChunksQuery, freeTierReplaySessionLimit).Error; err != nil {
+			return err
+		}
+
+		res := tx.Exec(deleteSessionsQuery, freeTierReplaySessionLimit)
+		if res.Error != nil {
+			return res.Error
+		}
+
+		deletedSessions = res.RowsAffected
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return deletedSessions, nil
 }
