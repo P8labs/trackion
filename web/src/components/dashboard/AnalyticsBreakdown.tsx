@@ -187,7 +187,7 @@ function TrafficSourcesList({
   }
 
   return (
-    <div className="divide-y divide-border/40">
+    <div className="divide-y divide-border/40 h-64">
       {data.slice(0, 6).map((source, index) => {
         const percentage = total > 0 ? (source.count / total) * 100 : 0;
         const icon = getIcon(source.name);
