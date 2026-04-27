@@ -29,13 +29,6 @@ func NewService(db *gorm.DB, cfg config.Config) *Service {
 }
 
 func (s *Service) UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error) {
-	externalID = strings.TrimSpace(externalID)
-	provider = strings.ToLower(strings.TrimSpace(provider))
-	email = strings.ToLower(strings.TrimSpace(email))
-
-	if err := core.Require("externalId", externalID, "email", email); err != nil {
-		return "", err
-	}
 
 	user, err := s.FindUserByProvider(ctx, externalID)
 	if err == nil {

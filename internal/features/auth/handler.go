@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,7 +9,6 @@ import (
 	"trackion/internal/res"
 
 	"github.com/markbates/goth/gothic"
-	"gorm.io/gorm"
 )
 
 type handler struct {
@@ -85,18 +83,6 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	if err := core.Require("providerId", providerId, "email", email); err != nil {
 		res.Error(w, err.Error(), 400)
 		return
-	}
-
-	_, err = h.service.FindUserByProvider(ctx, providerId)
-
-	if err == nil {
-		if err := h.service.UpdateUserFromProvider(ctx, providerId, email, user.Name, user.AvatarURL); err != nil {
-			res.Error(w, "user update failed through OAuth provider", 500)
-			return
-		}
-	}
-
-	if errors.Is(err, gorm.ErrRecordNotFound) {
 	}
 
 	userID, err := h.service.UpsertOAuthUser(

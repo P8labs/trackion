@@ -36,9 +36,6 @@ export default defineConfig({
   define: {
     "import.meta.env.VITE_WEB_VERSION": JSON.stringify(webVersion),
   },
-  server: {
-    allowedHosts: ["local.p8labs.qzz.io"],
-  },
   plugins: [
     react(),
     tailwindcss(),
