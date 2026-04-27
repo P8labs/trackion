@@ -14,8 +14,6 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { queryClient } from "./lib/queryClient";
 import Loader from "./Loader";
-import { TrackionProvider } from "@trackion/js/react";
-import { flags } from "./lib/flags";
 
 import {
   authRoutes,
@@ -49,55 +47,42 @@ function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <TrackionProvider
-      options={{
-        serverUrl: flags.trackionUrl,
-        apiKey: flags.trackionToken,
-        autoPageview: true,
-        batchSize: 10,
-        flushIntervalMs: 3000,
-        replay: {
-          enabled: true,
-        },
-      }}
-    >
-      <ErrorBoundary>
-        <ThemeProvider defaultTheme="dark">
-          <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
-              <RouteMiddleware>
-                <Suspense fallback={<Loader />}>
-                  <Routes>
-                    <Route>
-                      {publicRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
-                    <Route>
-                      {authRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="dark">
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <RouteMiddleware>
+              <Suspense fallback={<Loader />}>
+                <Routes>
+                  <Route>
+                    {publicRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
+                  <Route>
+                    {authRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
 
-                    <Route element={<ProjectsWorkspaceLayout />}>
-                      {workspaceRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
+                  <Route element={<ProjectsWorkspaceLayout />}>
+                    {workspaceRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
 
-                    <Route element={<ProjectDashboardLayout />}>
-                      {projectRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </RouteMiddleware>
-            </BrowserRouter>
-          </QueryClientProvider>
-        </ThemeProvider>
-      </ErrorBoundary>
-    </TrackionProvider>
+                  <Route element={<ProjectDashboardLayout />}>
+                    {projectRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
+                </Routes>
+              </Suspense>
+            </RouteMiddleware>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
