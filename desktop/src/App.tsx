@@ -12,22 +12,27 @@ import Loader from "./Loader";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
-import { authRoutes } from "./routes";
+import { authRoutes, projectRoutes, workspaceRoutes } from "./routes";
 import { queryClient } from "./lib/queryClient";
 import { useDeepLinkAuth } from "./hooks/deeplink";
+import { ProjectsWorkspaceLayout } from "./pages/dashboard/components/ProjectsWorkspaceLayout";
+import { ProjectDashboardLayout } from "./pages/dashboard/components/ProjectDashboardLayout";
+import { Layout } from "./components/Layout";
 
 function RouteMiddleware({ children }: { children: React.ReactNode }) {
+  useDeepLinkAuth();
   const location = useLocation();
-  const toLocation = useDeepLinkAuth();
-  console.log("toLocation", toLocation);
+
   const { isAuthenticated, authToken } = useStore();
   const isLoggedIn = isAuthenticated && !!authToken;
 
-  if (!isLoggedIn && !authRoutes.some((r) => r.path === location.pathname)) {
-    return <Navigate to="/" replace state={{ from: location }} />;
+  const publicPaths = ["/auth", "/auth/callback"];
+
+  if (!isLoggedIn && !publicPaths.includes(location.pathname)) {
+    return <Navigate to="/auth" replace state={{ from: location }} />;
   }
 
-  return <>{children}</>;
+  return <div className="no-scrollbar!">{children}</div>;
 }
 
 function App() {
@@ -39,13 +44,12 @@ function App() {
             <RouteMiddleware>
               <Suspense fallback={<Loader />}>
                 <Routes>
-                  <Route>
+                  <Route element={<Layout />}>
                     {authRoutes.map((r) => (
                       <Route key={r.path} {...r} />
                     ))}
                   </Route>
-
-                  {/* <Route element={<ProjectsWorkspaceLayout />}>
+                  <Route element={<ProjectsWorkspaceLayout />}>
                     {workspaceRoutes.map((r) => (
                       <Route key={r.path} {...r} />
                     ))}
@@ -55,7 +59,7 @@ function App() {
                     {projectRoutes.map((r) => (
                       <Route key={r.path} {...r} />
                     ))}
-                  </Route> */}
+                  </Route>
                 </Routes>
               </Suspense>
             </RouteMiddleware>
