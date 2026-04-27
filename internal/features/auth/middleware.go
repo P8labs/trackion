@@ -5,7 +5,8 @@ import (
 	"net/http"
 	"time"
 	"trackion/internal/config"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
+	"trackion/internal/repo"
 	"trackion/internal/res"
 
 	"gorm.io/gorm"
@@ -56,16 +57,16 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		if token == "" {
-			res.Error(w, "unauthorized", http.StatusUnauthorized)
+			res.Error(w, "unauthorized auth token not found", http.StatusUnauthorized)
 			return
 		}
 
 		session, err := gorm.G[db.Session](m.db).
-			Where("token = ? AND expires_at > ?", token, time.Now()).
+			Where(repo.Session.Token.Eq(token), repo.Session.ExpiresAt.Gt(time.Now())).
 			First(r.Context())
-		if err != nil {
 
-			res.Error(w, "unauthorized", http.StatusUnauthorized)
+		if err != nil {
+			res.Error(w, "can't fetch session at the moment", http.StatusUnauthorized)
 			return
 		}
 

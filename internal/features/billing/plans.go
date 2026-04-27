@@ -2,7 +2,7 @@ package billing
 
 import (
 	"time"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 )
 
 type PlanType string

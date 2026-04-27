@@ -145,7 +145,6 @@ func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
 		}
 	}
 
-	// Ensure no empty values
 	if info.Platform == "" {
 		info.Platform = "Unknown"
 	}
@@ -163,4 +162,35 @@ func ResolveDeviceInfo(props map[string]any, userAgent string) DeviceInfo {
 	}
 
 	return info
+}
+
+func IsEmpty(s string) bool {
+	return strings.TrimSpace(s) == ""
+}
+
+func IsNilOrEmpty(s *string) bool {
+	return s == nil || strings.TrimSpace(*s) == ""
+}
+
+func Normalize(s string) string {
+	return strings.TrimSpace(strings.ToLower(s))
+}
+
+func FirstEmpty(pairs ...string) (string, bool) {
+	for i := 0; i < len(pairs); i += 2 {
+		name := pairs[i]
+		val := pairs[i+1]
+
+		if strings.TrimSpace(val) == "" {
+			return name, true
+		}
+	}
+	return "", false
+}
+
+func Require(pairs ...string) error {
+	if field, ok := FirstEmpty(pairs...); ok {
+		return fmt.Errorf("%s is required", field)
+	}
+	return nil
 }

@@ -3,7 +3,7 @@ package projects
 import (
 	"encoding/json"
 	"time"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 
 	"gorm.io/datatypes"
 )

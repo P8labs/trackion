@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -25,13 +25,20 @@ import (
 	"gorm.io/gorm"
 )
 
-func (app *application) mount() http.Handler {
+type Application struct {
+	config  *config.Config
+	logger  *slog.Logger
+	db      *gorm.DB
+	version string
+}
+
+func (app *Application) mount() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middleware.RequestID) // important for rate limiting
-	r.Use(middleware.RealIP)    // import for rate limiting
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer) // recover from crashes
+	r.Use(middleware.Recoverer)
 
 	c := cors.AllowAll()
 	r.Use(c.Handler)
@@ -48,10 +55,9 @@ func (app *application) mount() http.Handler {
 
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
-		r.Mount("/auth", auth.Routes(app.db))
+		r.Mount("/auth", auth.Routes(app.db, *app.config))
 	}
 
-	// authenticated APIs
 	mw := auth.NewMiddleware(app.db, *app.config)
 
 	r.Route("/api", func(r chi.Router) {
@@ -69,7 +75,7 @@ func (app *application) mount() http.Handler {
 		res.Success(w, map[string]string{
 			"status":         "ok",
 			"timestamp":      time.Now().Format(time.RFC3339),
-			"server_version": version,
+			"server_version": app.version,
 		}, "OK")
 	})
 
@@ -83,7 +89,7 @@ func (app *application) mount() http.Handler {
 	return r
 }
 
-func (app *application) run(h http.Handler) error {
+func (app *Application) Run(h http.Handler) error {
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", app.config.Port),
 		Handler:      h,
@@ -97,8 +103,15 @@ func (app *application) run(h http.Handler) error {
 	return srv.ListenAndServe()
 }
 
-type application struct {
-	config *config.Config
-	logger *slog.Logger
-	db     *gorm.DB
+func NewApplication(db *gorm.DB, cfg *config.Config, logger *slog.Logger, version string) *Application {
+	return &Application{
+		db:      db,
+		config:  cfg,
+		logger:  logger,
+		version: version,
+	}
+}
+
+func (app *Application) Handler() http.Handler {
+	return app.mount()
 }

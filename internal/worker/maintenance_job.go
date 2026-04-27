@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"time"
 	"trackion/internal/config"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 
 	"gorm.io/gorm"
 )

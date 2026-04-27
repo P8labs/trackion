@@ -1,14 +1,13 @@
 package main
 
 import (
-	"log"
 	"log/slog"
 	"os"
+	"trackion/internal/app"
 	"trackion/internal/config"
-	types "trackion/internal/db"
+	m "trackion/internal/db"
 	"trackion/internal/worker"
 
-	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -16,11 +15,6 @@ import (
 var version = "dev"
 
 func main() {
-
-	err := godotenv.Load()
-	if err != nil {
-		log.Printf("No .env file loaded (%v), falling back to system environment", err)
-	}
 
 	cfg := config.Load()
 
@@ -33,20 +27,7 @@ func main() {
 		panic("failed to connect database")
 	}
 
-	db.AutoMigrate(
-		&types.User{},
-		&types.Subscription{},
-		&types.Session{},
-		&types.Project{},
-		&types.Event{},
-		&types.ReplaySession{},
-		&types.ReplayChunk{},
-		&types.Flag{},
-		&types.Config{},
-	)
-
-	// Run custom migrations for error tracking indexes
-	if err := types.RunMigrations(db, logger); err != nil {
+	if err := m.RunMigrations(db, logger); err != nil {
 		panic("failed to run custom migrations")
 	}
 
@@ -59,12 +40,9 @@ func main() {
 	workerManager.Start()
 	defer worker.StopWithTimeout(workerManager, cfg.CleanupTimeoutSec)
 
-	api := application{
-		config: cfg,
-		db:     db,
-		logger: logger,
-	}
-	if err := api.run(api.mount()); err != nil {
+	api := app.NewApplication(db, cfg, logger, version)
+
+	if err := api.Run(api.Handler()); err != nil {
 		slog.Error("server failed to start", "error", err)
 		os.Exit(1)
 	}

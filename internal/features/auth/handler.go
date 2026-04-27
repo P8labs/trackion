@@ -1,23 +1,24 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 	"trackion/internal/config"
 	"trackion/internal/core"
-	"trackion/internal/db"
 	"trackion/internal/res"
 
 	"github.com/markbates/goth/gothic"
+	"gorm.io/gorm"
 )
 
 type handler struct {
-	service Service
+	service *Service
 	cfg     config.Config
 }
 
-func NewHandler(service Service, cfg config.Config) *handler {
+func NewHandler(service *Service, cfg config.Config) *handler {
 	return &handler{
 		service,
 		cfg,
@@ -77,10 +78,31 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 
 	ctx := r.Context()
 
+	providerId := strings.TrimSpace(user.UserID)
+	provider = strings.ToLower(strings.TrimSpace(provider))
+	email := strings.ToLower(strings.TrimSpace(user.Email))
+
+	if err := core.Require("providerId", providerId, "email", email); err != nil {
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	_, err = h.service.FindUserByProvider(ctx, providerId)
+
+	if err == nil {
+		if err := h.service.UpdateUserFromProvider(ctx, providerId, email, user.Name, user.AvatarURL); err != nil {
+			res.Error(w, "user update failed through OAuth provider", 500)
+			return
+		}
+	}
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+	}
+
 	userID, err := h.service.UpsertOAuthUser(
 		ctx,
 		provider,
-		user.UserID,
+		providerId,
 		user.Email,
 		user.Name,
 		user.AvatarURL,
@@ -158,15 +180,6 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(200)
-}
-
-type verifyTokenRequest struct {
-	Token string `json:"token"`
-}
-
-type verifyTokenResponse struct {
-	Token string   `json:"token"`
-	User  *db.User `json:"user,omitempty"`
 }
 
 func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {

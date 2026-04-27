@@ -8,9 +8,10 @@ import (
 	"strings"
 	"trackion/internal/config"
 	"trackion/internal/core/domain"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
 	"trackion/internal/features/billing"
+	"trackion/internal/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
@@ -156,7 +157,12 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 }
 
 func (s *svc) GetProject(ctx context.Context, projectId string) (db.Project, error) {
-	project, err := gorm.G[db.Project](s.db).Where("id = ?", projectId).First(ctx)
+	pid, err := uuid.Parse(projectId)
+	if err != nil {
+		return db.Project{}, errors.New("Unable to get project. Not found")
+	}
+
+	project, err := gorm.G[db.Project](s.db).Where(repo.Project.ID.Eq(pid)).First(ctx)
 	if err != nil {
 		return db.Project{}, errors.New("Unable to get project. Not found")
 	}
@@ -165,7 +171,12 @@ func (s *svc) GetProject(ctx context.Context, projectId string) (db.Project, err
 
 func (s *svc) GetUserProjects(ctx context.Context) ([]db.Project, error) {
 	userId := ctx.Value(auth.UserIdContextKey).(string)
-	projects, err := gorm.G[db.Project](s.db).Where("user_id = ?", userId).Find(ctx)
+	uid, err := uuid.Parse(userId)
+	if err != nil {
+		return nil, errors.New("Unable to fetch projects")
+	}
+
+	projects, err := gorm.G[db.Project](s.db).Where(repo.Project.UserID.Eq(uid)).Find(ctx)
 	if err != nil {
 		return nil, errors.New("Unable to fetch projects")
 	}
@@ -173,7 +184,12 @@ func (s *svc) GetUserProjects(ctx context.Context) ([]db.Project, error) {
 }
 
 func (s *svc) UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error {
-	project, err := gorm.G[db.Project](s.db).Where("id = ?", projectId).First(ctx)
+	pid, err := uuid.Parse(projectId)
+	if err != nil {
+		return errors.New("Project not found")
+	}
+
+	project, err := gorm.G[db.Project](s.db).Where(repo.Project.ID.Eq(pid)).First(ctx)
 	if err != nil {
 		return errors.New("Project not found")
 	}
@@ -220,7 +236,7 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 	project.Properties = props
 
 	if _, err := gorm.G[db.Project](s.db).
-		Where("id = ?", projectId).
+		Where(repo.Project.ID.Eq(pid)).
 		Updates(ctx, project); err != nil {
 		return errors.New("unable to update project")
 	}
@@ -228,13 +244,22 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 }
 
 func (s *svc) DeleteProject(ctx context.Context, projectId string) error {
-	var project db.Project
-	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+	pid, err := uuid.Parse(projectId)
+	if err != nil {
 		return errors.New("Unable to find project")
 	}
 
-	_, err := gorm.G[db.Project](s.db).
-		Where("id = ?", projectId).Delete(ctx)
+	var project db.Project
+	project, err = gorm.G[db.Project](s.db).
+		Select("user_id").
+		Where(repo.Project.ID.Eq(pid)).
+		First(ctx)
+	if err != nil {
+		return errors.New("Unable to find project")
+	}
+
+	_, err = gorm.G[db.Project](s.db).
+		Where(repo.Project.ID.Eq(pid)).Delete(ctx)
 	if err != nil {
 		return errors.New("Unable to delete project")
 	}
