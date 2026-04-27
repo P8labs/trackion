@@ -6,7 +6,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, useEffect } from "react";
+import { Suspense } from "react";
 import { useStore } from "./store";
 import { ProjectDashboardLayout } from "./components/ProjectDashboardLayout";
 import { ProjectsWorkspaceLayout } from "./pages/dashboard/components/ProjectsWorkspaceLayout";
@@ -14,7 +14,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ThemeProvider } from "./components/ThemeProvider";
 import { queryClient } from "./lib/queryClient";
 import Loader from "./Loader";
-import { TrackionProvider, useTrackion } from "@trackion/js/react";
+import { TrackionProvider } from "@trackion/js/react";
 import { flags } from "./lib/flags";
 
 import {
@@ -29,15 +29,8 @@ const publicOnlyRoutes = new Set(["/auth"]);
 
 function RouteMiddleware({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const t = useTrackion();
-  const { isAuthenticated, authToken, user } = useStore();
+  const { isAuthenticated, authToken } = useStore();
   const isLoggedIn = isAuthenticated && !!authToken;
-
-  useEffect(() => {
-    if (user) {
-      t.setUserId(user.id);
-    }
-  }, [user, t]);
 
   const isProtectedRoute = protectedRoutePrefixes.some((prefix) =>
     location.pathname.startsWith(prefix),
