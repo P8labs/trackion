@@ -63,7 +63,6 @@ export const queryKeys = {
   user: ["current-user"] as const,
 };
 
-// Custom hooks for queries
 export function useUser() {
   const { authToken, serverUrl } = useStore();
   return useQuery({
