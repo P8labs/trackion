@@ -30,9 +30,9 @@ func NewService(db *gorm.DB, cfg config.Config) *Service {
 
 func (s *Service) UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error) {
 
-	user, err := s.FindUserByProvider(ctx, externalID)
+	user, err := s.FindUserByProvider(ctx, provider, externalID)
 	if err == nil {
-		if err := s.UpdateUserFromProvider(ctx, externalID, email, name, avatarURL); err != nil {
+		if err := s.UpdateUserFromProvider(ctx, provider, externalID, email, name, avatarURL); err != nil {
 			return "", err
 		}
 
@@ -52,7 +52,7 @@ func (s *Service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 			return "", err
 		}
 
-		if err := s.UpdateUserFromProvider(ctx, externalID, email, name, avatarURL); err != nil {
+		if err := s.UpdateUserFromProvider(ctx, provider, externalID, email, name, avatarURL); err != nil {
 			return "", err
 		}
 
@@ -95,12 +95,40 @@ func (s *Service) UpsertOAuthUser(ctx context.Context, provider, externalID, ema
 	return u.ID.String(), nil
 }
 
-func (s *Service) FindUserByProvider(ctx context.Context, externalID string) (db.User, error) {
-	return repo.Query[db.User](s.db).GetUserByProvider(ctx, externalID)
+func (s *Service) FindUserByProvider(ctx context.Context, provider, externalID string) (db.User, error) {
+
+	switch provider {
+	case "github":
+		return gorm.G[db.User](s.db).Where("github_id = ?", externalID).First(ctx)
+
+	case "google":
+		return gorm.G[db.User](s.db).Where("google_id = ?", externalID).First(ctx)
+	default:
+		return db.User{}, errors.New("unsupported oauth provider")
+	}
 }
 
-func (s *Service) UpdateUserFromProvider(ctx context.Context, providerId, email, name, avatarURL string) error {
-	return repo.Query[db.User](s.db).UpdateUserFromProvider(ctx, providerId, email, name, avatarURL)
+func (s *Service) UpdateUserFromProvider(ctx context.Context, provider, externalID, email, name, avatarURL string) error {
+	switch provider {
+	case "github":
+		_, err := gorm.G[db.User](s.db).Where("github_id = ?", externalID).Updates(ctx, db.User{
+			Email:     email,
+			Name:      core.StrPtr(name),
+			AvatarUrl: core.StrPtr(avatarURL),
+			GithubID:  core.StrPtr(externalID),
+		})
+		return err
+	case "google":
+		_, err := gorm.G[db.User](s.db).Where("google_id = ?", externalID).Updates(ctx, db.User{
+			Email:     email,
+			Name:      core.StrPtr(name),
+			AvatarUrl: core.StrPtr(avatarURL),
+			GoogleID:  core.StrPtr(externalID),
+		})
+		return err
+	default:
+		return errors.New("unsupported oauth provider")
+	}
 }
 
 func (s *Service) linkProviderToUser(ctx context.Context, provider, externalID string, userID uuid.UUID) error {

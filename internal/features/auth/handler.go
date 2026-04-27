@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"trackion/internal/config"
@@ -68,8 +69,13 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 		return
 	}
 
+	q := r.URL.Query()
+	q.Set("provider", provider)
+	r.URL.RawQuery = q.Encode()
+
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
+		log.Printf("OAuth callback error: %v", err)
 		res.Error(w, "oauth failed", 401)
 		return
 	}
@@ -108,8 +114,9 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	if client == "desktop" {
 		// Added because I want to build a desktop app also. But let's see when
 		redirect := fmt.Sprintf(
-			"trackion://auth?token=%s",
+			"trackion://auth?token=%s&auth=%s",
 			sessionToken,
+			provider,
 		)
 
 		http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)

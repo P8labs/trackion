@@ -1,50 +1,68 @@
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import { Suspense } from "react";
 import "./App.css";
+import { useStore } from "./store";
+import Loader from "./Loader";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ThemeProvider } from "./components/ThemeProvider";
+import { authRoutes } from "./routes";
+import { queryClient } from "./lib/queryClient";
+import { useDeepLinkAuth } from "./hooks/deeplink";
 
-function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
+function RouteMiddleware({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const toLocation = useDeepLinkAuth();
+  console.log("toLocation", toLocation);
+  const { isAuthenticated, authToken } = useStore();
+  const isLoggedIn = isAuthenticated && !!authToken;
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  if (!isLoggedIn && !authRoutes.some((r) => r.path === location.pathname)) {
+    return <Navigate to="/" replace state={{ from: location }} />;
   }
 
+  return <>{children}</>;
+}
+
+function App() {
   return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="dark">
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <RouteMiddleware>
+              <Suspense fallback={<Loader />}>
+                <Routes>
+                  <Route>
+                    {authRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
 
-      <div className="row">
-        <a href="https://vite.dev" target="_blank">
-          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+                  {/* <Route element={<ProjectsWorkspaceLayout />}>
+                    {workspaceRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route>
 
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-    </main>
+                  <Route element={<ProjectDashboardLayout />}>
+                    {projectRoutes.map((r) => (
+                      <Route key={r.path} {...r} />
+                    ))}
+                  </Route> */}
+                </Routes>
+              </Suspense>
+            </RouteMiddleware>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 
