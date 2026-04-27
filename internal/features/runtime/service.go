@@ -5,108 +5,24 @@ import (
 	"encoding/json"
 	"errors"
 	"hash/fnv"
+	"log"
 	"maps"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 	"trackion/internal/config"
-	"trackion/internal/db"
+	"trackion/internal/core"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
 	"trackion/internal/features/billing"
+	"trackion/internal/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
 
-type runtimeCacheEntry struct {
-	expiresAt time.Time
-	flags     []db.Flag
-	configs   map[string]json.RawMessage
-}
-
-type runtimeCache struct {
-	mu    sync.RWMutex
-	ttl   time.Duration
-	items map[string]runtimeCacheEntry
-}
-
-func newRuntimeCache(ttl time.Duration) *runtimeCache {
-	return &runtimeCache{
-		ttl:   ttl,
-		items: make(map[string]runtimeCacheEntry),
-	}
-}
-
-func (c *runtimeCache) get(projectID string) (runtimeCacheEntry, bool) {
-	c.mu.RLock()
-	entry, ok := c.items[projectID]
-	c.mu.RUnlock()
-	if !ok || time.Now().After(entry.expiresAt) {
-		if ok {
-			c.mu.Lock()
-			delete(c.items, projectID)
-			c.mu.Unlock()
-		}
-		return runtimeCacheEntry{}, false
-	}
-	return entry, true
-}
-
-func (c *runtimeCache) set(projectID string, entry runtimeCacheEntry) {
-	entry.expiresAt = time.Now().Add(c.ttl)
-	c.mu.Lock()
-	c.items[projectID] = entry
-	c.mu.Unlock()
-}
-
-func (c *runtimeCache) invalidate(projectID string) {
-	c.mu.Lock()
-	delete(c.items, projectID)
-	c.mu.Unlock()
-}
-
-type FlagDTO struct {
-	Key               string `json:"key"`
-	Enabled           bool   `json:"enabled"`
-	RolloutPercentage int    `json:"rollout_percentage"`
-}
-
-type ConfigDTO struct {
-	Key   string          `json:"key"`
-	Value json.RawMessage `json:"value"`
-}
-
-type ProjectRuntimeDTO struct {
-	Flags   []FlagDTO   `json:"flags"`
-	Configs []ConfigDTO `json:"configs"`
-}
-
-type PublicRuntimeDTO struct {
-	Flags  map[string]bool            `json:"flags"`
-	Config map[string]json.RawMessage `json:"config"`
-}
-
-type UpsertFlagParams struct {
-	Enabled           bool `json:"enabled"`
-	RolloutPercentage int  `json:"rollout_percentage"`
-}
-
-type UpsertConfigParams struct {
-	Value json.RawMessage `json:"value"`
-}
-
-type Service interface {
-	GetPublicRuntime(ctx context.Context, projectID, userID string) (PublicRuntimeDTO, error)
-	GetProjectRuntime(ctx context.Context, projectID string) (ProjectRuntimeDTO, error)
-	UpsertFlag(ctx context.Context, projectID, key string, params UpsertFlagParams) error
-	DeleteFlag(ctx context.Context, projectID, key string) error
-	UpsertConfig(ctx context.Context, projectID, key string, params UpsertConfigParams) error
-	DeleteConfig(ctx context.Context, projectID, key string) error
-}
-
-type service struct {
+type Service struct {
 	db      *gorm.DB
 	cache   *runtimeCache
 	billing billing.Service
@@ -114,7 +30,7 @@ type service struct {
 }
 
 func NewService(db *gorm.DB, cfg config.Config) Service {
-	return &service{
+	return Service{
 		db:      db,
 		cache:   newRuntimeCache(30 * time.Second),
 		billing: billing.NewService(db),
@@ -122,7 +38,7 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 	}
 }
 
-func (s *service) GetPublicRuntime(ctx context.Context, projectID, userID string) (PublicRuntimeDTO, error) {
+func (s *Service) GetPublicRuntime(ctx context.Context, projectID, userID string) (PublicRuntimeDTO, error) {
 	projectID = strings.TrimSpace(projectID)
 	if _, err := uuid.Parse(projectID); err != nil {
 		return PublicRuntimeDTO{}, errors.New("invalid project_id")
@@ -147,7 +63,7 @@ func (s *service) GetPublicRuntime(ctx context.Context, projectID, userID string
 	return out, nil
 }
 
-func (s *service) GetProjectRuntime(ctx context.Context, projectID string) (ProjectRuntimeDTO, error) {
+func (s *Service) GetProjectRuntime(ctx context.Context, projectID string) (ProjectRuntimeDTO, error) {
 	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return ProjectRuntimeDTO{}, err
 	}
@@ -186,14 +102,14 @@ func (s *service) GetProjectRuntime(ctx context.Context, projectID string) (Proj
 	return out, nil
 }
 
-func (s *service) UpsertFlag(ctx context.Context, projectID, key string, params UpsertFlagParams) error {
+func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params UpsertFlagParams) error {
 	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
 
-	key = strings.TrimSpace(key)
-	if key == "" {
-		return errors.New("flag key is required")
+	err := core.Require("flag key", key)
+	if err != nil {
+		return err
 	}
 
 	if s.config.IsSaaS() && params.RolloutPercentage > 0 && params.RolloutPercentage < 100 {
@@ -206,27 +122,37 @@ func (s *service) UpsertFlag(ctx context.Context, projectID, key string, params 
 		return errors.New("rollout_percentage must be between 0 and 100")
 	}
 
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var item db.Flag
-		err := tx.Where("project_id = ? AND key = ?", projectID, key).First(&item).Error
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			item = db.Flag{
-				ProjectID:         uuid.MustParse(projectID),
-				Key:               key,
-				Enabled:           params.Enabled,
-				RolloutPercentage: params.RolloutPercentage,
-			}
-			return tx.Create(&item).Error
-		}
-		if err != nil {
-			return err
-		}
+	projectUUID := uuid.MustParse(projectID)
+	var item db.Flag
 
-		item.Enabled = params.Enabled
-		item.RolloutPercentage = params.RolloutPercentage
-		item.UpdatedAt = time.Now()
-		return tx.Save(&item).Error
-	}); err != nil {
+	item, err = gorm.G[db.Flag](s.db).
+		Where(repo.Flag.ProjectID.Eq(projectUUID)).
+		Where(repo.Flag.Key.Eq(key)).
+		First(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		item = db.Flag{
+			ProjectID:         projectUUID,
+			Key:               key,
+			Enabled:           params.Enabled,
+			RolloutPercentage: params.RolloutPercentage,
+		}
+		return gorm.G[db.Flag](s.db).Create(ctx, &item)
+	}
+	if err != nil {
+		return err
+	}
+
+	item.Enabled = params.Enabled
+	item.RolloutPercentage = params.RolloutPercentage
+	item.UpdatedAt = time.Now()
+	log.Print(item)
+	_, err = gorm.G[db.Flag](s.db).
+		Where(repo.Flag.ID.Eq(item.ID)).Set(
+		repo.Flag.Enabled.Set(params.Enabled),
+		repo.Flag.RolloutPercentage.Set(params.RolloutPercentage)).
+		Update(ctx)
+	if err != nil {
+
 		return err
 	}
 
@@ -234,7 +160,7 @@ func (s *service) UpsertFlag(ctx context.Context, projectID, key string, params 
 	return nil
 }
 
-func (s *service) DeleteFlag(ctx context.Context, projectID, key string) error {
+func (s *Service) DeleteFlag(ctx context.Context, projectID, key string) error {
 	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
@@ -243,7 +169,11 @@ func (s *service) DeleteFlag(ctx context.Context, projectID, key string) error {
 		return errors.New("flag key is required")
 	}
 
-	if err := s.db.WithContext(ctx).Where("project_id = ? AND key = ?", projectID, key).Delete(&db.Flag{}).Error; err != nil {
+	projectUUID := uuid.MustParse(projectID)
+	if _, err := gorm.G[db.Flag](s.db).
+		Where(repo.Flag.ProjectID.Eq(projectUUID)).
+		Where(repo.Flag.Key.Eq(key)).
+		Delete(ctx); err != nil {
 		return err
 	}
 
@@ -251,7 +181,7 @@ func (s *service) DeleteFlag(ctx context.Context, projectID, key string) error {
 	return nil
 }
 
-func (s *service) UpsertConfig(ctx context.Context, projectID, key string, params UpsertConfigParams) error {
+func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, params UpsertConfigParams) error {
 	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
@@ -263,19 +193,25 @@ func (s *service) UpsertConfig(ctx context.Context, projectID, key string, param
 
 	if s.config.IsSaaS() {
 		var configCount int64
-		countErr := s.db.WithContext(ctx).Model(&db.Config{}).Where("project_id = ?", projectID).Count(&configCount).Error
+		projectUUID := uuid.MustParse(projectID)
+
+		configs, countErr := gorm.G[db.Config](s.db).
+			Where(repo.Config.ProjectID.Eq(projectUUID)).
+			Find(ctx)
 		if countErr != nil {
 			return countErr
 		}
+		configCount = int64(len(configs))
 
-		var existingConfig db.Config
-		existingErr := s.db.WithContext(ctx).Where("project_id = ? AND key = ?", projectID, key).First(&existingConfig).Error
+		_, existingErr := gorm.G[db.Config](s.db).
+			Where(repo.Config.ProjectID.Eq(projectUUID)).
+			Where(repo.Config.Key.Eq(key)).
+			First(ctx)
 		if existingErr != nil && !errors.Is(existingErr, gorm.ErrRecordNotFound) {
 			return existingErr
 		}
 
 		if errors.Is(existingErr, gorm.ErrRecordNotFound) {
-			projectUUID := uuid.MustParse(projectID)
 			if err := s.billing.CheckConfigLimit(ctx, projectUUID, int(configCount)); err != nil {
 				return err
 			}
@@ -292,15 +228,20 @@ func (s *service) UpsertConfig(ctx context.Context, projectID, key string, param
 	}
 
 	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		projectUUID := uuid.MustParse(projectID)
+
 		var item db.Config
-		err := tx.Where("project_id = ? AND key = ?", projectID, key).First(&item).Error
+		item, err := gorm.G[db.Config](tx).
+			Where(repo.Config.ProjectID.Eq(projectUUID)).
+			Where(repo.Config.Key.Eq(key)).
+			First(ctx)
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			item = db.Config{
-				ProjectID: uuid.MustParse(projectID),
+				ProjectID: projectUUID,
 				Key:       key,
 				Value:     datatypes.JSON(params.Value),
 			}
-			return tx.Create(&item).Error
+			return gorm.G[db.Config](tx).Create(ctx, &item)
 		}
 		if err != nil {
 			return err
@@ -308,7 +249,10 @@ func (s *service) UpsertConfig(ctx context.Context, projectID, key string, param
 
 		item.Value = datatypes.JSON(params.Value)
 		item.UpdatedAt = time.Now()
-		return tx.Save(&item).Error
+		_, err = gorm.G[db.Config](tx).
+			Where(repo.Config.ID.Eq(item.ID)).
+			Updates(ctx, item)
+		return err
 	}); err != nil {
 		return err
 	}
@@ -317,7 +261,7 @@ func (s *service) UpsertConfig(ctx context.Context, projectID, key string, param
 	return nil
 }
 
-func (s *service) DeleteConfig(ctx context.Context, projectID, key string) error {
+func (s *Service) DeleteConfig(ctx context.Context, projectID, key string) error {
 	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
@@ -326,7 +270,11 @@ func (s *service) DeleteConfig(ctx context.Context, projectID, key string) error
 		return errors.New("config key is required")
 	}
 
-	if err := s.db.WithContext(ctx).Where("project_id = ? AND key = ?", projectID, key).Delete(&db.Config{}).Error; err != nil {
+	projectUUID := uuid.MustParse(projectID)
+	if _, err := gorm.G[db.Config](s.db).
+		Where(repo.Config.ProjectID.Eq(projectUUID)).
+		Where(repo.Config.Key.Eq(key)).
+		Delete(ctx); err != nil {
 		return err
 	}
 
@@ -334,18 +282,22 @@ func (s *service) DeleteConfig(ctx context.Context, projectID, key string) error
 	return nil
 }
 
-func (s *service) ensureProjectOwnership(ctx context.Context, projectID string) error {
+func (s *Service) ensureProjectOwnership(ctx context.Context, projectID string) error {
 	userIDRaw, ok := ctx.Value(auth.UserIdContextKey).(string)
 	if !ok || userIDRaw == "" {
 		return errors.New("unauthorized")
 	}
 
-	if _, err := uuid.Parse(projectID); err != nil {
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
 		return errors.New("invalid project id")
 	}
 
 	if auth.SystemUserID == userIDRaw {
-		_, err := gorm.G[db.Project](s.db).Select("id").Where("id = ?", projectID).First(ctx)
+		_, err := gorm.G[db.Project](s.db).
+			Select("id").
+			Where(repo.Project.ID.Eq(projectUUID)).
+			First(ctx)
 		if err != nil {
 			return errors.New("project not found")
 		}
@@ -357,7 +309,11 @@ func (s *service) ensureProjectOwnership(ctx context.Context, projectID string) 
 		return errors.New("invalid user id")
 	}
 
-	_, err = gorm.G[db.Project](s.db).Select("id").Where("id = ? AND user_id = ?", projectID, userID).First(ctx)
+	_, err = gorm.G[db.Project](s.db).
+		Select("id").
+		Where(repo.Project.ID.Eq(projectUUID)).
+		Where(repo.Project.UserID.Eq(userID)).
+		First(ctx)
 	if err != nil {
 		return errors.New("project not found")
 	}
@@ -365,21 +321,32 @@ func (s *service) ensureProjectOwnership(ctx context.Context, projectID string) 
 	return nil
 }
 
-func (s *service) getRuntimeSnapshot(ctx context.Context, projectID string) (runtimeCacheEntry, error) {
+func (s *Service) getRuntimeSnapshot(ctx context.Context, projectID string) (runtimeCacheEntry, error) {
 	if entry, ok := s.cache.get(projectID); ok {
 		return entry, nil
 	}
 
-	if _, err := gorm.G[db.Project](s.db).Select("id").Where("id = ?", projectID).First(ctx); err != nil {
+	projectUUID, err := uuid.Parse(projectID)
+	if err != nil {
 		return runtimeCacheEntry{}, errors.New("project not found")
 	}
 
-	flags, err := gorm.G[db.Flag](s.db).Where("project_id = ?", projectID).Order("key ASC").Find(ctx)
+	if _, err := gorm.G[db.Project](s.db).
+		Select("id").
+		Where(repo.Project.ID.Eq(projectUUID)).
+		First(ctx); err != nil {
+		return runtimeCacheEntry{}, errors.New("project not found")
+	}
+
+	flags, err := gorm.G[db.Flag](s.db).
+		Where(repo.Flag.ProjectID.Eq(projectUUID)).
+		Order(repo.Flag.Key).
+		Find(ctx)
 	if err != nil {
 		return runtimeCacheEntry{}, err
 	}
 
-	configRows, err := gorm.G[db.Config](s.db).Where("project_id = ?", projectID).Find(ctx)
+	configRows, err := gorm.G[db.Config](s.db).Where(repo.Config.ProjectID.Eq(projectUUID)).Find(ctx)
 	if err != nil {
 		return runtimeCacheEntry{}, err
 	}

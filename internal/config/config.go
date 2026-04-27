@@ -1,6 +1,11 @@
 package config
 
-import "strings"
+import (
+	"log"
+	"strings"
+
+	"github.com/joho/godotenv"
+)
 
 type Mode string
 
@@ -41,6 +46,10 @@ type Config struct {
 }
 
 func Load() *Config {
+	err := godotenv.Load()
+	if err != nil {
+		log.Printf("No .env file loaded (%v), falling back to system environment", err)
+	}
 
 	mode := Mode(GetEnv("TRACKION_MODE", "saas"))
 	cors := GetEnv("CORS_ORIGINS", "*")

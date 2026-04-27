@@ -9,8 +9,9 @@ import (
 	"trackion/internal/config"
 	"trackion/internal/core"
 	"trackion/internal/core/geoip"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/billing"
+	"trackion/internal/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -108,7 +109,11 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	var project db.Project
-	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+	project, err = gorm.G[db.Project](s.db).
+		Select("user_id").
+		Where(repo.Project.ID.Eq(projectId)).
+		First(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -173,7 +178,11 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) e
 	}
 
 	var project db.Project
-	if err := s.db.WithContext(ctx).Select("user_id").Where("id = ?", projectId).First(&project).Error; err != nil {
+	project, err = gorm.G[db.Project](s.db).
+		Select("user_id").
+		Where(repo.Project.ID.Eq(projectId)).
+		First(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -207,9 +216,14 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) e
 }
 
 func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {
+	pid, err := uuid.Parse(projectId)
+	if err != nil {
+		return ProjectConfig{}, err
+	}
+
 	p, err := gorm.G[db.Project](s.db).
 		Select("properties").
-		Where("id = ?", projectId).
+		Where(repo.Project.ID.Eq(pid)).
 		First(ctx)
 
 	if err != nil {

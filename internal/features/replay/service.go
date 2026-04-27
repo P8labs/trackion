@@ -9,8 +9,9 @@ import (
 	"io"
 	"strings"
 	"time"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
+	"trackion/internal/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -167,21 +168,24 @@ func (s *svc) GetSessionEvents(ctx context.Context, projectID, sessionID string)
 		return nil, ErrInvalidReplayPayload
 	}
 
-	var session db.ReplaySession
-	if err := s.db.WithContext(ctx).
-		Where("session_id = ? AND project_id = ?", sessionID, projectUUID).
-		First(&session).Error; err != nil {
+	_, err = gorm.G[db.ReplaySession](s.db).
+		Where(repo.ReplaySession.SessionID.Eq(sessionID)).
+		Where(repo.ReplaySession.ProjectID.Eq(projectUUID)).
+		First(ctx)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, errors.New("session not found")
 		}
 		return nil, err
 	}
 
-	var chunks []db.ReplayChunk
-	if err := s.db.WithContext(ctx).
-		Where("session_id = ? AND project_id = ?", sessionID, projectUUID).
-		Order("created_at ASC, id ASC").
-		Find(&chunks).Error; err != nil {
+	chunks, err := gorm.G[db.ReplayChunk](s.db).
+		Where(repo.ReplayChunk.SessionID.Eq(sessionID)).
+		Where(repo.ReplayChunk.ProjectID.Eq(projectUUID)).
+		Order(repo.ReplayChunk.CreatedAt).
+		Order(repo.ReplayChunk.ID).
+		Find(ctx)
+	if err != nil {
 		return nil, err
 	}
 
@@ -215,15 +219,21 @@ func (s *svc) DeleteSession(ctx context.Context, projectID, sessionID string) er
 	}
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("session_id = ? AND project_id = ?", sessionID, projectUUID).Delete(&db.ReplayChunk{}).Error; err != nil {
+		if _, err := gorm.G[db.ReplayChunk](tx).
+			Where(repo.ReplayChunk.SessionID.Eq(sessionID)).
+			Where(repo.ReplayChunk.ProjectID.Eq(projectUUID)).
+			Delete(ctx); err != nil {
 			return err
 		}
 
-		res := tx.Where("session_id = ? AND project_id = ?", sessionID, projectUUID).Delete(&db.ReplaySession{})
-		if res.Error != nil {
-			return res.Error
+		deleted, err := gorm.G[db.ReplaySession](tx).
+			Where(repo.ReplaySession.SessionID.Eq(sessionID)).
+			Where(repo.ReplaySession.ProjectID.Eq(projectUUID)).
+			Delete(ctx)
+		if err != nil {
+			return err
 		}
-		if res.RowsAffected == 0 {
+		if deleted == 0 {
 			return errors.New("session not found")
 		}
 
@@ -246,7 +256,7 @@ func (s *svc) ensureProjectAccess(ctx context.Context, projectID string) (uuid.U
 	if userIDRaw == auth.SystemUserID {
 		_, err := gorm.G[db.Project](s.db).
 			Select("id").
-			Where("id = ?", projectUUID).
+			Where(repo.Project.ID.Eq(projectUUID)).
 			First(ctx)
 		if err != nil {
 			return uuid.Nil, errors.New("project not found")
@@ -261,7 +271,8 @@ func (s *svc) ensureProjectAccess(ctx context.Context, projectID string) (uuid.U
 
 	_, err = gorm.G[db.Project](s.db).
 		Select("id").
-		Where("id = ? AND user_id = ?", projectUUID, userUUID).
+		Where(repo.Project.ID.Eq(projectUUID)).
+		Where(repo.Project.UserID.Eq(userUUID)).
 		First(ctx)
 	if err != nil {
 		return uuid.Nil, errors.New("project not found")

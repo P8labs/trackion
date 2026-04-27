@@ -18,7 +18,8 @@ import (
 	"trackion/internal/config"
 	"trackion/internal/core/domain"
 	"trackion/internal/core/ratelimit"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
+	"trackion/internal/repo"
 	"trackion/internal/res"
 
 	"github.com/google/uuid"
@@ -79,7 +80,7 @@ func (m Middleware) AttachProjectContext(next http.Handler) http.Handler {
 			return
 		}
 
-		project, err := gorm.G[db.Project](m.db).Where("api_key = ?", key).First(r.Context())
+		project, err := gorm.G[db.Project](m.db).Where(repo.Project.ApiKey.Eq(key)).First(r.Context())
 
 		if err != nil {
 			next.ServeHTTP(w, r)
@@ -106,7 +107,7 @@ func (m Middleware) ProjectIDValidation(next http.Handler) http.Handler {
 			return
 		}
 
-		project, err := gorm.G[db.Project](m.db).Where("api_key = ?", key).First(r.Context())
+		project, err := gorm.G[db.Project](m.db).Where(repo.Project.ApiKey.Eq(key)).First(r.Context())
 		if err != nil {
 			res.Error(w, "Invalid project key.", 400)
 			return

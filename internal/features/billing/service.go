@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"time"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
 
 	"github.com/google/uuid"

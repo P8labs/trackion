@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"trackion/internal/config"
-	"trackion/internal/db"
+	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
+	"trackion/internal/repo"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -59,8 +60,10 @@ func (s *service) GetUsageSummary(ctx context.Context) (UsageSummary, error) {
 		return UsageSummary{}, errors.New("invalid user id")
 	}
 
-	subscription, err := gorm.G[db.Subscription](s.db).Where("user_id = ?", userID).
-		Where("status = ?", "active").First(ctx)
+	subscription, err := gorm.G[db.Subscription](s.db).
+		Where(repo.Subscription.UserID.Eq(userID)).
+		Where(repo.Subscription.Status.Eq("active")).
+		First(ctx)
 	if err != nil {
 		return UsageSummary{}, errors.New("active subscription not found")
 	}

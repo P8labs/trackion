@@ -7,12 +7,11 @@ import (
 	"gorm.io/gorm"
 )
 
-func Routes(db *gorm.DB) *chi.Mux {
+func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
-	cfg := config.Load()
-	mw := NewMiddleware(db, *cfg)
-	authService := NewService(db, *cfg)
-	authHandler := NewHandler(authService, *cfg)
+	mw := NewMiddleware(db, cfg)
+	authService := NewService(db, cfg)
+	authHandler := NewHandler(authService, cfg)
 
 	r.Get("/login/github", authHandler.GithubLogin)
 	r.Get("/login/google", authHandler.GoogleLogin)
