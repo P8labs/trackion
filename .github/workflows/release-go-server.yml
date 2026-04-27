@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - v*.*.*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (format: 0.0.0)"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -42,15 +48,36 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      - name: Set version
+        run: |
+          set -e
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            echo "Invalid trigger context"
+            exit 1
+          fi
+
+          # validate semver (strict x.y.z)
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version format: $VERSION (expected x.y.z)"
+            exit 1
+          fi
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Using version: $VERSION"
+
       - name: Build binary
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
         run: |
           mkdir -p dist
-          VERSION="${GITHUB_REF_NAME#v}"
           OUTPUT="trackion-server_${VERSION}_${GOOS}_${GOARCH}${{ matrix.ext }}"
-          CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o "dist/$OUTPUT" ./cmd
+          CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o "dist/$OUTPUT" ./cmd
 
       - name: Upload binary artifact
         uses: actions/upload-artifact@v4
@@ -70,26 +97,50 @@ jobs:
           pattern: trackion-*
           merge-multiple: true
 
+      - name: Set version + tag
+        run: |
+          set -e
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+
+          TAG="v$VERSION"
+
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "TAG=$TAG" >> $GITHUB_ENV
+
+      - name: Generate changelog
+        run: |
+          set -e
+
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            RANGE=""
+            echo "No previous tag found, using full history"
+          else
+            RANGE="$PREV_TAG..HEAD"
+          fi
+
+          echo "## Changes" > CHANGELOG.md
+
+          if [ -z "$RANGE" ]; then
+            git log --pretty=format:"- %s (%h)" >> CHANGELOG.md
+          else
+            git log $RANGE --pretty=format:"- %s (%h)" >> CHANGELOG.md
+          fi
+
       - name: Create release and upload assets
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.TAG }}
           files: dist/*
           generate_release_notes: true
           make_latest: true
-          body: |
-            ## Trackion Server Release
-
-            Prebuilt binaries for this version are attached as assets.
-
-            ### Docker Image
-
-            ```bash
-            docker pull ghcr.io/${{ github.repository_owner }}/trackion:${{ github.ref_name }}
-            ```
-
-            ### Notes
-            See the [documentation](https://trackion.tech/docs/) for more information.
-            Auto-generated changelog entries are included below.
+          body_path: CHANGELOG.md
 
   release-docker-image:
     runs-on: ubuntu-latest
