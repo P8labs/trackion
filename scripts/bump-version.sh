@@ -162,7 +162,7 @@ main() {
 
   local bump_type=$1
   local update_packages=true
-  local sync_packages=false
+  local sync_packages=true
 
   if [[ $# -eq 2 ]]; then
     case "$2" in
