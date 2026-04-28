@@ -12,11 +12,12 @@ VERSION_FILE="VERSION"
 WEB_PACKAGE_FILE="web/package.json"
 DESKTOP_PACKAGE_FILE="desktop/package.json"
 DESKTOP_CARGO_FILE="desktop/src-tauri/Cargo.toml"
+TAURI_CONF_FILE="desktop/src-tauri/tauri.conf.json"
 DOCS_PACKAGE_FILE="docs/package.json"
 
 usage() {
-  echo -e "${RED}Usage: $0 <major|minor|patch> [--update-packages|-p] [--sync-packages|-s]${NC}"
-  echo -e "Example: $0 patch --sync-packages"
+  echo -e "${RED}Usage: $0 <major|minor|patch>${NC}"
+  echo -e "Example: $0 patch"
   exit 1
 }
 
@@ -57,6 +58,19 @@ update_desktop_cargo_version() {
   sed -i -E "s/(^version = \")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DESKTOP_CARGO_FILE"
 
   echo -e "${GREEN}Updated $DESKTOP_CARGO_FILE version to $new_version${NC}"
+}
+
+update_tauri_conf_version() {
+  local new_version=$1
+
+  if [[ ! -f "$TAURI_CONF_FILE" ]]; then
+    echo -e "${RED}Missing $TAURI_CONF_FILE${NC}"
+    exit 1
+  fi
+
+  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$TAURI_CONF_FILE"
+
+  echo -e "${GREEN}Updated $TAURI_CONF_FILE version to $new_version${NC}"
 }
 
 update_docs_version() {
@@ -156,28 +170,11 @@ show_info() {
 }
 
 main() {
-  if [[ $# -lt 1 || $# -gt 2 ]]; then
+  if [[ $# -ne 1 ]]; then
     usage
   fi
 
   local bump_type=$1
-  local update_packages=true
-  local sync_packages=true
-
-  if [[ $# -eq 2 ]]; then
-    case "$2" in
-      --update-packages|-p)
-        update_packages=true
-        ;;
-      --sync-packages|-s)
-        update_packages=true
-        sync_packages=true
-        ;;
-      *)
-        usage
-        ;;
-    esac
-  fi
 
   CURRENT_VERSION=$(get_version)
 
@@ -195,15 +192,11 @@ main() {
   update_version_file "$NEW_VERSION"
   echo -e "${GREEN}Updated $VERSION_FILE${NC}"
 
-  if [[ "$update_packages" == true ]]; then
-    update_web_version "$NEW_VERSION"
-    update_desktop_version "$NEW_VERSION"
-    update_desktop_cargo_version "$NEW_VERSION"
-
-    if [[ "$sync_packages" == true ]]; then
-      update_docs_version "$NEW_VERSION"
-    fi
-  fi
+  update_web_version "$NEW_VERSION"
+  update_desktop_version "$NEW_VERSION"
+  update_desktop_cargo_version "$NEW_VERSION"
+  update_tauri_conf_version "$NEW_VERSION"
+  update_docs_version "$NEW_VERSION"
 
   show_info "$NEW_VERSION"
 
