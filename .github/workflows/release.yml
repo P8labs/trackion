@@ -1,0 +1,435 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*.*.*
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (format: 0.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-server:
+    name: Build Server Binaries
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            ext: ""
+          - goos: linux
+            goarch: arm64
+            ext: ""
+          - goos: linux
+            goarch: arm
+            goarm: "7"
+            ext: ""
+          - goos: darwin
+            goarch: amd64
+            ext: ""
+          - goos: darwin
+            goarch: arm64
+            ext: ""
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GOARM: ${{ matrix.goarm || '' }}
+        run: |
+          mkdir -p dist
+
+          # Handle ARM variant suffix
+          SUFFIX=""
+          if [ "$GOOS" = "linux" ] && [ "$GOARCH" = "arm" ]; then
+            SUFFIX="-v$GOARM"
+          fi
+
+          OUTPUT="trackion-server_${{ steps.version.outputs.version }}_${GOOS}_${GOARCH}${SUFFIX}${{ matrix.ext }}"
+          CGO_ENABLED=0 go build -trimpath \
+            -ldflags "-s -w -X main.version=${{ steps.version.outputs.version }}" \
+            -o "dist/$OUTPUT" ./cmd
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.goarm && format('-v{0}', matrix.goarm) || '' }}
+          path: dist/*
+          retention-days: 1
+
+  build-desktop:
+    name: Build Desktop Client
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./desktop/src-tauri -> target"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: desktop/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: cd desktop && pnpm install --frozen-lockfile
+
+      - name: Determine version
+        shell: bash
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: echo "${{ steps.version.outputs.version }}" > VERSION
+
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: ./desktop
+          args: --verbose
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-windows
+          path: |
+            desktop/src-tauri/target/release/bundle/msi/**
+            desktop/src-tauri/target/release/bundle/nsis/**
+            desktop/src-tauri/target/release/bundle/portable/**
+            desktop/src-tauri/target/release/bundle/**/*.sig
+            desktop/src-tauri/target/release/bundle/**/latest.json
+          retention-days: 1
+
+  prepare-release:
+    name: Prepare Release Assets
+    needs: [build-server, build-desktop]
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Organize release assets
+        run: |
+          mkdir -p release-assets
+
+          # Copy server binaries
+          mkdir -p release-assets/server
+          cp artifacts/server-*/* release-assets/server/ 2>/dev/null || true
+
+          # Copy desktop installers and portable build
+          mkdir -p release-assets/desktop
+          cp artifacts/desktop-windows/msi/*.msi release-assets/desktop/ 2>/dev/null || true
+          cp artifacts/desktop-windows/nsis/*.exe release-assets/desktop/ 2>/dev/null || true
+
+          # Copy portable ZIP and updater metadata
+          cp artifacts/desktop-windows/portable/*.zip release-assets/desktop/ 2>/dev/null || true
+          mkdir -p release-assets/updater
+          cp artifacts/desktop-windows/**/latest.json release-assets/updater/ 2>/dev/null || true
+          cp artifacts/desktop-windows/**/*.sig release-assets/updater/ 2>/dev/null || true
+
+          echo "=== Release Assets Structure ==="
+          find release-assets -type f | sort
+          ls -lh release-assets/**/*
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          {
+            echo "## 📦 Release ${{ steps.version.outputs.version }}"
+            echo ""
+            echo "### Server Binaries"
+            echo "Linux:"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_linux_amd64\`"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_linux_arm64\`"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_linux_arm-v7\`"
+            echo ""
+            echo "macOS:"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_darwin_amd64\`"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_darwin_arm64\` (Apple Silicon)"
+            echo ""
+            echo "Windows:"
+            echo "- \`trackion-server_${{ steps.version.outputs.version }}_windows_amd64.exe\`"
+            echo ""
+            echo "### Desktop Client"
+            echo "Windows:"
+            echo "- \`trackion_${{ steps.version.outputs.version }}_x64.msi\`"
+            echo "- \`trackion_${{ steps.version.outputs.version }}_x64-setup.exe\`"
+            echo "- \`trackion_${{ steps.version.outputs.version }}_x64.zip\`"
+            echo "- \`latest.json\`"
+            echo ""
+            echo "### Docker Image"
+            echo "\`\`\`bash"
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+            echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            echo "\`\`\`"
+            echo ""
+            echo "### Installation"
+            echo ""
+            echo "#### Server"
+            echo "Download the appropriate binary for your platform and run it:"
+            echo "\`\`\`bash"
+            echo "./trackion-server_linux_amd64  # On Linux"
+            echo "\`\`\`"
+            echo ""
+            echo "#### Desktop"
+            echo "1. Download the MSI, EXE, or ZIP package"
+            echo "2. Run the installer or extract the ZIP"
+            echo "3. Follow the installation wizard or launch the app directly"
+            echo ""
+            echo "#### Docker"
+            echo "Run with Docker:"
+            echo "\`\`\`bash"
+            echo "docker run -p 3000:3000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+            echo "\`\`\`"
+            echo ""
+            echo "### Changes"
+            if [ -n "$PREV_TAG" ]; then
+              git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" 
+            else
+              git log --pretty=format:"- %s (%h)"
+            fi
+            echo ""
+          } > CHANGELOG.md
+
+          echo "changelog=$(cat CHANGELOG.md)" >> $GITHUB_OUTPUT
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: release-assets/
+          retention-days: 1
+
+      - name: Upload changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG.md
+          retention-days: 1
+
+  docker:
+    name: Build & Push Docker Image
+    needs: build-server
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download server binaries
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: server-*
+
+      - name: Prepare Docker build context
+        run: |
+          mkdir -p build
+
+          # Copy and rename binaries for Docker build
+          # Format: trackion-server-linux-${TARGETARCH}${TARGETVARIANT:+-${TARGETVARIANT}}
+          # When TARGETVARIANT is set (e.g., v7), it becomes: trackion-server-linux-${TARGETARCH}-${TARGETVARIANT}
+
+          # amd64
+          if [ -f "dist/server-linux-amd64/trackion-server_${{ steps.version.outputs.version }}_linux_amd64" ]; then
+            cp "dist/server-linux-amd64/trackion-server_${{ steps.version.outputs.version }}_linux_amd64" \
+               "build/trackion-server-linux-amd64"
+          fi
+
+          # arm64
+          if [ -f "dist/server-linux-arm64/trackion-server_${{ steps.version.outputs.version }}_linux_arm64" ]; then
+            cp "dist/server-linux-arm64/trackion-server_${{ steps.version.outputs.version }}_linux_arm64" \
+               "build/trackion-server-linux-arm64"
+          fi
+
+          # armv7
+          if [ -f "dist/server-linux-arm-v7/trackion-server_${{ steps.version.outputs.version }}_linux_arm-v7" ]; then
+            cp "dist/server-linux-arm-v7/trackion-server_${{ steps.version.outputs.version }}_linux_arm-v7" \
+               "build/trackion-server-linux-arm-v7"
+          fi
+
+          echo "=== Docker Build Context ===" 
+          ls -lh build/
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=tag
+            type=raw,value=latest
+            type=raw,value=${{ steps.version.outputs.version }}
+
+      - name: Build and push multi-arch Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./build
+          file: ./Dockerfile.release
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          provenance: true
+          sbom: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  create-release:
+    name: Create GitHub Release
+    needs: [prepare-release, docker]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download changelog
+        uses: actions/download-artifact@v4
+        with:
+          name: changelog
+          path: .
+
+      - name: Download all release assets
+        uses: actions/download-artifact@v4
+        with:
+          path: final-release
+          pattern: release-assets
+
+      - name: Organize assets
+        run: |
+          mkdir -p assets
+
+          # Flatten the nested structure
+          if [ -d "final-release/release-assets" ]; then
+            cp -r final-release/release-assets/* assets/ 2>/dev/null || true
+            find assets -type f | sort
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare-release.outputs.tag }}
+          files: assets/**/*
+          body_path: CHANGELOG.md
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
