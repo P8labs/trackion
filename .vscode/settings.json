@@ -1,3 +1,14 @@
 {
-  "rust-analyzer.linkedProjects": ["desktop/src-tauri/Cargo.toml"]
+  "rust-analyzer.linkedProjects": ["desktop/src-tauri/Cargo.toml"],
+  "files.associations": {
+    "*.png": "plaintext",
+    "*.jpg": "plaintext",
+    "*.svg": "plaintext",
+    "*.icns": "plaintext",
+    "*.ico": "plaintext"
+  },
+  "github.copilot.enable": {
+    "*": true,
+    "plaintext": false
+  }
 }

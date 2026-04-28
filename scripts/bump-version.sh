@@ -10,10 +10,12 @@ NC='\033[0m'
 
 VERSION_FILE="VERSION"
 WEB_PACKAGE_FILE="web/package.json"
+DESKTOP_PACKAGE_FILE="desktop/package.json"
+DESKTOP_CARGO_FILE="desktop/src-tauri/Cargo.toml"
 DOCS_PACKAGE_FILE="docs/package.json"
 
 usage() {
-  echo -e "${RED}Usage: $0 <major|minor|patch> [--update-web|-w] [--sync-packages|-s]${NC}"
+  echo -e "${RED}Usage: $0 <major|minor|patch> [--update-packages|-p] [--sync-packages|-s]${NC}"
   echo -e "Example: $0 patch --sync-packages"
   exit 1
 }
@@ -29,6 +31,32 @@ update_web_version() {
   sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$WEB_PACKAGE_FILE"
 
   echo -e "${GREEN}Updated $WEB_PACKAGE_FILE version to $new_version${NC}"
+}
+
+update_desktop_version() {
+  local new_version=$1
+
+  if [[ ! -f "$DESKTOP_PACKAGE_FILE" ]]; then
+    echo -e "${RED}Missing $DESKTOP_PACKAGE_FILE${NC}"
+    exit 1
+  fi
+
+  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DESKTOP_PACKAGE_FILE"
+
+  echo -e "${GREEN}Updated $DESKTOP_PACKAGE_FILE version to $new_version${NC}"
+}
+
+update_desktop_cargo_version() {
+  local new_version=$1
+
+  if [[ ! -f "$DESKTOP_CARGO_FILE" ]]; then
+    echo -e "${RED}Missing $DESKTOP_CARGO_FILE${NC}"
+    exit 1
+  fi
+
+  sed -i -E "s/(^version = \")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DESKTOP_CARGO_FILE"
+
+  echo -e "${GREEN}Updated $DESKTOP_CARGO_FILE version to $new_version${NC}"
 }
 
 update_docs_version() {
@@ -118,11 +146,12 @@ show_info() {
   local version=$1
 
   echo -e "\n${BLUE}==============================================${NC}"
-  echo -e "${GREEN}Trackion Server Release Info${NC}"
+  echo -e "${GREEN}Trackion Release Info${NC}"
   echo -e "${BLUE}==============================================${NC}"
-  echo -e "${YELLOW}Version:${NC}   $version"
-  echo -e "${YELLOW}Binary:${NC}    trackion-server"
-  echo -e "${YELLOW}Tag:${NC}       v$version"
+  echo -e "${YELLOW}Version:${NC}             $version"
+  echo -e "${YELLOW}Server Binary:${NC}       trackion-server"
+  echo -e "${YELLOW}Desktop Installer:${NC}   Tauri MSI/NSIS"
+  echo -e "${YELLOW}Tag:${NC}                 v$version"
   echo -e "${BLUE}==============================================${NC}\n"
 }
 
@@ -132,16 +161,16 @@ main() {
   fi
 
   local bump_type=$1
-  local update_web=true
+  local update_packages=true
   local sync_packages=false
 
   if [[ $# -eq 2 ]]; then
     case "$2" in
-      --update-web|-w)
-        update_web=true
+      --update-packages|-p)
+        update_packages=true
         ;;
       --sync-packages|-s)
-        update_web=true
+        update_packages=true
         sync_packages=true
         ;;
       *)
@@ -166,8 +195,10 @@ main() {
   update_version_file "$NEW_VERSION"
   echo -e "${GREEN}Updated $VERSION_FILE${NC}"
 
-  if [[ "$update_web" == true ]]; then
+  if [[ "$update_packages" == true ]]; then
     update_web_version "$NEW_VERSION"
+    update_desktop_version "$NEW_VERSION"
+    update_desktop_cargo_version "$NEW_VERSION"
 
     if [[ "$sync_packages" == true ]]; then
       update_docs_version "$NEW_VERSION"
