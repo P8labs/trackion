@@ -74,6 +74,13 @@ export const getGoogleLoginUrl = (serverUrl = SERVER_URL): string => {
   return `${serverUrl}/auth/login/google?client=web`;
 };
 
+export const logout = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  await apiCall("/api/auth/logout", { method: "POST" }, serverUrl, authToken);
+};
+
 export const getCurrentUser = async (
   serverUrl: string,
   authToken: string,

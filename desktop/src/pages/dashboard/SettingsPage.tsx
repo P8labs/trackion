@@ -97,8 +97,8 @@ export function SettingsPage() {
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate("/auth");
   };
 

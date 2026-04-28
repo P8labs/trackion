@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
 import { Button } from "./ui/button";
+import Topbar from "@/pages/dashboard/components/Topbar";
 
 interface Props {
   children: ReactNode;

@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useProjects, useUser } from "@/hooks/useApi";
 import { useStore } from "@/store";
 import type { Project } from "@/types";
@@ -27,6 +26,8 @@ import {
   Logout,
   Menu01Icon,
   MinusSignIcon,
+  ReloadIcon,
+  ResetPasswordFreeIcons,
   Settings01Icon,
   ShieldAlert,
   SquareIcon,
@@ -79,11 +80,21 @@ export default function Topbar({
     ? "Fetching profile"
     : user?.email || "No email";
 
-  const handleLogoutConfirm = () => {
-    logout();
+  const handleLogoutConfirm = async () => {
+    await logout();
     setLogoutDialogOpen(false);
     setSidebarOpen?.(false);
     navigate("/auth");
+  };
+
+  const handleResetApp = async () => {
+    localStorage.clear();
+    sessionStorage.clear();
+    await logout();
+    setLogoutDialogOpen(false);
+    setSidebarOpen?.(false);
+    navigate("/auth");
+    window.location.reload();
   };
 
   return (
@@ -112,7 +123,6 @@ export default function Topbar({
               <HugeiconsIcon icon={Menu01Icon} size={18} />
             )}
           </button>
-
           <Breadcrumb projects={projects} />
         </div>
       ) : (
@@ -122,9 +132,9 @@ export default function Topbar({
       )}
 
       <div className="flex items-center gap-3">
-        <ThemeToggle />
+        {/* <ThemeToggle /> */}
 
-        {user && (
+        {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger>
               <button className="flex items-center">
@@ -169,9 +179,41 @@ export default function Topbar({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        ) : (
+          <DropdownMenu>
+            <DropdownMenuTrigger>
+              <HugeiconsIcon
+                icon={Menu01Icon}
+                size={18}
+                className="text-muted-foreground"
+              />
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent align="end" className="w-52 border-border/60">
+              <DropdownMenuItem
+                onClick={handleResetApp}
+                className="text-destructive focus:text-destructive"
+              >
+                <HugeiconsIcon
+                  icon={ResetPasswordFreeIcons}
+                  className="mr-2 h-4 w-4"
+                />
+                Reset App
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
 
         <div className="flex h-full items-stretch">
+          <Button
+            variant="ghost"
+            type="button"
+            aria-label="Minimize"
+            size="icon"
+            onClick={() => window.location.reload()}
+          >
+            <HIcon icon={ReloadIcon} className="size-4" />
+          </Button>
           <Button
             variant="ghost"
             type="button"

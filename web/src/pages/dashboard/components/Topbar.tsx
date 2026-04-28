@@ -70,8 +70,8 @@ export default function Topbar({
     ? "Fetching profile"
     : user?.email || "No email";
 
-  const handleLogoutConfirm = () => {
-    logout();
+  const handleLogoutConfirm = async () => {
+    await logout();
     setLogoutDialogOpen(false);
     setSidebarOpen(false);
     navigate("/auth");

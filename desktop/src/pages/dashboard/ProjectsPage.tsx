@@ -101,8 +101,16 @@ export function ProjectsPage() {
       </div>
 
       {error && (
-        <div className="px-4 md:px-6 pb-4 text-sm text-destructive">
-          Failed to load projects.
+        <div className="px-4 md:px-6 pb-4 text-sm text-destructive flex items-center gap-2">
+          <div
+            className="inline-flex items-center gap-2"
+            onClick={() => {
+              window.location.reload();
+            }}
+          >
+            <span>Error loading projects</span>
+            <span>{error.message}</span>
+          </div>
         </div>
       )}
 

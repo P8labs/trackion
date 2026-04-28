@@ -84,6 +84,13 @@ export const getCurrentUser = async (
   return apiCall<User>("/auth/me", {}, serverUrl, authToken);
 };
 
+export const logout = async (
+  serverUrl: string,
+  authToken: string,
+): Promise<void> => {
+  await apiCall("/api/auth/logout", { method: "POST" }, serverUrl, authToken);
+};
+
 export const getProjects = async (
   serverUrl: string,
   authToken: string,
