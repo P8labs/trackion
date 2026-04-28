@@ -17,9 +17,12 @@ import PlusDecor from "@/components/PlusDecor";
 import { getVersion } from "@tauri-apps/api/app";
 import { platform, version } from "@tauri-apps/plugin-os";
 import { check } from "@tauri-apps/plugin-updater";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 export function SettingsPage() {
-  const { serverUrl, authToken, user: storedUser } = useStore();
+  const { serverUrl, authToken, user: storedUser, logout } = useStore();
+  const navigate = useNavigate();
   const [appVersion, setAppVersion] = useState<string>("Loading...");
   const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
   const [updateVersion, setUpdateVersion] = useState<string | null>(null);
@@ -93,6 +96,11 @@ export function SettingsPage() {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
+
+  const handleLogout = () => {
+    logout();
+    navigate("/auth");
+  };
 
   return (
     <section className="relative max-w-4xl mx-auto py-4 h-full">
@@ -216,6 +224,13 @@ export function SettingsPage() {
               days.
             </p>
           </div>
+        </div>
+
+        <div className="px-4 md:px-6 py-6 border-b border-border/60">
+          <p className="text-sm font-medium mb-4">Session</p>
+          <Button variant="destructive" onClick={handleLogout}>
+            Logout
+          </Button>
         </div>
       </div>
     </section>

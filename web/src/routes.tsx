@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
+import DownloadsPage from "./pages/landing/DownloadsPage";
 
 const AuthPage = lazy(() =>
   import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
@@ -126,6 +127,7 @@ export const projectRoutes = [
 
 export const publicRoutes = [
   { path: "/", element: <LandingPage /> },
+  { path: "/downloads", element: <DownloadsPage /> },
   { path: "/about", element: <AboutPage /> },
   { path: "/terms", element: <TermsPage /> },
   { path: "/privacy", element: <PrivacyPage /> },

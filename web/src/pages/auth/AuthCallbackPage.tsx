@@ -32,6 +32,13 @@ export function AuthCallbackPage() {
     const params = new URLSearchParams(window.location.search);
     const authParam = params.get("auth");
     const authToken = params.get("token");
+    const errorParam = params.get("error");
+
+    if (errorParam) {
+      setStatus("error");
+      setError(`Authentication failed: ${errorParam}`);
+      return;
+    }
 
     if (authToken && authToken.trim()) {
       setAuth(authToken.trim(), serverUrl);

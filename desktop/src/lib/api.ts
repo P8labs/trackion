@@ -1,4 +1,5 @@
-// import { fetch } from "@tauri-apps/plugin-http";
+import { fetch } from "@tauri-apps/plugin-http";
+
 import type {
   Project,
   ProjectSettings,
@@ -42,6 +43,7 @@ const apiCall = async <T>(
   });
 
   const data = await response.json();
+  console.log("API Response:", { endpoint, headers, response, data });
 
   if (!data.status) {
     throw new Error(data.message);
