@@ -112,7 +112,6 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            desktop/src-tauri/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-
@@ -129,6 +128,10 @@ jobs:
           cache: pnpm
           cache-dependency-path: desktop/pnpm-lock.yaml
 
+      - name: Clean Tauri build
+        shell: bash
+        run: |
+          rm -rf desktop/src-tauri/target
       - name: Install dependencies
         run: cd desktop && pnpm install --frozen-lockfile
 
@@ -170,24 +173,67 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           $outDir = "desktop/src-tauri/target/release/bundle/updater"
+          $bundleDir = "desktop/src-tauri/target/release/bundle"
+
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
           $tag = "v$env:VERSION"
           $base = "https://github.com/$env:REPO/releases/download/$tag"
 
+          # Helper: read signature
+          function Get-Signature($filePath) {
+            $sigPath = "$filePath.sig"
+            if (!(Test-Path $sigPath)) {
+              throw "Missing signature for $filePath"
+            }
+            return (Get-Content $sigPath -Raw).Trim()
+          }
+
+          # Detect files
+          $msi = Get-ChildItem "$bundleDir/msi" -Filter "*$env:VERSION*.msi" | Select-Object -First 1
+          $exe = Get-ChildItem "$bundleDir/nsis" -Filter "*$env:VERSION*-setup.exe" | Select-Object -First 1
+
+          if (-not $msi -or -not $exe) {
+            throw "Missing MSI or EXE build output"
+          }
+
+          # Build JSON
           $latest = [ordered]@{
             version = $env:VERSION
-            notes = ""
-            pub_date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+            notes = @"
+          ## Changelog
+          - Release `v$env:VERSION` is now available.
+          - See commit history: https://github.com/$env:REPO/commits/v$env:VERSION
+
+          ## Artifacts
+          - Windows setup installer (.exe)
+          - Windows MSI installer (.msi)
+
+          ## Windows Install Note
+          - Windows may show a warning/block screen because the app is not signed with a commercial certificate.
+          - This is expected for indie apps.
+
+          ## Bug Reports
+          - https://github.com/$env:REPO/issues
+          "@
+            pub_date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
             platforms = [ordered]@{
-              'linux-x86_64' = [ordered]@{ signature = ''; url = "$base/trackion_${env:VERSION}_linux_amd64" }
-              'windows-x86_64' = [ordered]@{ signature = ''; url = "$base/trackion_${env:VERSION}_x64.zip" }
-              'darwin-x86_64' = [ordered]@{ signature = ''; url = "$base/trackion_${env:VERSION}_darwin_amd64" }
+              "windows-x86_64" = [ordered]@{
+                url = "$base/$($exe.Name)"
+                signature = Get-Signature $exe.FullName
+              }
+              "windows-x86_64-msi" = [ordered]@{
+                url = "$base/$($msi.Name)"
+                signature = Get-Signature $msi.FullName
+              }
+              "windows-x86_64-nsis" = [ordered]@{
+                url = "$base/$($exe.Name)"
+                signature = Get-Signature $exe.FullName
+              }
             }
           }
 
-          $json = $latest | ConvertTo-Json -Depth 10
-          $json | Out-File -FilePath (Join-Path $outDir 'latest.json') -Encoding utf8
+          $latest | ConvertTo-Json -Depth 10 | Out-File "$outDir/latest.json" -Encoding utf8
 
       - name: Create portable zip
         shell: pwsh
@@ -382,7 +428,11 @@ jobs:
           else
             VERSION="${GITHUB_REF#refs/tags/v}"
           fi
+
+          TAG="v${VERSION}"
+
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -438,9 +488,8 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
             type=raw,value=latest
-            type=raw,value=${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.tag }}
 
       - name: Build and push multi-arch Docker image
         uses: docker/build-push-action@v7
@@ -482,15 +531,7 @@ jobs:
         run: |
           mkdir -p assets
 
-          # Flatten the nested structure
-          if [ -d "final-release/release-assets" ]; then
-            cp -r final-release/release-assets/* assets/ 2>/dev/null || true
-          else
-            # Debug: show what was actually downloaded
-            echo "ERROR: final-release/release-assets not found"
-            echo "Contents of final-release:"
-            find final-release -type f | head -20
-          fi
+          cp -r final-release/* assets/ 2>/dev/null || true
 
       - name: Debug assets
         run: |
