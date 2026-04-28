@@ -9,6 +9,8 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+    paths:
+      - "desktop/**"
 
 permissions:
   contents: read
@@ -57,4 +59,4 @@ jobs:
         run: pnpm run build
 
       - name: Build Tauri app
-        run: npm run tauri build
+        run: pnpm run tauri build --no-sign
