@@ -19,3 +19,13 @@ export function formatTimeSpent(seconds: number) {
   }
   return `${secs}s`;
 }
+
+export function parseGoDate(value: string): Date {
+  const normalized = value
+    .replace(" ", "T")
+    .replace(" +", "+")
+    .replace(/([+-]\d{2})(\d{2})/, "$1:$2")
+    .replace(" IST", "");
+
+  return new Date(normalized);
+}

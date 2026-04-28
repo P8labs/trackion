@@ -20,6 +20,7 @@ import {
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { useAreaChartData } from "@/hooks/useApi";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { parseGoDate } from "@/lib/utils";
 
 interface ChartDataProps {
   projectId: string;
@@ -165,7 +166,7 @@ export function DashboardChart({ projectId }: ChartDataProps) {
                 axisLine={false}
                 tickMargin={8}
                 tickFormatter={(value) => {
-                  const d = new Date(value);
+                  const d = parseGoDate(value);
 
                   if (timeRange === "30m" || timeRange === "1h") {
                     return d.toLocaleTimeString([], {

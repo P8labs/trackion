@@ -66,7 +66,6 @@ export function EventsPage() {
     error,
   } = useRecentEventsPaginated(activeProject?.id || "", page, pageSize);
 
-  // Parse properties helper
   const parseProperties = (properties: unknown): Record<string, unknown> => {
     if (!properties) return {};
     try {

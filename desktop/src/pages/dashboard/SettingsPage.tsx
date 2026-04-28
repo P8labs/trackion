@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { useStore } from "../../store";
 import {
   getCurrentUser,
@@ -11,12 +12,56 @@ import {
   AvatarImage,
 } from "../../components/ui/avatar";
 import moment from "moment";
-import { WEB_VERSION } from "../../lib/constants";
 import { PLine } from "@/components/Line";
 import PlusDecor from "@/components/PlusDecor";
+import { getVersion } from "@tauri-apps/api/app";
+import { platform, version } from "@tauri-apps/plugin-os";
+import { check } from "@tauri-apps/plugin-updater";
 
 export function SettingsPage() {
   const { serverUrl, authToken, user: storedUser } = useStore();
+  const [appVersion, setAppVersion] = useState<string>("Loading...");
+  const [updateAvailable, setUpdateAvailable] = useState<boolean>(false);
+  const [updateVersion, setUpdateVersion] = useState<string | null>(null);
+  const [isUpdating, setIsUpdating] = useState<boolean>(false);
+  const osType = platform();
+  const osVersion = version();
+
+  useEffect(() => {
+    const initializeInfo = async () => {
+      try {
+        const version = await getVersion();
+        setAppVersion(version);
+      } catch {
+        setAppVersion("Unknown");
+      }
+
+      try {
+        const update = await check();
+        if (update) {
+          setUpdateAvailable(true);
+          setUpdateVersion(update.version);
+        }
+      } catch {}
+    };
+
+    initializeInfo();
+  }, []);
+
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true);
+      const update = await check();
+      if (update) {
+        update.downloadAndInstall((e) => {
+          console.log("Update progress:", e.event);
+        });
+      }
+    } catch (error) {
+      console.error("Update failed:", error);
+      setIsUpdating(false);
+    }
+  };
 
   const { data: usage } = useQuery({
     queryKey: ["settings-usage", serverUrl],
@@ -122,12 +167,40 @@ export function SettingsPage() {
             </div>
 
             <div>
-              <p className="text-muted-foreground">Web Version</p>
-              <p className="text-foreground mt-1">{WEB_VERSION}</p>
+              <p className="text-muted-foreground">App Version</p>
+              <p className="text-foreground mt-1">{appVersion}</p>
+            </div>
+
+            <div>
+              <p className="text-muted-foreground">Operating System</p>
+              <p className="text-foreground mt-1">
+                {osType} {osVersion}
+              </p>
             </div>
           </div>
           <PlusDecor />
         </div>
+
+        {updateAvailable && (
+          <div className="px-4 md:px-6 py-6 relative border-b bg-blue-50 dark:bg-blue-950/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium mb-2">Update Available</p>
+                <p className="text-sm text-muted-foreground">
+                  Version {updateVersion} is available.
+                </p>
+              </div>
+              <button
+                onClick={handleUpdate}
+                disabled={isUpdating}
+                className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white text-sm font-medium transition"
+              >
+                {isUpdating ? "Updating..." : "Update Now"}
+              </button>
+            </div>
+            <PlusDecor />
+          </div>
+        )}
 
         <div className="px-4 md:px-6 py-6 border-b border-border/60">
           <p className="text-sm font-medium mb-4">Data & Privacy</p>
@@ -141,48 +214,6 @@ export function SettingsPage() {
             <p>
               Deleted projects removed after {usage?.delete_after_days ?? 7}{" "}
               days.
-            </p>
-          </div>
-        </div>
-        <div className="px-4 md:px-6 py-6 border-t border-border/60">
-          <p className="text-sm font-medium mb-4">Resources</p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <a
-                href="/docs/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Documentation
-              </a>
-
-              <a
-                href="/docs/quick-start/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Quick Start
-              </a>
-
-              <a
-                href="/terms"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Terms
-              </a>
-
-              <a
-                href="/privacy"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Privacy
-              </a>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} Trackion. Built at P8labs.
             </p>
           </div>
         </div>
