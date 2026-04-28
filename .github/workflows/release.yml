@@ -170,9 +170,9 @@ jobs:
           $portableInstall = Join-Path $portableRoot "trackion"
           New-Item -ItemType Directory -Force -Path $portableInstall | Out-Null
 
-          & $nsisInstaller.FullName /S "/D=$portableInstall"
-          if ($LASTEXITCODE -ne 0) {
-            throw "NSIS installer exited with code $LASTEXITCODE"
+          $installerProcess = Start-Process -FilePath $nsisInstaller.FullName -ArgumentList @('/S', "/D=$portableInstall") -Wait -PassThru
+          if ($installerProcess.ExitCode -ne 0) {
+            throw "NSIS installer exited with code $($installerProcess.ExitCode)"
           }
 
           $portableBundleDir = "desktop/src-tauri/target/release/bundle/portable"
