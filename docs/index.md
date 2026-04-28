@@ -44,6 +44,18 @@ features:
 - [Architecture](/architecture)
 - [Database Schema](/database-schema)
 
+## Desktop Client
+
+- [Desktop Development Setup](/desktop-development) - Local setup and development
+- [Desktop Distribution](/desktop-distribution) - Production build, Windows installer, code signing
+- [Auto-Updater Setup](/updater-setup) - Configure automatic app updates
+
+## Releases & Deployment
+
+- [Release Workflow Guide](/RELEASE_WORKFLOW) - Unified release process overview
+- [Release Checklist](/RELEASE_CHECKLIST) - Step-by-step release checklist
+- [Setup Summary](/SETUP_SUMMARY) - Complete implementation summary
+
 ## What You Get
 
 - Go backend with PostgreSQL

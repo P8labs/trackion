@@ -26,19 +26,57 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "category": "Utilities",
+    "shortDescription": "Trackion - Product Analytics Platform",
+    "publisher": "P8Labs",
+    "copyright": "Copyright (c) P8Labs",
+    "createUpdaterArtifacts": true,
+    "targets": ["msi", "nsis", "app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "windows": {
+      "allowDowngrades": false,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com",
+      "tsp": true,
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper",
+        "silent": true
+      },
+      "nsis": {
+        "installMode": "currentUser",
+        "startMenuFolder": "Trackion",
+        "installerIcon": "icons/icon.ico",
+        "compression": "lzma",
+        "displayLanguageSelector": false,
+        "minimumWebview2Version": "110.0.1531.0",
+        "languages": ["English"]
+      },
+      "wix": {
+        "language": "en-US"
+      }
+    }
   },
   "plugins": {
     "deep-link": {
       "desktop": {
         "schemes": ["trackion"]
+      }
+    },
+    "updater": {
+      "active": true,
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDJBN0FERDU1NjVFMTM5MEYKUldRUE9lRmxWZDE2S29Tdm9BT0E2UFRyS09KNmJDc1lZVEQxWWpNQThLSmpXdXVlK2lqQUQ1NmUK",
+      "endpoints": [
+        "https://github.com/P8labs/trackion/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
       }
     }
   }
