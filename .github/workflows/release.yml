@@ -106,10 +106,16 @@ jobs:
         with:
           targets: x86_64-pc-windows-msvc
 
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
+      - name: Cargo cache
+        uses: actions/cache@v4
         with:
-          workspaces: "./desktop/src-tauri -> target"
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            desktop/src-tauri/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('desktop/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -151,6 +157,28 @@ jobs:
         with:
           projectPath: ./desktop
           args: --verbose
+
+      - name: Create portable zip
+        shell: pwsh
+        run: |
+          $nsisInstaller = Get-ChildItem "desktop/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" | Select-Object -First 1
+          if (-not $nsisInstaller) {
+            throw "NSIS installer not found"
+          }
+
+          $portableRoot = Join-Path $env:RUNNER_TEMP "trackion-portable"
+          $portableInstall = Join-Path $portableRoot "trackion"
+          New-Item -ItemType Directory -Force -Path $portableInstall | Out-Null
+
+          & $nsisInstaller.FullName /S "/D=$portableInstall"
+          if ($LASTEXITCODE -ne 0) {
+            throw "NSIS installer exited with code $LASTEXITCODE"
+          }
+
+          $portableBundleDir = "desktop/src-tauri/target/release/bundle/portable"
+          New-Item -ItemType Directory -Force -Path $portableBundleDir | Out-Null
+          $portableZip = Join-Path $portableBundleDir "trackion_${{ steps.version.outputs.version }}_x64.zip"
+          Compress-Archive -Path (Join-Path $portableInstall '*') -DestinationPath $portableZip -Force
 
       - name: Upload desktop artifacts
         uses: actions/upload-artifact@v7
@@ -279,7 +307,11 @@ jobs:
             echo ""
           } > CHANGELOG.md
 
-          echo "changelog=$(cat CHANGELOG.md)" >> $GITHUB_OUTPUT
+          {
+            echo "changelog<<EOF"
+            cat CHANGELOG.md
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
 
       - name: Upload release assets
         uses: actions/upload-artifact@v7
