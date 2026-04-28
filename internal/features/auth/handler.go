@@ -65,7 +65,9 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 
 	client, err := core.ParseAuthStateCode(state, h.cfg.AuthSecret)
 	if err != nil {
-		res.Error(w, "invalid oauth state", 401)
+		errUrl := fmt.Sprintf("%s/auth/callback?error=invalid_state", h.cfg.FrontendURL)
+		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
+		// res.Error(w, "invalid oauth state", 401)
 		return
 	}
 
@@ -76,7 +78,9 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		log.Printf("OAuth callback error: %v", err)
-		res.Error(w, "oauth failed", 401)
+		errUrl := fmt.Sprintf("%s/auth/callback?error=oauth_failed", h.cfg.FrontendURL)
+		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
+		// res.Error(w, "oauth failed", 401)
 		return
 	}
 
@@ -87,7 +91,9 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	email := strings.ToLower(strings.TrimSpace(user.Email))
 
 	if err := core.Require("providerId", providerId, "email", email); err != nil {
-		res.Error(w, err.Error(), 400)
+		errUrl := fmt.Sprintf("%s/auth/callback?error=missing_fields", h.cfg.FrontendURL)
+		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
+		// res.Error(w, err.Error(), 400)
 		return
 	}
 
@@ -101,13 +107,17 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	)
 
 	if err != nil {
-		res.Error(w, "user creation failed", 500)
+		errUrl := fmt.Sprintf("%s/auth/callback?error=user_creation_failed", h.cfg.FrontendURL)
+		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
+		// res.Error(w, "user creation failed", 500)
 		return
 	}
 
 	sessionToken, err := h.service.CreateSession(ctx, userID)
 	if err != nil {
-		res.Error(w, "session creation failed", 500)
+		errUrl := fmt.Sprintf("%s/auth/callback?error=session_creation_failed", h.cfg.FrontendURL)
+		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
+		// res.Error(w, "session creation failed", 500)
 		return
 	}
 

@@ -25,7 +25,22 @@ export function LandingPage() {
       <div className="mx-auto relative md:max-w-5xl *:[[id]]:scroll-mt-22">
         <Header />
         <FullLine />
+        <div className="mx-auto max-w-5xl">
+          <div className="flex items-center justify-between gap-4 bg-muted/30 px-4 py-3">
+            <div className="flex items-center gap-3 text-sm">
+              <span className="inline-flex h-2 w-2 rounded-full bg-(--color-chart-2)" />
+              <p className="text-muted-foreground">
+                Desktop client is now available for Trackion.
+              </p>
+            </div>
 
+            <a href="/downloads">
+              <button className="text-sm font-medium hover:underline">
+                Download →
+              </button>
+            </a>
+          </div>
+        </div>
         <section className="relative px-4 pb-20 pt-14 md:pt-20">
           <PLine />
           <div className="text-center mb-10">

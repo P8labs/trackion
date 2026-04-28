@@ -12,7 +12,20 @@
     "shell:default",
     {
       "identifier": "http:default",
-      "allow": [{ "url": "*" }]
+      "allow": [
+        {
+          "url": "http://*"
+        },
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://*:*"
+        },
+        {
+          "url": "https://*:*"
+        }
+      ]
     }
   ]
 }

@@ -36,6 +36,7 @@ export function Footer() {
               title: "Product",
               links: [
                 { label: "Documentation", href: "/docs/" },
+                { label: "Downloads", href: "/downloads", internal: true },
                 {
                   label: "GitHub",
                   href: "https://github.com/P8labs/trackion",
