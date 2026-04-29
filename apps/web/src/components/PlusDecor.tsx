@@ -21,7 +21,10 @@ export default function PlusDecor({
             pos,
           )}
         >
-          <Plus />
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+            <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+          </div>
         </div>
       </>
     );
@@ -35,7 +38,10 @@ export default function PlusDecor({
             pos,
           )}
         >
-          <Plus />
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+            <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+          </div>
         </div>
       </>
     );
@@ -50,7 +56,10 @@ export default function PlusDecor({
             pos,
           )}
         >
-          <Plus />
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+            <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+          </div>
         </div>
 
         <div
@@ -59,18 +68,12 @@ export default function PlusDecor({
             pos,
           )}
         >
-          <Plus />
+          <div className="relative w-4 h-4 flex items-center justify-center">
+            <div className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+            <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
+          </div>
         </div>
       </>
     );
   }
-}
-
-function Plus() {
-  return (
-    <div className="relative w-4 h-4 flex items-center justify-center">
-      <div className="absolute left-1/2 top-1/2 w-3 h-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
-      <div className="absolute left-1/2 top-1/2 h-3 w-px -translate-x-1/2 -translate-y-1/2 bg-neutral-400 dark:bg-neutral-500" />
-    </div>
-  );
 }

@@ -66,6 +66,7 @@ export function ProjectsWorkspaceLayout() {
               </p>
               {links.map((Item) => (
                 <Link
+                  key={Item.to}
                   to={Item.to}
                   className={cn(
                     "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors",

@@ -8,14 +8,15 @@ import {
   Shield,
   Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@trackion/ui/button";
+import { FullLine, PLine, Strip, PlusDecor } from "@trackion/ui/decoration";
+
 import CodeBox from "@/components/CodeBox";
 import { SCRIPT_TAG_CODE } from "@/lib/constants";
 import { Icons } from "@/lib/icons";
-import Header from "./components/Header";
+
+import { Header } from "./components/Header";
 import DemoSection from "./components/DemoSection";
-import { FullLine, PLine, Strip } from "@/components/Line";
-import PlusDecor from "@/components/PlusDecor";
 import { Footer } from "./components/Footer";
 
 export function LandingPage() {

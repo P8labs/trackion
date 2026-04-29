@@ -2,7 +2,7 @@ import PlusDecor from "@/components/PlusDecor";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-export default function Header() {
+export function Header() {
   return (
     <header className="bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between border-b">
@@ -29,7 +29,7 @@ export default function Header() {
             GitHub
           </a>
           <Link to="/auth">
-            <Button variant="secondary">Sign In</Button>
+            <Button variant="outline">Let's Begin</Button>
           </Link>
         </nav>
       </div>

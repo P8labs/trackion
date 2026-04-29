@@ -14,6 +14,7 @@ const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const store = useStore.getState();
+
   const api = useMemo(() => {
     const client = createApiClient({
       baseUrl: store.serverUrl,
@@ -26,8 +27,8 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const loginUrls = useMemo(() => {
     const baseUrl = store.serverUrl.replace(/\/+$/, "");
     return {
-      google: `${baseUrl}/api/auth/google`,
-      github: `${baseUrl}/api/auth/github`,
+      google: `${baseUrl}/auth/login/google?client=web`,
+      github: `${baseUrl}/auth/login/github?client=web`,
     };
   }, [store.serverUrl]);
 

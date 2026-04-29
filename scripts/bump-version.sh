@@ -9,11 +9,11 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 VERSION_FILE="VERSION"
-WEB_PACKAGE_FILE="web/package.json"
-DESKTOP_PACKAGE_FILE="desktop/package.json"
-DESKTOP_CARGO_FILE="desktop/src-tauri/Cargo.toml"
-TAURI_CONF_FILE="desktop/src-tauri/tauri.conf.json"
-DOCS_PACKAGE_FILE="docs/package.json"
+WEB_PACKAGE_FILE="apps/web/package.json"
+DESKTOP_PACKAGE_FILE="apps/desktop/package.json"
+DESKTOP_CARGO_FILE="apps/desktop/src-tauri/Cargo.toml"
+TAURI_CONF_FILE="apps/desktop/src-tauri/tauri.conf.json"
+DOCS_PACKAGE_FILE="apps/docs/package.json"
 
 usage() {
   echo -e "${RED}Usage: $0 <major|minor|patch>${NC}"

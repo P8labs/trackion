@@ -1,11 +1,15 @@
 import { Link } from "react-router-dom";
+
 import { Button } from "@trackion/ui/button";
+import { PlusDecor } from "@trackion/ui/decoration";
+
 import { flags } from "@/lib/flags";
+
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
+
 import { SelfHostAuthForm } from "./components/self-host-auth-form";
 import { useGlobal } from "@/providers/global-provider";
-import { FullLine, PlusDecor } from "@trackion/ui/decoration";
 
 export function AuthPage() {
   const { loginUrls } = useGlobal();
@@ -29,9 +33,7 @@ export function AuthPage() {
         <div className="absolute left-1/2 top-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
       </div>
       <section className="relative z-10 mx-auto w-full max-w-3xl border border-border/60 bg-background/95 backdrop-blur-[2px] dark:bg-background/80">
-        <FullLine direction="vertical" />
         <PlusDecor position="top" />
-        <FullLine />
         <div className="relative overflow-hidden px-6 py-10 lg:px-8 lg:py-12">
           <div className="relative">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -103,7 +105,6 @@ export function AuthPage() {
             </div>
           </div>
         </div>
-        <FullLine />
         <PlusDecor />
       </section>
     </div>

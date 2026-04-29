@@ -10,7 +10,7 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - "desktop/**"
+      - "apps/desktop/**"
 
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: desktop
+        working-directory: apps/desktop
 
     steps:
       - name: Checkout
@@ -35,7 +35,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop/src-tauri -> target"
+          workspaces: "./apps/desktop/src-tauri -> target"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -47,7 +47,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: desktop/pnpm-lock.yaml
+          cache-dependency-path: apps/desktop/pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

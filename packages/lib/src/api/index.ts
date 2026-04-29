@@ -12,7 +12,7 @@ export { createApiClient } from "./client";
 
 export function createApi(api: ReturnType<typeof createApiClient>) {
   return {
-    getServerHealth: () => api.apiCall<ServerHealth>("GET", "/api/health"),
+    getServerHealth: () => api.apiCall<ServerHealth>("GET", "/health"),
 
     loginWithToken: (token: string) =>
       api.apiCall<SelfhostTokenResponse>("POST", "/api/auth/verify", {
