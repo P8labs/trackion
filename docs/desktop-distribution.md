@@ -1,305 +1,139 @@
-# Desktop Client - Windows Installer & Distribution Setup
+# Desktop Distribution
 
-This guide covers the setup of the Tauri desktop client for production Windows distribution with automatic updates.
+This guide describes how Trackion desktop releases are built and published.
 
-## Overview
+## Distribution Targets
 
-The desktop client is built using Tauri with the following features:
+Current release workflow builds Windows artifacts:
 
-- **Windows Installer**: NSIS and MSI installers for easy installation
-- **Code Signing**: Sign installers for authenticity and Windows SmartScreen bypass
-- **Auto-Updates**: Built-in updater plugin for automatic app updates
-- **CI/CD**: GitHub Actions workflows for automated builds and releases
+- NSIS installer (`*.exe`)
+- MSI installer (`*.msi`)
+- portable ZIP package
+- updater metadata (`latest.json` + signatures)
 
-## Prerequisites
+## Release Workflow Overview
 
-### Local Development
+Desktop build is part of the repository-wide `release.yml` workflow, triggered by semver tags:
 
-1. **Rust**: Install from https://rustup.rs/
-2. **Node.js**: v22+ (used in GH Actions)
-3. **pnpm**: Install via `npm install -g pnpm`
-4. **Windows Development Tools**:
-   - Visual Studio Build Tools (for Windows builds)
-   - Or Visual Studio Community Edition
+- trigger pattern: `v*.*.*`
 
-### GitHub Secrets (Required for Production)
+High-level pipeline:
 
-For the GitHub Actions workflows to build and sign the desktop app, set these secrets:
+1. build server binaries (multi-platform)
+2. build desktop client on Windows runner
+3. generate updater metadata
+4. package release assets
+5. publish GitHub Release
+6. build/push Docker image for server
 
-1. **`TAURI_SIGNING_PRIVATE_KEY`**: Your private key for signing updates
-2. **`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`**: Password for the private key
+## Required GitHub Secrets
 
-To generate signing keys:
+For signed updater artifacts in desktop build job:
+
+- `TAURI_SIGNING_PRIVATE_KEY`
+- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+Generate keys:
 
 ```bash
 cd desktop/src-tauri
-tauri signer generate --password "your-password"
+tauri signer generate --password "your-strong-password"
 ```
 
-This will output:
+Put generated public key in `tauri.conf.json` updater `pubkey`, and private key/password in repository secrets.
 
-- Public key: Add to `tauri.conf.json` as `plugins.updater.pubkey`
-- Private key: Add to GitHub Secrets as `TAURI_SIGNING_PRIVATE_KEY`
-
-## Configuration
-
-### tauri.conf.json
-
-The configuration includes:
-
-- **Bundle targets**: `msi`, `nsis`, `exe`
-- **Updater plugin**: Enabled with public key for signature verification
-- **Windows-specific settings**: Code signing placeholders for production
-
-```json
-{
-  "plugins": {
-    "updater": {
-      "active": true,
-      "dialog": true,
-      "pubkey": "{{ TAURI_UPDATER_PUBLIC_KEY }}"
-    }
-  },
-  "bundle": {
-    "windows": [
-      {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
-    ],
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
-    },
-    "msi": {
-      "certificateThumbprint": null,
-      "digestAlgorithm": "sha256",
-      "timestampUrl": ""
-    }
-  }
-}
-```
-
-## Building Locally
-
-### Development Build
+## Local Production Build
 
 ```bash
 cd desktop
-pnpm install
-pnpm dev
+pnpm install --frozen-lockfile
+pnpm tauri build
 ```
 
-### Production Build
+Artifacts appear under:
+
+`desktop/src-tauri/target/release/bundle/`
+
+## Versioning and Tagging
+
+Use the root script:
 
 ```bash
-cd desktop
-pnpm install
-npm run tauri build
+./scripts/bump-version.sh patch
 ```
 
-Built files will be in: `desktop/src-tauri/target/release/bundle/`
+This updates:
 
-## Release Process
+- root `VERSION`
+- `web/package.json`
+- `desktop/package.json`
+- `desktop/src-tauri/Cargo.toml`
+- `desktop/src-tauri/tauri.conf.json`
+- `docs/package.json`
 
-### 1. Bump Version
+Then push code + tag:
 
 ```bash
-./scripts/bump-version.sh patch --sync-packages
+git push origin <branch>
+git push origin v$(cat VERSION)
 ```
 
-This will:
+## Updater Artifact Generation
 
-- Update `VERSION` file
-- Update `web/package.json`
-- Update `desktop/package.json`
-- Update `desktop/src-tauri/Cargo.toml`
-- Update `docs/package.json`
+Release workflow constructs `latest.json` with:
 
-### 2. Create Release
+- release version
+- release notes
+- `windows-x86_64` URLs and signatures
+- additional windows platform aliases
 
-Push the version tag to trigger both:
+The app’s updater plugin is configured to fetch:
 
-- **Desktop Release Workflow**: Builds Windows MSI/NSIS installers
-- **Go Server Release Workflow**: Builds server binaries
+`https://github.com/P8labs/trackion/releases/latest/download/latest.json`
 
-```bash
-git push origin master && git push origin v$(cat VERSION)
-```
+## Code Signing and SmartScreen
 
-### 3. GitHub Release
+Trackion updater artifacts are signature-verified using Tauri signer keys.
 
-Both workflows will:
+Separate Windows Authenticode signing (commercial cert) is optional but recommended for reducing SmartScreen friction.
 
-1. Build artifacts
-2. Create a GitHub Release with installers
-3. Generate release notes
+If you add certificate signing:
 
-## Code Signing (Optional but Recommended)
+1. configure certificate parameters in `tauri.conf.json`
+2. ensure cert material is securely injected in CI
+3. validate installer trust chain on clean Windows machines
 
-For production builds, you should code sign the installers to:
+## Distribution Checklist
 
-- Bypass Windows SmartScreen warnings
-- Improve user trust
-- Meet Windows quality standards
-
-### Prerequisites for Code Signing
-
-1. **Code Signing Certificate**:
-   - Obtain from a CA (e.g., DigiCert, GlobalSign)
-   - Or use a self-signed certificate for testing
-
-2. **Certificate Setup**:
-   - Export certificate as `.pfx` file
-   - Add to GitHub Secrets as `WINDOWS_CERTIFICATE`
-   - Add password as `WINDOWS_CERTIFICATE_PASSWORD`
-
-### Update Configuration
-
-Edit `desktop/src-tauri/tauri.conf.json`:
-
-```json
-{
-  "bundle": {
-    "windows": [
-      {
-        "certificateThumbprint": "YOUR_CERT_THUMBPRINT",
-        "digestAlgorithm": "sha256",
-        "timestampUrl": "http://timestamp.digicert.com"
-      }
-    ],
-    "msi": {
-      "certificateThumbprint": "YOUR_CERT_THUMBPRINT",
-      "digestAlgorithm": "sha256",
-      "timestampUrl": "http://timestamp.digicert.com"
-    }
-  }
-}
-```
-
-### Update GitHub Actions
-
-In `.github/workflows/release-desktop.yml`, add certificate handling:
-
-```yaml
-- name: Sign Installer
-  env:
-    WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
-    WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
-  run: |
-    # Set up certificate for signing
-    [IO.File]::WriteAllBytes('cert.pfx', [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
-    # Build will automatically sign with the certificate
-```
-
-## Auto-Update Configuration
-
-### Updater Endpoint
-
-The auto-updater needs a static file endpoint. Configure your server to serve:
-
-```
-https://your-domain.com/updates/latest.json
-```
-
-Example `latest.json`:
-
-```json
-{
-  "version": "0.1.0",
-  "notes": "New version with bug fixes",
-  "pub_date": "2024-04-28T00:00:00Z",
-  "platforms": {
-    "windows-x86_64": {
-      "signature": "BASE64_ENCODED_SIGNATURE",
-      "url": "https://your-domain.com/downloads/trackion_0.1.0_x64.msi"
-    }
-  }
-}
-```
-
-### In the App
-
-To check for updates programmatically in your React app:
-
-```typescript
-import { check, installUpdate } from "@tauri-apps/plugin-updater";
-
-async function checkForUpdates() {
-  const update = await check();
-  if (update?.available) {
-    console.log("Update available:", update.version);
-    await update.downloadAndInstall();
-    // Optionally restart the app
-    relaunch();
-  }
-}
-```
-
-## GitHub Actions Workflows
-
-### Desktop CI (`desktop-ci.yml`)
-
-Runs on every pull request:
-
-- Type-checks TypeScript
-- Builds frontend
-- Attempts full Tauri build
-
-### Release Desktop (`release-desktop.yml`)
-
-Runs on version tags (e.g., `v0.1.0`):
-
-1. Builds Windows MSI and NSIS installers
-2. Uploads artifacts
-3. Creates GitHub Release with installers
-4. Generates release notes linking to server release
+1. Confirm version bump across all packages
+2. Ensure desktop CI is green
+3. Ensure updater keys exist in secrets
+4. Tag release with semver format
+5. Validate created GitHub Release assets
+6. Validate updater check from installed app
 
 ## Troubleshooting
 
-### Build Failures
+### Missing `latest.json` in release
 
-1. **Rust Cache Issues**:
+- Check desktop build step completed
+- Check updater artifact path upload in workflow
 
-   ```bash
-   cargo clean
-   cargo build
-   ```
+### Installer artifacts missing
 
-2. **Node Dependencies**:
+- Verify `pnpm tauri build` output in workflow logs
+- Verify bundle paths in upload-artifact step
 
-   ```bash
-   cd desktop
-   pnpm install --frozen-lockfile
-   ```
+### Signature verification failures
 
-3. **Tauri Cache**:
-   ```bash
-   rm -rf desktop/src-tauri/target
-   npm run tauri build
-   ```
+- Confirm private key secret matches `pubkey` in config
+- Ensure generated `.sig` files are uploaded with release assets
 
-### Update Signature Issues
+### PR desktop CI failure
 
-If updates fail verification:
+CI runs `tauri build --no-sign`; resolve Rust/toolchain/frontend build errors first, then re-run.
 
-1. Ensure public key in `tauri.conf.json` matches the one used to sign
-2. Check that the signature in `latest.json` is correct
-3. Regenerate keys if needed
+## Related Pages
 
-### GitHub Actions Failures
-
-1. Check secrets are set: `Settings > Secrets and variables > Actions`
-2. Verify Rust toolchain compatibility
-3. Check pnpm-lock.yaml is committed
-4. Review workflow logs in Actions tab
-
-## References
-
-- [Tauri Windows Installer Docs](https://v2.tauri.app/distribute/windows-installer/)
-- [Tauri Code Signing](https://v2.tauri.app/distribute/sign/windows/)
-- [Tauri Updater Plugin](https://v2.tauri.app/plugin/updater/)
-- [Tauri CLI Documentation](https://v2.tauri.app/reference/cli/)
+- local development: [Desktop Development](/desktop-development)
+- updater details: [Auto-Updater Setup](/updater-setup)

@@ -42,6 +42,30 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
 
   const maxCount = Math.max(countryMapData?.max_count || 1, 1);
 
+  function getCountryData(geo: any) {
+    const props = geo.properties;
+
+    const name =
+      props.NAME || props.NAME_LONG || props.ADMIN || props.name || "";
+
+    const iso2 = props.ISO_A2 || props.ISO2 || props.iso_a2 || "";
+
+    const code = String(iso2).toUpperCase();
+
+    const info =
+      countryMapData?.by_code?.[code] ||
+      countryMapData?.by_name?.[normalizeCountryName(name)];
+
+    const count = info?.count ?? 0;
+    const intensity = count > 0 ? count / maxCount : 0;
+
+    return {
+      name: info?.name || name,
+      count,
+      intensity,
+    };
+  }
+
   if (countryMapLoading || heatmapLoading) {
     return (
       <div className="grid gap-4 xl:grid-cols-[2fr_1fr] items-stretch">
@@ -68,30 +92,6 @@ export function OverviewGeoTraffic({ projectId }: OverviewGeoTrafficProps) {
         </Card>
       </div>
     );
-  }
-
-  function getCountryData(geo: any) {
-    const props = geo.properties;
-
-    const name =
-      props.NAME || props.NAME_LONG || props.ADMIN || props.name || "";
-
-    const iso2 = props.ISO_A2 || props.ISO2 || props.iso_a2 || "";
-
-    const code = String(iso2).toUpperCase();
-
-    const info =
-      countryMapData?.by_code?.[code] ||
-      countryMapData?.by_name?.[normalizeCountryName(name)];
-
-    const count = info?.count ?? 0;
-    const intensity = count > 0 ? count / maxCount : 0;
-
-    return {
-      name: info?.name || name,
-      count,
-      intensity,
-    };
   }
 
   return (

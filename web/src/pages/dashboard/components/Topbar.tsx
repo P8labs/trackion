@@ -110,12 +110,12 @@ export default function Topbar({
 
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <button className="flex items-center">
+            <div className="flex items-center">
               <Avatar size="sm" className="cursor-pointer">
                 <AvatarImage src={userLoading ? "" : user?.avatar_url || ""} />
                 <AvatarFallback>{profileInitials}</AvatarFallback>
               </Avatar>
-            </button>
+            </div>
           </DropdownMenuTrigger>
 
           <DropdownMenuContent align="end" className="w-52 border-border/60">

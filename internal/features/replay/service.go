@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"strings"
 	"time"
 	db "trackion/internal/db/models"
@@ -24,20 +25,13 @@ const (
 	maxSessionIDLen = 255
 )
 
-type Service interface {
-	Ingest(ctx context.Context, params IngestParams) error
-	ListSessions(ctx context.Context, projectID string, limit int) ([]SessionSummary, error)
-	GetSessionEvents(ctx context.Context, projectID, sessionID string) ([]json.RawMessage, error)
-	DeleteSession(ctx context.Context, projectID, sessionID string) error
-}
-
 type IngestParams struct {
 	ProjectID uuid.UUID
 	SessionID string
-	Events    []json.RawMessage
+	EventsRaw json.RawMessage
 }
 
-type svc struct {
+type Service struct {
 	db *gorm.DB
 }
 
@@ -49,27 +43,34 @@ type SessionSummary struct {
 	ChunkCount int64     `json:"chunk_count"`
 }
 
-func NewService(db *gorm.DB) Service {
-	return &svc{db: db}
+func NewService(db *gorm.DB) *Service {
+	return &Service{db: db}
 }
 
-func (s *svc) Ingest(ctx context.Context, params IngestParams) error {
+func (s *Service) IngestAsync(params IngestParams) {
+	go func() {
+		if err := s.processReplay(params); err != nil {
+			log.Printf("async replay ingest failed: %v", err)
+		}
+	}()
+}
+func (s *Service) processReplay(params IngestParams) error {
 	sessionID := strings.TrimSpace(params.SessionID)
-	if params.ProjectID == uuid.Nil || sessionID == "" || len(sessionID) > maxSessionIDLen || len(params.Events) == 0 {
+
+	if params.ProjectID == uuid.Nil || sessionID == "" || len(sessionID) > maxSessionIDLen {
 		return ErrInvalidReplayPayload
 	}
 
-	rawEvents, err := json.Marshal(params.Events)
-	if err != nil {
-		return err
-	}
-
-	compressed, err := gzipData(rawEvents)
+	// compress directly (no re-marshal)
+	compressed, err := gzipData(params.EventsRaw)
 	if err != nil {
 		return err
 	}
 
 	now := time.Now().UTC()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		session := db.ReplaySession{
@@ -78,18 +79,24 @@ func (s *svc) Ingest(ctx context.Context, params IngestParams) error {
 			StartedAt:  now,
 			LastSeenAt: now,
 		}
+
 		result := tx.Clauses(clause.OnConflict{
 			Columns: []clause.Column{{Name: "session_id"}},
 			DoUpdates: clause.Assignments(map[string]any{
 				"last_seen_at": now,
 			}),
 			Where: clause.Where{Exprs: []clause.Expression{
-				clause.Eq{Column: clause.Column{Table: "replay_sessions", Name: "project_id"}, Value: params.ProjectID},
+				clause.Eq{
+					Column: clause.Column{Table: "replay_sessions", Name: "project_id"},
+					Value:  params.ProjectID,
+				},
 			}},
 		}).Create(&session)
+
 		if result.Error != nil {
 			return result.Error
 		}
+
 		if result.RowsAffected == 0 {
 			return ErrInvalidReplayPayload
 		}
@@ -105,7 +112,7 @@ func (s *svc) Ingest(ctx context.Context, params IngestParams) error {
 	})
 }
 
-func (s *svc) ListSessions(ctx context.Context, projectID string, limit int) ([]SessionSummary, error) {
+func (s *Service) ListSessions(ctx context.Context, projectID string, limit int) ([]SessionSummary, error) {
 	projectUUID, err := s.ensureProjectAccess(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -157,7 +164,7 @@ func (s *svc) ListSessions(ctx context.Context, projectID string, limit int) ([]
 	return out, nil
 }
 
-func (s *svc) GetSessionEvents(ctx context.Context, projectID, sessionID string) ([]json.RawMessage, error) {
+func (s *Service) GetSessionEvents(ctx context.Context, projectID, sessionID string) ([]json.RawMessage, error) {
 	projectUUID, err := s.ensureProjectAccess(ctx, projectID)
 	if err != nil {
 		return nil, err
@@ -207,7 +214,7 @@ func (s *svc) GetSessionEvents(ctx context.Context, projectID, sessionID string)
 	return out, nil
 }
 
-func (s *svc) DeleteSession(ctx context.Context, projectID, sessionID string) error {
+func (s *Service) DeleteSession(ctx context.Context, projectID, sessionID string) error {
 	projectUUID, err := s.ensureProjectAccess(ctx, projectID)
 	if err != nil {
 		return err
@@ -241,7 +248,7 @@ func (s *svc) DeleteSession(ctx context.Context, projectID, sessionID string) er
 	})
 }
 
-func (s *svc) ensureProjectAccess(ctx context.Context, projectID string) (uuid.UUID, error) {
+func (s *Service) ensureProjectAccess(ctx context.Context, projectID string) (uuid.UUID, error) {
 	projectID = strings.TrimSpace(projectID)
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {

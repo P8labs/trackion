@@ -6,6 +6,28 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+.replay-stage,
+.replay-stage .replayer-wrapper,
+.replay-stage .replayer-wrapper > iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.replay-stage .replayer-wrapper {
+  overflow: hidden;
+}
+
+.replayer-wrapper {
+  position: absolute;
+  top: 0 !important;
+  left: 0 !important;
+}
+
+.replay-stage .replayer-wrapper > iframe {
+  display: block;
+  border: 0;
+}
+
 :root {
   --accent-soft: color-mix(in oklab, var(--primary) 12%, transparent);
   --accent-medium: color-mix(in oklab, var(--primary) 30%, transparent);

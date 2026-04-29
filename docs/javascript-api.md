@@ -1,27 +1,22 @@
 # JavaScript API
 
-Trackion supports both:
+This page focuses on browser-side Trackion usage, including script integration, runtime behavior, and practical debugging.
 
-- NPM SDK package family (`@trackion/js`)
-- Hosted tracker script (`/t.js`)
+For framework-specific examples, see [SDK Usage](/sdk-usage).
 
-Official package: [@trackion/js on npm](https://www.npmjs.com/package/@trackion/js)
+## Integration Options
 
-## NPM SDK Quick Start
-
-Install:
+### Option A: npm SDK
 
 ```bash
 npm install @trackion/js
 ```
 
-Vanilla usage:
-
 ```ts
 import { createTrackionClient } from "@trackion/js";
 
 const trackion = createTrackionClient({
-  serverUrl: "https://your-trackion-server.com",
+  serverUrl: "https://api.example.com",
   apiKey: "PROJECT_API_KEY",
   userId: "user-123",
 });
@@ -30,127 +25,114 @@ trackion.track("signup.started", { source: "landing" });
 await trackion.refreshRuntime();
 ```
 
-Framework entrypoints:
-
-- `@trackion/js/react`
-- `@trackion/js/vue`
-- `@trackion/js/node`
-
-See [SDK Usage](/sdk-usage) for full examples.
-
-## Script Setup
-
-Add in &lt;head&gt;:
+### Option B: Script Tag
 
 ```html
 <script
-  src="https://your-trackion-server.com/t.js"
-  data-api-key="your-project-api-key"
+  src="https://api.example.com/t.js"
+  data-api-key="PROJECT_API_KEY"
 ></script>
 ```
 
-Variants:
+Script variants:
 
-- /t.js
-- /t.min.js
+- `/t.js`
+- `/t.min.js`
 
-The tracker:
+## Tracker Behavior
 
-- Loads project config from /events/config
-- Sends events to /events/batch
-- Authenticates ingestion with X-Project-Key
+When initialized with a valid API key, the tracker typically:
 
-Runtime control:
+1. Fetches project config from `GET /events/config`
+2. Queues automatic and manual events
+3. Flushes events to `POST /events/batch`
+4. Attaches project auth via `X-Project-Key`
 
-- Clients can fetch evaluated flags/config from /v1/runtime
-- Dashboard users manage values in project Runtime Control sections
+## Global API (`trackion`)
 
-## What Is Auto-Tracked
+Manual event:
 
-Depending on project settings, the tracker can collect:
-
-- Page views
-- Session-based activity
-- Referrer and campaign data
-- Time-spent and click signals (when enabled)
-
-## Manual Event Tracking
-
-The global object is trackion.
-
-```javascript
+```js
 trackion.track("signup_started", {
   source: "landing",
   plan: "pro",
 });
 ```
 
-## Backend-to-Trackion Event Ingestion
+## Runtime Controls in Browser
 
-Use ingestion endpoints directly from your backend jobs/services.
+Use public runtime endpoint to evaluate flags/config client-side:
 
 ```bash
-curl -X POST https://your-trackion-server.com/events/batch \
-  -H "Content-Type: application/json" \
-  -H "X-Project-Key: your-project-api-key" \
-  -d '{
-    "project_key": "your-project-api-key",
-    "events": [
-      {
-        "event": "order_created",
-        "session_id": "system-session",
-        "page": {
-          "path": "/orders",
-          "title": "Orders",
-          "referrer": "https://example.com"
-        },
-        "properties": {"orderId": "ord_123"}
-      }
-    ]
-  }'
+curl -H "X-Project-Key: PROJECT_API_KEY" \
+  "https://api.example.com/v1/runtime?user_id=user-123"
 ```
 
-Note: use `session_id` (snake_case) in ingestion payloads.
+Key rollout semantics:
+
+- `enabled=false` => always off
+- `rollout_percentage=100` => always on
+- partial rollout requires stable `user_id`
+
+## Event Payload Shape (HTTP)
+
+If sending custom requests directly:
+
+```json
+{
+  "project_key": "PROJECT_API_KEY",
+  "event": "checkout.submit",
+  "session_id": "session-123",
+  "page": {
+    "path": "/checkout",
+    "title": "Checkout",
+    "referrer": "https://example.com/pricing"
+  },
+  "utm": {
+    "source": "newsletter",
+    "medium": "email",
+    "campaign": "spring"
+  },
+  "properties": {
+    "value": 4999,
+    "currency": "USD"
+  }
+}
+```
+
+Important: ingestion contract expects `session_id` in snake_case.
+
+## Error Capture Strategy
+
+For browser apps, error events can be sent through normal event ingestion by setting event type/category metadata in properties. The server-side error APIs group and query these events by fingerprint.
+
+See [Error Tracking API](/api/errors).
 
 ## Validation Checklist
 
-- Script URL points to your API server
-- data-api-key is present and valid
-- X-Project-Key reaches API requests
-- /events/config responds 200 for your project
-- /events/batch responds 200 and events appear in dashboard
+1. Script URL points to correct API origin
+2. `data-api-key` is valid for existing project
+3. `/events/config` returns `200` and optional `ETag`
+4. `/events/batch` returns `200`
+5. Events appear in dashboard recent events
+6. Runtime endpoint returns expected flag/config values
 
-## Runtime Control Quick Usage
+## Debugging Tips
 
-Public runtime fetch:
+### Nothing is sent
 
-```bash
-curl -H "Authorization: Bearer PROJECT_API_KEY" \
-  "https://your-trackion-server.com/v1/runtime?user_id=user-123"
-```
+- Check CSP/script blocking
+- Verify script loaded successfully
+- Verify project key and domain restrictions
 
-`user_id` is optional and used for rollout evaluation when provided.
+### Events sent but no dashboard data
 
-Dashboard management flow:
+- Confirm project selected in dashboard matches key
+- Check payload fields (`event`, `session_id`)
+- Inspect API responses for validation errors
 
-1. Open Project Detail.
-2. Add or update Feature Flags with enabled state + rollout percentage.
-3. Add or update Remote Config using JSON values.
-4. Clients fetch runtime and read flags/config immediately.
+### Runtime values not changing
 
-## SDK Examples
-
-Repository examples for each integration style:
-
-- Web module: `examples/web/index.ts`
-- React: `examples/react/App.tsx`
-- Vue 3: `examples/vue/main.ts`
-- Node: `examples/node/index.ts`
-- Script tag: `examples/script/index.html`
-
-NPM package variants:
-
-- `@trackion/js`
-- `@trackion/js/react`
-- `@trackion/js/vue`
-- `@trackion/js/node`
+- Re-fetch runtime after updating dashboard values
+- Use stable `user_id` for rollout tests
+- Ensure flag key names match exactly

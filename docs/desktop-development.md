@@ -1,317 +1,151 @@
-# Desktop Client - Local Development Setup
+# Desktop Development
 
-This guide helps you set up the development environment for building and testing the Tauri desktop client locally on Windows.
+This guide covers local development for the Trackion desktop client (`desktop/`) built with Tauri + React.
 
 ## Prerequisites
 
-### 1. Rust
+### Required
 
-Install from https://rustup.rs/
+- Rust toolchain (`rustup`, `cargo`)
+- Node.js `22+`
+- pnpm `10+`
+- platform build prerequisites for Tauri
 
-```powershell
-# Run the installer and follow prompts
-# Verify installation
-rustc --version
-cargo --version
-```
+### Windows Notes
 
-### 2. Node.js & pnpm
+For Windows builds (recommended for this project’s distribution path), install Visual Studio Build Tools with C++ workload.
 
-```powershell
-# Install Node.js v22+ from https://nodejs.org/
-node --version
+## Project Layout
 
-# Install pnpm
-npm install -g pnpm
-pnpm --version
-```
+`desktop/` contains:
 
-### 3. Windows Build Tools
+- `src/`: React UI
+- `src-tauri/`: Rust/Tauri host
+- `vite.config.ts`: Vite dev/build config (port `1420`)
+- `src-tauri/tauri.conf.json`: app, bundling, updater, deep-link config
 
-Choose one:
-
-**Option A: Visual Studio Community (Recommended)**
-
-- Download from https://visualstudio.microsoft.com/downloads/
-- Install with "Desktop development with C++" workload
-
-**Option B: Build Tools Standalone**
-
-- Download Visual Studio Build Tools
-- Select C++ development tools during installation
-
-**Option C: MinGW** (if you prefer)
-
-- Install via `choco install mingw`
-
-## Setup Steps
-
-### 1. Clone Repository
+## Install Dependencies
 
 ```bash
-git clone <repo-url>
-cd trackion/desktop
-```
-
-### 2. Install Dependencies
-
-```bash
-# Install Node dependencies
+cd desktop
 pnpm install --frozen-lockfile
-
-# Rust dependencies are handled automatically by Tauri
 ```
 
-### 3. Setup Tauri CLI
+## Development Modes
 
-```bash
-# Ensure Tauri CLI is installed (should be in node_modules)
-npx tauri --version
-
-# Or install globally
-pnpm add -g @tauri-apps/cli
-```
-
-## Development
-
-### Run Dev Server
+### Frontend-Only Development
 
 ```bash
 cd desktop
 pnpm dev
 ```
 
-This will:
+Starts Vite server at `http://localhost:1420`.
 
-1. Start the Vite dev server (http://localhost:1420)
-2. Build and run the Tauri app
-3. Enable hot-reload for frontend changes
-
-### Hot Reload Features
-
-- **Frontend**: Changes to React/TypeScript files reload instantly
-- **Rust Backend**: You need to rebuild the app (restart `pnpm dev`)
-
-### Build Frontend Only
+### Full Tauri App Development
 
 ```bash
+cd desktop
+pnpm tauri dev
+```
+
+This launches the desktop window and wires Rust + frontend together.
+
+## Build Commands
+
+### Frontend Build Only
+
+```bash
+cd desktop
 pnpm build
 ```
 
-Output: `desktop/dist/`
-
-## Building for Production
-
-### Build Tauri App (Dev Artifacts)
+### Production Tauri Bundle
 
 ```bash
-npm run tauri build
+cd desktop
+pnpm tauri build
 ```
 
-Output: `desktop/src-tauri/target/release/bundle/`
+Artifacts are generated in:
 
-This includes:
+`desktop/src-tauri/target/release/bundle/`
 
-- MSI installer
-- NSIS installer
-- EXE installer
+## Useful Checks
 
-### Production Build Checklist
-
-- [ ] Frontend builds without errors: `pnpm build`
-- [ ] No TypeScript errors: `pnpm exec tsc --noEmit`
-- [ ] Tauri builds: `npm run tauri build`
-- [ ] Installers are signed (if configured)
-
-## Project Structure
-
-```
-desktop/
-├── src/                          # Frontend source
-│   ├── App.tsx                   # Main app component
-│   ├── components/               # React components
-│   ├── hooks/                    # Custom React hooks
-│   ├── lib/                      # Utilities and helpers
-│   ├── pages/                    # Page components
-│   └── store/                    # State management
-├── src-tauri/                    # Rust backend
-│   ├── src/
-│   │   ├── main.rs              # Entry point
-│   │   └── lib.rs               # App initialization
-│   ├── Cargo.toml               # Rust dependencies
-│   └── tauri.conf.json          # App config
-├── package.json                  # Node dependencies
-└── vite.config.ts               # Vite config
-```
-
-## Common Tasks
-
-### Update Dependencies
+Type-check:
 
 ```bash
-# Update Node dependencies
-pnpm update
-
-# Update Rust dependencies
-cd src-tauri
-cargo update
-cd ..
+cd desktop
+pnpm exec tsc --noEmit
 ```
 
-### Add New npm Package
+Rust format/lint/test:
 
 ```bash
-pnpm add package-name
-```
-
-### Add Tauri Plugin
-
-```bash
-cd src-tauri
-cargo add tauri-plugin-name
-cd ..
-
-# Then update src-tauri/src/lib.rs to initialize the plugin
-```
-
-### Run Tests
-
-```bash
-# Rust tests
-cd src-tauri
+cd desktop/src-tauri
+cargo fmt
+cargo clippy -- -D warnings
 cargo test
-cd ..
-
-# Frontend tests (if configured)
-pnpm test
 ```
-
-## Debugging
-
-### Browser DevTools
-
-When running `pnpm dev`, you can access DevTools:
-
-```typescript
-// In any component
-import { open } from "@tauri-apps/api/shell";
-
-useEffect(() => {
-  // Press Ctrl+Shift+I or add a button to open DevTools
-  const handleDevTools = async (e: KeyboardEvent) => {
-    if (e.ctrlKey && e.shiftKey && e.code === "KeyI") {
-      // DevTools opens automatically
-    }
-  };
-  window.addEventListener("keydown", handleDevTools);
-  return () => window.removeEventListener("keydown", handleDevTools);
-}, []);
-```
-
-### Rust Debugging
-
-```bash
-# Run with backtrace
-RUST_BACKTRACE=1 npm run tauri dev
-
-# Or full backtrace
-RUST_BACKTRACE=full npm run tauri dev
-```
-
-### Tauri Logs
-
-Check logs in:
-
-- **Windows**: `%APPDATA%/trackion/logs/`
-- **Dev Console**: Check browser console (F12)
-
-## Troubleshooting
-
-### Port Already in Use
-
-```bash
-# Default dev port is 1420. Change in vite.config.ts
-# Or kill the process:
-netstat -ano | findstr :1420
-taskkill /PID <PID> /F
-```
-
-### Build Fails on Windows
-
-```bash
-# Clear Rust cache
-cargo clean
-
-# Update Rust
-rustup update
-
-# Rebuild
-npm run tauri build
-```
-
-### Dependencies Not Installing
-
-```bash
-# Clear pnpm store
-pnpm store prune
-
-# Reinstall
-pnpm install --frozen-lockfile
-```
-
-### Tauri App Won't Start
-
-1. Check browser console (F12) for errors
-2. Check Rust compilation errors in terminal
-3. Try running without dev server: `npm run tauri build && npm run tauri`
 
 ## Environment Variables
 
-Create `desktop/.env` for development:
+Use a local `.env` in `desktop/` for frontend configuration:
 
-```
-VITE_API_URL=http://localhost:3000
-VITE_ENV=development
-```
-
-Access in frontend:
-
-```typescript
-const apiUrl = import.meta.env.VITE_API_URL;
+```env
+VITE_SERVER_URL=http://localhost:8000
+VITE_TRACKION_MODE=selfhost
 ```
 
-## Git Workflow
+Common mode values:
+
+- `VITE_TRACKION_MODE=selfhost` for token-based local API login
+- `VITE_TRACKION_MODE=saas` for OAuth flow against hosted API
+
+## Key Tauri Features in This App
+
+- deep link scheme: `trackion://`
+- updater plugin enabled
+- single-instance handling with deep-link registration
+- custom window actions via Rust invoke command
+
+## Troubleshooting
+
+### Port `1420` already in use
+
+- Stop conflicting process or change Vite/Tauri dev configuration together
+- `tauri dev` expects this port to be available (`strictPort=true`)
+
+### Build fails on Rust step
 
 ```bash
-# Create feature branch
-git checkout -b feature/my-feature
-
-# Make changes
-# ...
-
-# Commit
-git add .
-git commit -m "feat: add new feature"
-
-# Push and create PR
-git push origin feature/my-feature
+cd desktop/src-tauri
+cargo clean
+cd ..
+pnpm tauri build
 ```
 
-The CI will automatically:
+### App launches but API requests fail
 
-1. Type-check frontend
-2. Build frontend
-3. Attempt Tauri build
-4. Run desktop CI checks
+- Check `VITE_SERVER_URL`
+- Check API health (`/health`)
+- Check auth mode alignment (`selfhost` vs `saas`)
 
-## Next Steps
+### Updater errors in dev
 
-1. Read [Desktop Distribution Guide](./desktop-distribution.md) for production setup
-2. Check [Updater Setup Guide](./updater-setup.md) for auto-update configuration
-3. Review Tauri docs: https://v2.tauri.app/
+Updater endpoints are production-oriented. Expect updater checks to fail in local dev unless endpoint + signatures are available.
 
-## Getting Help
+## CI Behavior
 
-- **Tauri Docs**: https://v2.tauri.app/
-- **Tauri Discord**: https://discord.gg/tauri
-- **GitHub Issues**: Check existing issues or create new one
+Desktop CI workflow validates:
+
+1. dependency installation
+2. TypeScript type-check
+3. frontend build
+4. `tauri build --no-sign`
+
+## Next
+
+- release process and installers: [Desktop Distribution](/desktop-distribution)
+- updater lifecycle and `latest.json`: [Auto-Updater Setup](/updater-setup)

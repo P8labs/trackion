@@ -1,158 +1,196 @@
 # Database Schema
 
-Documentation of Trackion PostgreSQL schema, including core tables, runtime-control tables, and common index patterns.
+Trackion uses PostgreSQL for transactional metadata and analytics-read workloads.
 
-## Overview
+This page reflects the current schema derived from model auto-migrations and custom SQL migrations.
 
-Trackion uses PostgreSQL 15+ with a normalized schema designed for analytics workloads. It stores users, projects, events, sessions, and runtime-control data (feature flags/config) with indexes optimized for dashboard reads.
+## Core Entity Groups
 
-## Core Tables
+1. Identity and auth: `users`, `sessions`
+2. Commercial limits: `subscriptions`
+3. Product boundary: `projects`
+4. Telemetry: `events`
+5. Runtime control: `flags`, `configs`
+6. Replay: `replay_sessions`, `replay_chunks`
 
-### users
+## Table Reference
 
-Stores user accounts, primarily for GitHub OAuth.
+### `users`
 
-```sql
-CREATE TABLE users (
-    id UUID PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    name TEXT,
-    github_id TEXT UNIQUE,
-    google_id TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+OAuth-backed user accounts.
 
-### subscriptions
+Key columns:
 
-Tracks plan and usage limits for SaaS scenarios.
+- `id` uuid PK
+- `email` unique
+- `github_id` unique nullable
+- `google_id` unique nullable
+- `avatar_url`, `name`
+- `created_at`, `updated_at`
 
-```sql
-CREATE TABLE subscriptions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    plan TEXT NOT NULL DEFAULT 'free',
-    monthly_event_limit INTEGER NOT NULL DEFAULT 10000,
-    status TEXT NOT NULL DEFAULT 'active',
-    current_period_end TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+### `sessions`
 
-### projects
+SaaS auth sessions.
 
-Defines projects and tracker settings.
+Key columns:
 
-```sql
-CREATE TABLE projects (
-    id UUID PRIMARY KEY,
-    owner_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    name TEXT NOT NULL,
-    api_key TEXT NOT NULL UNIQUE,
-    domains TEXT[],
-    status TEXT NOT NULL DEFAULT 'active',
-    deleted_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+- `id` uuid PK
+- `user_id` FK -> `users.id`
+- `token` unique
+- `created_at`, `expires_at`
 
-### events
+### `subscriptions`
 
-Stores raw event telemetry and optional JSON properties.
+Usage and plan constraints.
 
-```sql
-CREATE TABLE events (
-    id BIGSERIAL PRIMARY KEY,
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    event_name TEXT NOT NULL,
-    event_type TEXT,
-    user_id TEXT,
-    session_id TEXT,
-    page_path TEXT,
-    page_title TEXT,
-    referrer TEXT,
-    utm_source TEXT,
-    utm_medium TEXT,
-    utm_campaign TEXT,
-    user_agent TEXT,
-    properties JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+Key columns:
 
-### sessions
+- `id` uuid PK
+- `user_id` FK -> `users.id`
+- `plan`, `status`
+- `monthly_event_limit`
+- `events_used_this_month`
+- `max_projects`, `max_config_keys`
+- `error_retention_days`, `supports_rollout`
+- period tracking timestamps
 
-Stores authenticated SaaS user sessions.
+### `projects`
 
-```sql
-CREATE TABLE sessions (
-    id UUID PRIMARY KEY,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at TIMESTAMPTZ NOT NULL
-);
-```
+Project-level telemetry scope and config.
 
-### flags
+Key columns:
 
-Project-scoped feature flags for runtime evaluation.
+- `id` uuid PK
+- `user_id` FK -> `users.id`
+- `name`, `status`
+- `api_key` unique
+- `domains` jsonb
+- `properties` jsonb (tracker settings, etc.)
+- `event_retention_days`
+- `created_at`, `updated_at`, `deleted_at`
 
-```sql
-CREATE TABLE flags (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    key TEXT NOT NULL,
-    enabled BOOLEAN NOT NULL DEFAULT false,
-    rollout_percentage SMALLINT NOT NULL DEFAULT 100,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+### `events`
 
-### configs
+Primary telemetry table.
 
-Project-scoped runtime JSON config values.
+Key columns:
 
-```sql
-CREATE TABLE configs (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    key TEXT NOT NULL,
-    value JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-```
+- `id` bigint PK
+- `project_id` FK -> `projects.id`
+- `event_name`, `event_type`
+- `user_id`, `session_id`
+- device dimensions: `platform`, `device`, `os_version`, `app_version`, `browser`
+- page dimensions: `page_path`, `page_title`, `referrer`
+- campaign dimensions: `utm_source`, `utm_medium`, `utm_campaign`
+- `properties` jsonb
+- `created_at`
 
-## Relationship View
+### `flags`
 
-- `users` -> `subscriptions` (one-to-many)
-- `users` -> `projects` (one-to-many)
-- `projects` -> `events` (one-to-many)
-- `projects` -> `flags` (one-to-many)
-- `projects` -> `configs` (one-to-many)
+Feature flag definitions per project.
 
-## Performance Indexes
+Key columns:
 
-Recommended query indexes:
+- `id` uuid PK
+- `project_id` FK -> `projects.id`
+- `key`
+- `enabled`
+- `rollout_percentage`
+- `created_at`, `updated_at`
 
-```sql
-CREATE INDEX idx_events_project_time ON events(project_id, created_at);
-CREATE INDEX idx_events_event_name ON events(event_name);
-CREATE INDEX idx_events_project_event ON events(project_id, event_name);
-CREATE INDEX idx_events_created_at ON events(created_at);
-CREATE INDEX idx_projects_owner_id ON projects(owner_id);
-CREATE INDEX idx_projects_status ON projects(status);
-CREATE INDEX idx_projects_deleted_at ON projects(deleted_at);
-CREATE INDEX idx_flags_project_id ON flags(project_id);
-CREATE INDEX idx_configs_project_id ON configs(project_id);
-```
+### `configs`
 
-These cover common usage patterns:
+Remote config values per project.
 
-- per-project dashboard summaries
-- event-type breakdowns
-- time-window analytics
-- retention cleanup jobs
+Key columns:
+
+- `id` uuid PK
+- `project_id` FK -> `projects.id`
+- `key`
+- `value` jsonb
+- `created_at`, `updated_at`
+
+### `replay_sessions`
+
+Replay session metadata.
+
+Key columns:
+
+- `session_id` text PK
+- `project_id` FK-like project reference
+- `started_at`, `last_seen_at`
+
+### `replay_chunks`
+
+Chunked replay payload storage.
+
+Key columns:
+
+- `id` bigint PK
+- `session_id`
+- `project_id`
+- `data` bytea
+- `created_at`
+
+## Relationships
+
+- `users` 1:n `projects`
+- `users` 1:n `sessions`
+- `users` 1:n `subscriptions`
+- `projects` 1:n `events`
+- `projects` 1:n `flags`
+- `projects` 1:n `configs`
+- `projects` 1:n `replay_sessions`
+- (`project_id`, `session_id`) scoped replay chunks
+
+## Index Strategy
+
+Trackion relies on composite indexes tuned for dashboard queries.
+
+Notable indexes:
+
+- events project/time: `idx_project_time`, `idx_events_project_retention`
+- event grouping/filtering: `idx_project_event`, `idx_events_event_name`, `idx_events_event_type`
+- segmentation fields: `idx_events_platform`, `idx_events_user_id`, `idx_events_session_id`, `idx_events_utm_source`
+- error queries: `idx_events_error_queries` (partial index on `event_type='error'`)
+- error fingerprint lookup: `idx_events_properties_fingerprint` (GIN on `properties->fingerprint`)
+- runtime tables: `idx_flags_project_id`, `idx_configs_project_id`
+- replay tables: `idx_replay_sessions_project_last_seen`, `idx_replay_chunks_project_session_created`
+
+## Migration Behavior
+
+On server startup:
+
+1. GORM auto-migrates model tables
+2. custom SQL applies indexing and subscription-limit normalization
+
+This means schema evolves with application version; keep API and server binaries aligned with DB migration state.
+
+## Retention and Data Growth
+
+Retention-related config:
+
+- `EVENT_RETENTION_DAYS`
+- `PROJECT_DELETE_AFTER_DAYS`
+- project-level `event_retention_days`
+
+Recommended operations:
+
+1. Monitor events row growth per project
+2. Schedule backups before major upgrades
+3. Vacuum/analyze regularly on high-ingest workloads
+4. Partition events table if multi-tenant scale demands it
+
+## Practical Query Guidance
+
+For analytics jobs and custom SQL:
+
+- always include `project_id`
+- include time predicates on `created_at`
+- prefer aggregating on indexed dimensions
+- avoid full JSON scans when scalar columns exist
+
+## Related Pages
+
+- route and endpoint contracts: [API Reference](/api-reference)
+- component-level view: [Architecture](/architecture)

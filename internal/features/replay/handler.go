@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,16 +20,16 @@ const (
 )
 
 type IngestRequest struct {
-	ProjectID string            `json:"project_key"`
-	SessionID string            `json:"session_id"`
-	Events    []json.RawMessage `json:"events"`
+	ProjectID string          `json:"project_key"`
+	SessionID string          `json:"session_id"`
+	Events    json.RawMessage `json:"events"`
 }
 
 type handler struct {
-	service Service
+	service *Service
 }
 
-func NewHandler(service Service) *handler {
+func NewHandler(service *Service) *handler {
 	return &handler{service: service}
 }
 
@@ -41,29 +40,20 @@ func (h *handler) Ingest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	body, err := parseIngestRequest(r)
+	body, err := parseIngestRequest(w, r)
 	if err != nil {
 		res.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = h.service.Ingest(r.Context(), IngestParams{
+	go h.service.IngestAsync(IngestParams{
 		ProjectID: projectIDCtx,
 		SessionID: body.SessionID,
-		Events:    body.Events,
+		EventsRaw: body.Events,
 	})
-	if err != nil {
-		if errors.Is(err, ErrInvalidReplayPayload) {
-			res.Error(w, "invalid replay payload", http.StatusBadRequest)
-			return
-		}
 
-		log.Printf("replay ingestion failed: %v", err)
-		res.Error(w, "failed to ingest replay", http.StatusBadRequest)
-		return
-	}
-
-	w.WriteHeader(http.StatusNoContent)
+	// respond immediately (CRITICAL)
+	res.Success(w, res.M{}, "queued")
 }
 
 func (h *handler) ListSessions(w http.ResponseWriter, r *http.Request) {
@@ -142,7 +132,7 @@ func (h *handler) DeleteSession(w http.ResponseWriter, r *http.Request) {
 	res.Success(w, res.M{}, "Replay session deleted successfully.")
 }
 
-func parseIngestRequest(r *http.Request) (IngestRequest, error) {
+func parseIngestRequest(w http.ResponseWriter, r *http.Request) (IngestRequest, error) {
 	var body IngestRequest
 
 	contentType := strings.TrimSpace(r.Header.Get("Content-Type"))
@@ -150,37 +140,20 @@ func parseIngestRequest(r *http.Request) (IngestRequest, error) {
 		return body, errors.New("Content-Type must be application/json")
 	}
 
-	r.Body = http.MaxBytesReader(nil, r.Body, maxReplayPayloadBytes)
-	rawBody, err := io.ReadAll(r.Body)
-	if err != nil {
+	r.Body = http.MaxBytesReader(w, r.Body, maxReplayPayloadBytes)
+	defer r.Body.Close()
+
+	dec := json.NewDecoder(r.Body)
+	dec.DisallowUnknownFields()
+
+	if err := dec.Decode(&body); err != nil {
 		var maxErr *http.MaxBytesError
 		if errors.As(err, &maxErr) {
 			return body, errors.New("payload too large")
 		}
-		return body, errors.New("invalid JSON payload")
-	}
-
-	if len(rawBody) == 0 {
-		return body, errors.New("request body is empty")
-	}
-
-	var strict map[string]json.RawMessage
-	if err := json.Unmarshal(rawBody, &strict); err != nil {
-		return body, errors.New("invalid JSON payload")
-	}
-
-	allowed := map[string]struct{}{
-		"project_key": {},
-		"session_id":  {},
-		"events":      {},
-	}
-	for key := range strict {
-		if _, ok := allowed[key]; !ok {
-			return body, errors.New("request contains unknown fields")
+		if errors.Is(err, io.EOF) {
+			return body, errors.New("request body is empty")
 		}
-	}
-
-	if err := json.Unmarshal(rawBody, &body); err != nil {
 		return body, errors.New("invalid JSON payload")
 	}
 
@@ -194,10 +167,6 @@ func parseIngestRequest(r *http.Request) (IngestRequest, error) {
 
 	if len(body.Events) == 0 {
 		return body, errors.New("events must not be empty")
-	}
-
-	if len(body.Events) > maxReplayEventsPerReq {
-		return body, errors.New("too many events in a single request")
 	}
 
 	return body, nil

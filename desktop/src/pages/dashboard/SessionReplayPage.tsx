@@ -1,16 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
-import "rrweb-player/dist/style.css";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Delete02Icon,
-  PlayCircleIcon,
-  RefreshIcon,
-} from "@hugeicons/core-free-icons";
+import { Delete02Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   queryKeys,
   useDeleteReplaySession,
@@ -32,140 +25,7 @@ import {
 } from "@/hooks/useApi";
 import { useStore } from "@/store";
 import { useQueryClient } from "@tanstack/react-query";
-
-function ReplayPlayer({ events }: { events: Record<string, unknown>[] }) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    let isDisposed = false;
-    const mountNode = containerRef.current;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let playerInstance: any = null;
-
-    async function mountPlayer() {
-      if (!mountNode) {
-        return;
-      }
-
-      mountNode.innerHTML = "";
-
-      if (events.length === 0) {
-        return;
-      }
-
-      const { default: RRWebPlayer } = await import("rrweb-player");
-      if (isDisposed || !mountNode) {
-        return;
-      }
-
-      const width = Math.max(360, Math.min(mountNode.clientWidth - 8, 1200));
-
-      // rrweb-player does not expose strict TS typings in this setup.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      playerInstance = new (RRWebPlayer as any)({
-        target: mountNode,
-        props: {
-          events,
-          width,
-          autoPlay: false,
-          showController: true,
-        },
-      });
-    }
-
-    mountPlayer();
-
-    return () => {
-      isDisposed = true;
-      if (playerInstance?.$destroy) {
-        playerInstance.$destroy();
-      }
-      if (mountNode) {
-        mountNode.innerHTML = "";
-      }
-    };
-  }, [events]);
-
-  return (
-    <div className="trackion-replay-shell rounded-2xl border border-border/60 bg-card/70 p-2 md:p-3 overflow-hidden">
-      <div ref={containerRef} className="min-h-130 w-full overflow-x-auto" />
-      <style>
-        {`
-          .trackion-replay-shell .rr-player {
-            background: hsl(var(--card)) !important;
-            border: 1px solid hsl(var(--border)) !important;
-            border-radius: 12px;
-            box-shadow: none !important;
-            color: hsl(var(--foreground)) !important;
-            width: 100% !important;
-            max-width: 100%;
-            float: none;
-          }
-
-          .trackion-replay-shell .rr-player__frame {
-            background: hsl(var(--background)) !important;
-          }
-
-          .trackion-replay-shell .replayer-wrapper {
-            max-width: 100%;
-          }
-
-          .trackion-replay-shell .rr-controller {
-            background: hsl(var(--card)) !important;
-            border-top: 1px solid hsl(var(--border)) !important;
-            min-height: 72px;
-            color: hsl(var(--foreground)) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-timeline__time {
-            color: hsl(var(--muted-foreground)) !important;
-            font-size: 12px;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-progress {
-            background: hsl(var(--muted)) !important;
-            border-top-color: transparent !important;
-            border-bottom-color: transparent !important;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-progress__step {
-            background: color-mix(in oklab, hsl(var(--primary)) 20%, transparent) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-progress__handler,
-          .trackion-replay-shell .rr-controller .rr-controller__btns button.active {
-            background: hsl(var(--primary)) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-controller__btns button {
-            color: hsl(var(--foreground)) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .rr-controller__btns button:active {
-            background: color-mix(in oklab, hsl(var(--primary)) 22%, transparent) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .switch label:before {
-            background: color-mix(in oklab, hsl(var(--primary)) 50%, transparent) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .switch input[type='checkbox']:checked + label:before {
-            background: hsl(var(--primary)) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .switch label:after {
-            background: hsl(var(--background)) !important;
-          }
-
-          .trackion-replay-shell .rr-controller .switch .label {
-            color: hsl(var(--muted-foreground)) !important;
-            font-size: 12px;
-          }
-        `}
-      </style>
-    </div>
-  );
-}
+import { ReplayPlayer } from "./components/ReplayPlayer";
 
 export function SessionReplayPage() {
   const navigate = useNavigate();
@@ -250,106 +110,92 @@ export function SessionReplayPage() {
   }
 
   return (
-    <section className="px-4 md:px-6 py-6 space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className="flex flex-col">
+      <div className="px-4 md:px-6 py-4 border-b border-border/60 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">
-            Session Replay
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Browse captured sessions and play rrweb recordings for{" "}
-            {activeProject.name}.
+          <h1 className="text-xl font-semibold">Session Replay</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Playback recorded sessions for {activeProject.name}
           </p>
         </div>
 
-        <Button
-          variant="ghost"
-          className="h-9 gap-2 border border-border/60"
-          onClick={() => refetchSessions()}
-          disabled={sessionsLoading}
+        <button
+          onClick={async () => await refetchSessions()}
+          className="
+              flex items-center gap-2
+              text-xs px-3 h-8
+              border border-border/60
+              hover:bg-muted/20 transition
+            "
         >
           <HugeiconsIcon
             icon={RefreshIcon}
+            size={16}
             className={sessionsLoading ? "animate-spin" : ""}
           />
           Refresh
-        </Button>
+        </button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[340px_1fr]">
-        <Card className="p-3 h-fit max-h-[76vh] overflow-y-auto border-border/60">
-          <div className="px-2 pb-3">
-            <div className="text-sm font-medium">Sessions</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {sessions.length} recorded sessions
-            </div>
+      <div className="grid xl:grid-cols-[300px_1fr] border-b border-border/60">
+        <div className="border-r border-border/60 flex flex-col">
+          <div className="px-4 py-3 border-b border-border/60 text-xs text-muted-foreground">
+            {sessions.length} sessions
           </div>
 
-          {sessionsLoading ? (
-            <div className="py-10 flex justify-center">
-              <LoadingSpinner />
-            </div>
-          ) : sessions.length === 0 ? (
-            <div className="p-4 text-sm text-muted-foreground">
-              No replay sessions yet.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {sessions.map((session) => {
-                const isActive = session.session_id === selectedSessionId;
+          <div className="flex-1 overflow-y-auto divide-y divide-border/40">
+            {sessionsLoading ? (
+              <State>Loading sessions…</State>
+            ) : sessions.length === 0 ? (
+              <State>No sessions yet</State>
+            ) : (
+              sessions.map((session) => {
+                const active = session.session_id === selectedSessionId;
 
                 return (
-                  <button
+                  <div
                     key={session.session_id}
-                    type="button"
                     onClick={() =>
                       setManualSelectedSessionId(session.session_id)
                     }
-                    className={`w-full text-left rounded-xl border px-3 py-3 transition ${
-                      isActive
-                        ? "border-primary/40 bg-primary/10"
-                        : "border-border/60 hover:border-border hover:bg-muted/40"
-                    }`}
+                    className={`
+                  px-4 py-3 cursor-pointer transition
+                  ${active ? "bg-primary/10" : "hover:bg-muted/20"}
+                `}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <div className="font-mono text-xs truncate">
+                      <span className="font-mono text-xs truncate">
                         {session.session_id}
-                      </div>
-                      <Badge variant="outline" className="text-[11px]">
-                        {session.chunk_count} chunks
-                      </Badge>
+                      </span>
+
+                      <span className="text-[11px] text-muted-foreground">
+                        {session.chunk_count}
+                      </span>
                     </div>
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Last seen{" "}
+
+                    <div className="text-[11px] text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(session.last_seen_at), {
                         addSuffix: true,
                       })}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </Card>
-
-        <Card className="p-4 md:p-5 border-border/60">
-          {!selectedSession ? (
-            <div className="min-h-130 flex items-center justify-center text-muted-foreground">
-              Select a session to start playback.
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <HugeiconsIcon icon={PlayCircleIcon} className="h-4 w-4" />
-                    <span className="text-sm font-medium">Session Details</span>
                   </div>
-                  <p className="font-mono text-xs text-muted-foreground break-all">
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col">
+          {!selectedSession ? (
+            <State>Select a session</State>
+          ) : (
+            <>
+              <div className="px-4 md:px-6 py-3 border-b border-border/60 flex items-center justify-between">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs truncate">
                     {selectedSession.session_id}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Started{" "}
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     {formatDistanceToNow(new Date(selectedSession.started_at), {
                       addSuffix: true,
                     })}
@@ -357,27 +203,23 @@ export function SessionReplayPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline">{replayEvents.length} events</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {replayEvents.length} events
+                  </span>
 
                   <AlertDialog>
-                    <AlertDialogTrigger
-                      render={
-                        <Button variant="outline" className="h-8 gap-2" />
-                      }
-                    >
-                      <HugeiconsIcon icon={Delete02Icon} className="h-4 w-4" />
-                      Delete
+                    <AlertDialogTrigger className="h-8 px-2 text-xs text-destructive hover:bg-muted/20">
+                      <HugeiconsIcon icon={Delete02Icon} size={16} />
                     </AlertDialogTrigger>
+
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Delete replay session?
-                        </AlertDialogTitle>
+                        <AlertDialogTitle>Delete session?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          This will permanently remove the session and all its
-                          replay chunks.
+                          This cannot be undone.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
+
                       <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
                         <AlertDialogAction
@@ -391,7 +233,6 @@ export function SessionReplayPage() {
                                 activeProject.id,
                                 100,
                               ),
-                              exact: false,
                             });
                             setManualSelectedSessionId("");
                           }}
@@ -404,31 +245,29 @@ export function SessionReplayPage() {
                 </div>
               </div>
 
-              {replayLoading ? (
-                <div className="min-h-130 flex items-center justify-center">
-                  <LoadingSpinner />
-                </div>
-              ) : replayError ? (
-                <div className="min-h-130 flex flex-col items-center justify-center text-center gap-3">
-                  <HugeiconsIcon
-                    icon={PlayCircleIcon}
-                    className="h-8 w-8 text-muted-foreground"
-                  />
-                  <p className="text-sm text-muted-foreground">
-                    Could not load replay events for this session.
-                  </p>
-                </div>
-              ) : replayEvents.length === 0 ? (
-                <div className="min-h-130 flex items-center justify-center text-muted-foreground">
-                  This session has no replay events.
-                </div>
-              ) : (
-                <ReplayPlayer events={replayEvents} />
-              )}
-            </div>
+              <div className="flex-1">
+                {replayLoading ? (
+                  <State>Loading replay…</State>
+                ) : replayError ? (
+                  <State>Error loading replay</State>
+                ) : replayEvents.length === 0 ? (
+                  <State>No replay events</State>
+                ) : (
+                  <ReplayPlayer events={replayEvents} />
+                )}
+              </div>
+            </>
           )}
-        </Card>
+        </div>
       </div>
     </section>
+  );
+}
+
+function State({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-center h-full min-h-75 text-sm text-muted-foreground">
+      {children}
+    </div>
   );
 }

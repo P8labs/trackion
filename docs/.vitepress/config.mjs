@@ -4,7 +4,7 @@ export default defineConfig({
   title: "Trackion Docs",
   base: "/docs/",
   description:
-    "Trackion documentation for setup, API usage, architecture, and self-hosting.",
+    "Trackion documentation for setup, SDK integration, API usage, architecture, and operations.",
   lang: "en-US",
   cleanUrls: true,
   lastUpdated: true,
@@ -17,7 +17,7 @@ export default defineConfig({
     nav: [
       { text: "Introduction", link: "/introduction" },
       { text: "Quick Start", link: "/quick-start" },
-      { text: "SDK Usage", link: "/sdk-usage" },
+      { text: "Self Hosting", link: "/self-hosting" },
       { text: "API Reference", link: "/api-reference" },
       { text: "Architecture", link: "/architecture" },
     ],
@@ -33,13 +33,32 @@ export default defineConfig({
         ],
       },
       {
-        text: "Reference",
+        text: "Integration",
         items: [
-          { text: "API Reference", link: "/api-reference" },
           { text: "SDK Usage", link: "/sdk-usage" },
           { text: "JavaScript API", link: "/javascript-api" },
+        ],
+      },
+      {
+        text: "API Reference",
+        items: [
+          { text: "API Reference", link: "/api-reference" },
+          { text: "Error Tracking API", link: "/api/errors" },
+        ],
+      },
+      {
+        text: "Technical",
+        items: [
           { text: "Architecture", link: "/architecture" },
           { text: "Database Schema", link: "/database-schema" },
+        ],
+      },
+      {
+        text: "Desktop",
+        items: [
+          { text: "Desktop Development", link: "/desktop-development" },
+          { text: "Desktop Distribution", link: "/desktop-distribution" },
+          { text: "Auto-Updater Setup", link: "/updater-setup" },
         ],
       },
     ],

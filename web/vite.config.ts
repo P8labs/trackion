@@ -77,6 +77,10 @@ export default defineConfig({
             return "highlight";
           }
 
+          if (id.includes("rrweb")) {
+            return "rrweb";
+          }
+
           return "vendor";
         },
       },

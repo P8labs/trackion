@@ -1,11 +1,15 @@
 # API Reference
 
-Base URL examples:
+This reference documents Trackion HTTP endpoints exposed by the Go API server.
 
-- Local: http://localhost:8000
-- Production: https://your-domain
+## Base URL
 
-All successful responses follow:
+- Local: `http://localhost:8000`
+- Production: `https://api.your-domain.com`
+
+## Response Envelope
+
+Most endpoints return:
 
 ```json
 {
@@ -15,69 +19,90 @@ All successful responses follow:
 }
 ```
 
+Error responses use:
+
+```json
+{
+  "status": false,
+  "message": "error message"
+}
+```
+
 ## Authentication
 
-Two token types are used:
+### Project Key (Ingestion + Public Runtime)
 
-1. Project key for ingestion APIs via X-Project-Key
-2. Bearer token for dashboard APIs via Authorization: Bearer &lt;token&gt;
+Use project API key in header:
 
-In self-host mode, the bearer token is TRACKION_ADMIN_TOKEN.
+```http
+X-Project-Key: PROJECT_API_KEY
+```
 
-## Health
+Used by `/events/*` and `/replay` ingestion routes.
 
-### GET /health
+### Bearer Token (Dashboard APIs)
 
-Checks API and DB connectivity.
+```http
+Authorization: Bearer TOKEN
+```
 
-## Auth
+- Selfhost: `TOKEN == TRACKION_ADMIN_TOKEN`
+- SaaS: session token from OAuth flow
 
-### POST /api/auth/verify
+## Public Routes
 
-Verifies login token and returns user payload.
+### `GET /health`
+
+Health/readiness payload with server version and timestamp.
+
+### `GET /t.js` and `GET /t.min.js`
+
+Served tracker assets for browser integration.
+
+### `POST /api/auth/verify`
+
+Verifies bearer/body token and returns auth payload.
 
 Request:
 
 ```json
-{
-  "token": "your-token"
-}
+{ "token": "your-token" }
 ```
 
-Optional header:
+Rules:
 
-- Authorization: Bearer your-token
+- Token can come from body, bearer header, or both
+- If both body + bearer are provided and mismatch, request is rejected
 
-### SaaS-only OAuth Endpoints
+### SaaS OAuth Routes
 
-- GET /auth/login/github?client=web
-- GET /auth/callback/github
-- GET /auth/me
-- POST /auth/logout
+- `GET /auth/login/github?client=web|desktop`
+- `GET /auth/login/google?client=web|desktop`
+- `GET /auth/callback/github`
+- `GET /auth/callback/google`
+- `GET /auth/me` (auth required)
+- `POST /auth/logout` (auth required)
 
-## Event Ingestion
+## Event Ingestion Routes (`/events`)
 
-All require X-Project-Key.
+### `POST /events/collect`
 
-### POST /events/collect
+Ingest one event.
 
-Single event ingestion.
+Required fields:
 
-### POST /events/batch
+- `event`
+- `session_id`
 
-Batch event ingestion.
-
-### GET /events/config
-
-Returns tracker configuration for the project identified by X-Project-Key.
-
-Example single event body:
+Example:
 
 ```json
 {
+  "project_key": "PROJECT_API_KEY",
   "event": "button_click",
+  "type": "custom",
   "session_id": "session-1",
-  "user_agent": "Mozilla/5.0",
+  "user_id": "user-123",
   "page": {
     "path": "/pricing",
     "title": "Pricing",
@@ -94,70 +119,71 @@ Example single event body:
 }
 ```
 
-Note: ingestion payloads require `session_id` (snake_case).
+### `POST /events/batch`
 
-SDK package family:
-
-- `@trackion/js`
-- `@trackion/js/react`
-- `@trackion/js/vue`
-- `@trackion/js/node`
-
-Official package: [https://www.npmjs.com/package/@trackion/js](https://www.npmjs.com/package/@trackion/js)
-
-See [SDK Usage](/sdk-usage) for integration examples.
-
-## Runtime Control
-
-Runtime control is split into:
-
-- Public read endpoint for clients/SDKs
-- Authenticated management endpoints for dashboard users
-
-### GET /v1/runtime?user_id={optional_user_id}
-
-Returns evaluated feature flags and remote config for the project identified by `Authorization: Bearer <project_api_key>`.
-
-Example response:
+Ingest multiple events in one request.
 
 ```json
 {
-  "status": true,
-  "message": "Runtime fetched successfully.",
-  "data": {
-    "flags": {
-      "checkout_v2": true,
-      "new_paywall": false
-    },
-    "config": {
-      "paywall.copy": {
-        "title": "Upgrade",
-        "cta": "Start trial"
-      },
-      "limits": {
-        "max_upload_mb": 25
-      }
+  "project_key": "PROJECT_API_KEY",
+  "events": [
+    {
+      "event": "page_view",
+      "session_id": "session-1",
+      "page": { "path": "/", "title": "Home" }
     }
-  }
+  ]
 }
 ```
 
+### `GET /events/config`
+
+Returns tracker behavior config for project identified by `X-Project-Key`.
+
+Supports `ETag` and `If-None-Match` caching behavior.
+
+## Replay Routes
+
+### `POST /replay/`
+
+Ingest replay payload asynchronously.
+
+Request constraints:
+
+- `Content-Type: application/json`
+- body max size ~1MB
+- requires `project_key`, `session_id`, and non-empty `events`
+
+### Protected Replay Routes (`/api/replay`)
+
+- `GET /api/replay/projects/{id}/sessions?limit=50`
+- `GET /api/replay/projects/{id}/sessions/{sessionId}`
+- `DELETE /api/replay/projects/{id}/sessions/{sessionId}`
+
+## Runtime Routes
+
+### Public Runtime Fetch
+
+`GET /v1/runtime?user_id=<optional>`
+
+Returns evaluated feature flags/config for project from `X-Project-Key`.
+
 Rollout behavior:
 
-- If a flag is disabled, result is false.
-- If rollout is 100, result is true.
-- If rollout is between 1-99, evaluation uses deterministic hashing on user_id.
-- If user_id is missing for partial rollout, result is false.
+- disabled flag => `false`
+- rollout `100` => `true`
+- rollout `1..99` => deterministic by `user_id`
+- no `user_id` during partial rollout => `false`
 
-### Runtime Management (Protected)
+### Protected Runtime Management
 
-- GET /api/runtime/projects/{id}/runtime
-- PUT /api/runtime/projects/{id}/runtime/flags/{key}
-- DELETE /api/runtime/projects/{id}/runtime/flags/{key}
-- PUT /api/runtime/projects/{id}/runtime/config/{key}
-- DELETE /api/runtime/projects/{id}/runtime/config/{key}
+- `GET /api/runtime/projects/{id}/runtime`
+- `PUT /api/runtime/projects/{id}/runtime/flags/{key}`
+- `DELETE /api/runtime/projects/{id}/runtime/flags/{key}`
+- `PUT /api/runtime/projects/{id}/runtime/config/{key}`
+- `DELETE /api/runtime/projects/{id}/runtime/config/{key}`
 
-Example flag upsert body:
+Flag body:
 
 ```json
 {
@@ -166,7 +192,7 @@ Example flag upsert body:
 }
 ```
 
-Example config upsert body:
+Config body:
 
 ```json
 {
@@ -177,40 +203,44 @@ Example config upsert body:
 }
 ```
 
-## Projects API
+## Protected Project Routes
 
-All routes are protected by bearer auth.
+- `GET /api/projects/`
+- `POST /api/projects/`
+- `GET /api/projects/{id}`
+- `PUT /api/projects/{id}`
+- `DELETE /api/projects/{id}`
 
-- GET /api/projects/
-- POST /api/projects/
-- GET /api/projects/{id}
-- PUT /api/projects/{id}
-- DELETE /api/projects/{id}
+## Protected Analytics Routes
 
-## Analytics API
+- `GET /api/analytics/{id}/counts`
+- `GET /api/analytics/{id}/chart-data`
+- `GET /api/analytics/{id}/area-chart-data`
+- `GET /api/analytics/{id}/device-analytics`
+- `GET /api/analytics/{id}/traffic-sources`
+- `GET /api/analytics/{id}/top-pages`
+- `GET /api/analytics/{id}/recent-events`
+- `GET /api/analytics/{id}/recent-events-paginated`
+- `GET /api/analytics/{id}/online-users`
+- `GET /api/analytics/{id}/country-data`
+- `GET /api/analytics/{id}/country-map-data`
+- `GET /api/analytics/{id}/traffic-heatmap`
 
-All routes are protected by bearer auth.
+## Protected Error Routes
 
-- GET /api/analytics/{id}/counts
-- GET /api/analytics/{id}/chart-data?time_range=24h&event_filter=
-- GET /api/analytics/{id}/area-chart-data?time_range=7d&event_filter=
-- GET /api/analytics/{id}/device-analytics
-- GET /api/analytics/{id}/traffic-sources
-- GET /api/analytics/{id}/top-pages
-- GET /api/analytics/{id}/recent-events?limit=50
+- `GET /api/errors?project_id=...&time_range=7d&limit=50&offset=0`
+- `GET /api/errors/{fingerprint}?project_id=...&limit=20&offset=0`
+- `GET /api/errors/stats?project_id=...&time_range=7d`
 
-## Settings API
+See dedicated [Error Tracking API](/api/errors) page for full details.
 
-Protected by bearer auth.
+## Protected Settings + Billing Routes
 
-- GET /api/settings/usage
+- `GET /api/settings/usage`
+- `GET /api/billing/usage`
+- `GET /api/billing/plan`
 
-## Tracker Assets
-
-- GET /t.js
-- GET /t.min.js
-
-## Example: Verify Token + List Projects
+## Example Flow: Verify + List Projects
 
 ```bash
 TOKEN="your-admin-or-session-token"
@@ -223,3 +253,9 @@ curl -X POST http://localhost:8000/api/auth/verify \
 curl http://localhost:8000/api/projects/ \
   -H "Authorization: Bearer $TOKEN"
 ```
+
+## Related Pages
+
+- SDK integration examples: [SDK Usage](/sdk-usage)
+- Browser runtime behavior: [JavaScript API](/javascript-api)
+- System design and modules: [Architecture](/architecture)

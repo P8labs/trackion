@@ -1,131 +1,140 @@
 # Self Hosting
 
-This guide documents the real deployment path for Trackion in self-host mode.
+This guide describes production-oriented self-host deployment for Trackion.
 
-## Deployment Model
+## Deployment Topology
 
-Trackion self-hosting includes:
+Minimum components:
 
-- PostgreSQL
-- Go API server
-- Optional separate web frontend deployment
+1. PostgreSQL database
+2. Trackion API server
+3. Web dashboard (optional separate deployment)
 
-The API serves tracker assets (/t.js, /t.min.js) and dashboard data APIs.
+The API server exposes:
 
-## 1. Prepare Environment
+- ingestion routes (`/events`, `/replay`)
+- dashboard routes (`/api/*`)
+- runtime public route (`/v1/runtime`)
+- tracker assets (`/t.js`, `/t.min.js`)
 
-Copy template:
+## Required Environment Variables
 
-```bash
-cp .env.selfhost.example .env.selfhost
-```
+At minimum, set:
 
-At minimum, set secure values for:
+- `TRACKION_MODE=selfhost`
+- `DATABASE_URL=postgres://...`
+- `TRACKION_ADMIN_TOKEN=<long-random-token>`
+- `AUTH_SECRET=<long-random-secret>`
+- `BASE_URL=https://api.your-domain.com`
+- `FRONTEND_URL=https://your-dashboard-domain.com`
 
-- TRACKION_ADMIN_TOKEN
-- AUTH_SECRET
-- POSTGRES_PASSWORD
+Recommended operational vars:
 
-Important vars:
+- `EVENT_RETENTION_DAYS` (default `30`)
+- `PROJECT_DELETE_AFTER_DAYS` (default `7`)
+- `CLEANUP_CRON_SPEC` (default `@every 1h`)
+- `CLEANUP_TIMEOUT_SEC` (default `300`)
+- rate limit + geo lookup vars from [Quick Start](/quick-start)
 
-- TRACKION_MODE=selfhost
-- BASE_URL and FRONTEND_URL
-- CORS_ORIGINS
-- retention settings:
-  - EVENT_RETENTION_DAYS
-  - PROJECT_DELETE_AFTER_DAYS
+## Recommended Deployment Path
 
-## 2. Docker Compose
+For most teams, the best self-host path is:
 
-Current docker-compose.yml includes db and may have server commented out depending on branch state.
+1. PostgreSQL via Docker Compose
+2. Trackion server from prebuilt GHCR image tied to a GitHub release tag
 
-If server is commented, uncomment it first.
+This avoids local image builds and keeps runtime aligned with published release artifacts.
 
-Then run:
+## GitHub Releases and Docker Images
 
-```bash
-docker compose up -d --build
-```
+Trackion publishes release artifacts on GitHub:
 
-Verify:
+- Server binaries (Linux/macOS/Windows)
+- Desktop installers
+- Updater metadata
+- Docker image tags
 
-```bash
-docker compose ps
-curl http://localhost:8000/health
-```
+Release assets:
 
-## 3. Deploy Using Prebuilt Docker Image (GHCR)
+- https://github.com/P8labs/trackion/releases
 
-If you do not want to build locally, use the published image from GitHub Container Registry.
+Container image:
 
-1. Start only the database service:
+- `ghcr.io/p8labs/trackion`
+
+Tag strategy:
+
+- Prefer pinned tags in production: `vX.Y.Z`
+- `latest` is convenient for testing but less deterministic
+
+## Option A: Prebuilt Container Image (Recommended)
+
+Start database:
 
 ```bash
 docker compose up -d db
 ```
 
-2. Pull a release image:
+Pull a released image:
 
 ```bash
-docker pull ghcr.io/p8labs/trackion:vX.Y.Z
+docker pull ghcr.io/p8labs/trackion:latest
 ```
 
-3. Run the server container against the compose DB:
+Run with your DB/network:
 
 ```bash
 docker run -d \
   --name trackion-server \
   --restart unless-stopped \
-  --network trackion_default \
   -p 8000:8000 \
   -e TRACKION_MODE=selfhost \
   -e PORT=8000 \
   -e DATABASE_URL="postgres://trackion:trackion@db:5432/trackion?sslmode=disable" \
   -e TRACKION_ADMIN_TOKEN="replace-with-long-random-token" \
   -e AUTH_SECRET="replace-with-long-random-secret" \
-  -e BASE_URL="http://localhost:8000" \
-  -e FRONTEND_URL="http://localhost:5173" \
-  ghcr.io/p8labs/trackion:vX.Y.Z
+  -e BASE_URL="https://api.example.com" \
+  -e FRONTEND_URL="https://app.example.com" \
+  ghcr.io/p8labs/trackion:latest
 ```
 
-Notes:
+## Option B: Docker Compose Build (Source-Based)
 
-- Replace vX.Y.Z with a real tag from releases.
-- If your compose project name differs, adjust trackion_default network accordingly.
+Current repository `docker-compose.yml` has `db` enabled and `server` commented.
 
-## 4. Deploy Using Prebuilt Binary (GitHub Releases)
+### 1. Enable server service
 
-If you prefer systemd or direct host execution, use release binaries.
+Uncomment the `server` block in `docker-compose.yml`.
 
-1. Download binary for your platform (example: Linux AMD64):
+### 2. Set env values
+
+Use shell env vars or configure the `env_file` target for the server service.
+
+### 3. Start services
 
 ```bash
-VERSION=0.1.0
+docker compose up -d --build
+```
+
+### 4. Verify
+
+```bash
+docker compose ps
+curl -fsS http://localhost:8000/health
+```
+
+## Option C: Prebuilt Binary (From GitHub Release)
+
+Download release binary:
+
+```bash
+VERSION=2.3.0
 curl -fL -o trackion-server \
   "https://github.com/P8labs/trackion/releases/download/v${VERSION}/trackion-server_${VERSION}_linux_amd64"
 chmod +x trackion-server
 ```
 
-2. Create runtime env file:
-
-```bash
-cat > .env <<'EOF'
-TRACKION_MODE=selfhost
-PORT=8000
-DATABASE_URL=postgres://trackion:trackion@localhost:5432/trackion?sslmode=disable
-TRACKION_ADMIN_TOKEN=replace-with-long-random-token
-AUTH_SECRET=replace-with-long-random-secret
-BASE_URL=http://localhost:8000
-FRONTEND_URL=http://localhost:5173
-CORS_ORIGINS=*
-EVENT_RETENTION_DAYS=30
-PROJECT_DELETE_AFTER_DAYS=7
-CLEANUP_CRON_SPEC=@every 1h
-CLEANUP_TIMEOUT_SEC=300
-EOF
-```
-
-3. Run:
+Run with environment:
 
 ```bash
 set -a
@@ -134,42 +143,51 @@ set +a
 ./trackion-server
 ```
 
-Optional install location:
+## Deploying the Web Dashboard
 
-```bash
-sudo mv trackion-server /usr/local/bin/trackion-server
-```
-
-## 5. Frontend
-
-Run web separately in production or development:
+Build web app:
 
 ```bash
 cd web
-pnpm install
-pnpm build
+pnpm install --frozen-lockfile
+pnpm run build
 ```
 
-Serve web/dist with your static server and point it to your API URL.
+Serve `web/dist` from your static host or reverse proxy, and ensure users can reach your API `BASE_URL`.
 
-## 6. Reverse Proxy and TLS
+## Reverse Proxy + TLS
 
-Recommended production setup:
+Production recommendations:
 
-- Put API behind Nginx/Caddy/Traefik
-- Enforce HTTPS
-- Restrict CORS to your frontend domain(s)
-- Keep PostgreSQL private (no public exposure)
+1. Put API behind Nginx/Caddy/Traefik
+2. Enforce HTTPS only
+3. Keep PostgreSQL private (no public ingress)
+4. Restrict allowed origins at edge/proxy layer
+5. Add request size + rate limits at gateway level
 
-## 7. Backups and Upgrades
+## Authentication Model in Selfhost
 
-### Database backup
+- Login API: `POST /api/auth/verify`
+- Credential: admin token
+- Protected APIs: `Authorization: Bearer <TRACKION_ADMIN_TOKEN>`
+
+## Backups
+
+Database backup example:
 
 ```bash
 docker exec -t trackion-db pg_dump -U trackion trackion > trackion-backup.sql
 ```
 
-### Upgrade flow
+Restore example:
+
+```bash
+cat trackion-backup.sql | docker exec -i trackion-db psql -U trackion -d trackion
+```
+
+## Upgrades
+
+From source deployment:
 
 ```bash
 git pull
@@ -177,24 +195,33 @@ docker compose build --no-cache
 docker compose up -d
 ```
 
-## 8. Authentication in Self-host Mode
+For image/binary deployments, roll forward to next release tag and keep DB backups before upgrade.
 
-- Web login uses POST /api/auth/verify
-- Token must equal TRACKION_ADMIN_TOKEN
-- Protected APIs require Authorization: Bearer &lt;TRACKION_ADMIN_TOKEN&gt;
+## Production Hardening Checklist
 
-## 9. Troubleshooting
+1. Replace all dev secrets with generated values
+2. Use managed PostgreSQL backups or scheduled dumps
+3. Protect admin token distribution
+4. Monitor API health and DB metrics
+5. Rotate secrets on schedule
+6. Test restore procedure quarterly
 
-### API fails with missing env
+## Troubleshooting
 
-Check .env.selfhost and confirm required variables are present.
+### API does not boot
 
-### No events visible
+- Check `DATABASE_URL`
+- Ensure DB network reachability
+- Ensure `TRACKION_ADMIN_TOKEN` is set in selfhost mode
 
-- Verify project API key
-- Verify tracker script uses data-api-key
-- Check /events/config and /events/batch responses in browser network tab
+### Dashboard loads but no data
 
-### CORS errors
+- Confirm frontend points to correct API URL
+- Confirm bearer token is valid
+- Verify project IDs in API requests
 
-Set CORS_ORIGINS to your frontend origin list, comma-separated.
+### Ingestion requests fail
+
+- Validate `X-Project-Key`
+- Check origin/domain restrictions for project
+- Inspect batch rate limiting (`429`) responses

@@ -12,6 +12,7 @@ import PlusDecor from "@/components/PlusDecor";
 export function ProjectsPage() {
   const navigate = useNavigate();
   const { setCurrentProject } = useStore();
+
   const { data: projects = [], isLoading, error } = useProjects();
 
   const [searchTerm, setSearchTerm] = useState("");

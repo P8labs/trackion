@@ -1,242 +1,118 @@
-# Auto-Updater Setup Guide
+# Auto-Updater Setup
 
-This guide explains how to set up the Tauri auto-updater for the desktop client.
+Trackion desktop uses Tauri updater with signature verification and a release-hosted `latest.json` manifest.
 
-## Quick Start
+## Current Updater Configuration
 
-### 1. Generate Signing Keys (One-time)
+In `desktop/src-tauri/tauri.conf.json`, updater is configured with:
+
+- `active: true`
+- `dialog: true`
+- `pubkey: <minisign public key>`
+- endpoint: `https://github.com/P8labs/trackion/releases/latest/download/latest.json`
+
+This means production desktop clients check GitHub Releases directly.
+
+## One-Time Key Setup
+
+Generate signing keys:
 
 ```bash
 cd desktop/src-tauri
-tauri signer generate --password "your-secure-password"
+tauri signer generate --password "your-strong-password"
 ```
 
-Output:
+Then:
 
-```
-Generated keys to /home/user/.tauri/signer/
-Private key: /home/user/.tauri/signer/
-Public key: dW1Y44yPVRf2UrFf...
-```
+1. keep private key secure (never commit)
+2. set public key in updater `pubkey`
+3. add secrets to repo:
+   - `TAURI_SIGNING_PRIVATE_KEY`
+   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 
-### 2. Add Public Key to Config
+## Release-Time Manifest Generation
 
-Update `desktop/src-tauri/tauri.conf.json`:
+During `release.yml`, desktop build step:
+
+1. builds installers
+2. reads generated `.sig` files
+3. creates updater `latest.json`
+4. publishes `latest.json` and signatures as release assets
+
+The app then fetches this manifest at runtime via configured endpoint.
+
+## Expected `latest.json` Shape
+
+Typical structure:
 
 ```json
 {
-  "plugins": {
-    "updater": {
-      "active": true,
-      "dialog": true,
-      "pubkey": "dW1Y44yPVRf2UrFf..."
-    }
-  }
-}
-```
-
-### 3. Set GitHub Secrets
-
-In GitHub repository settings (`Settings > Secrets and variables > Actions`):
-
-**`TAURI_SIGNING_PRIVATE_KEY`**:
-
-```
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEA...
-... (full private key)
------END RSA PRIVATE KEY-----
-```
-
-**`TAURI_SIGNING_PRIVATE_KEY_PASSWORD`**:
-
-```
-your-secure-password
-```
-
-### 4. Build and Release
-
-When you push a version tag, the workflow will:
-
-1. Build signed installers
-2. Generate update manifest
-3. Create GitHub Release
-
-## Hosting Updates
-
-### Option A: GitHub Releases (Easiest)
-
-The auto-updater can fetch from GitHub releases directly:
-
-```typescript
-import { check } from "@tauri-apps/plugin-updater";
-
-const update = await check();
-if (update?.available) {
-  await update.downloadAndInstall();
-}
-```
-
-**Configure in `tauri.conf.json`**:
-
-```json
-{
-  "plugins": {
-    "updater": {
-      "active": true,
-      "dialog": true,
-      "pubkey": "YOUR_PUBLIC_KEY",
-      "endpoints": [
-        "https://releases.example.com/updates/${{ target }}/{{ current_version }}"
-      ]
-    }
-  }
-}
-```
-
-### Option B: Self-Hosted Updates
-
-Create a `latest.json` file on your server:
-
-```json
-{
-  "version": "0.2.0",
-  "notes": "Bug fixes and performance improvements",
-  "pub_date": "2024-04-28T12:00:00Z",
+  "version": "2.3.0",
+  "notes": "...",
+  "pub_date": "2026-04-29T00:00:00Z",
   "platforms": {
     "windows-x86_64": {
-      "signature": "base64_encoded_signature_here",
-      "url": "https://your-domain.com/releases/trackion_0.2.0_x64.msi"
+      "url": "https://github.com/P8labs/trackion/releases/download/v2.3.0/trackion_2.3.0_x64-setup.exe",
+      "signature": "..."
     }
   }
 }
 ```
 
-To generate the signature:
+## App-Side Update Check
 
-```bash
-tauri signer sign --private-key-path ~/.tauri/signer/private.key --password "your-password" /path/to/installer.msi
-```
+Example manual check in frontend:
 
-Then in `tauri.conf.json`:
+```ts
+import { check } from "@tauri-apps/plugin-updater";
 
-```json
-{
-  "plugins": {
-    "updater": {
-      "active": true,
-      "dialog": true,
-      "pubkey": "YOUR_PUBLIC_KEY",
-      "endpoints": ["https://your-domain.com/updates/latest.json"]
-    }
-  }
-}
-```
-
-## App-Side Implementation
-
-### Check for Updates on Startup
-
-In `desktop/src/App.tsx`:
-
-```typescript
-import { useEffect } from 'react';
-import { check, installUpdate, relaunch } from '@tauri-apps/plugin-updater';
-
-export function App() {
-  useEffect(() => {
-    checkForUpdates();
-  }, []);
-
-  async function checkForUpdates() {
-    try {
-      const update = await check();
-      if (update?.available) {
-        console.log('Update available:', update.version);
-        // User will see dialog automatically due to "dialog": true
-      }
-    } catch (error) {
-      console.error('Failed to check for updates:', error);
-    }
-  }
-
-  return (
-    // ... your app
-  );
-}
-```
-
-### Manual Check Button
-
-```typescript
-async function handleUpdateCheck() {
+export async function checkForDesktopUpdate() {
   const update = await check();
   if (update?.available) {
-    const confirmed = window.confirm(
-      `Update available: v${update.version}\n\n${update.body}\n\nDownload and install?`,
-    );
-    if (confirmed) {
-      await update.downloadAndInstall();
-      await relaunch();
-    }
-  } else {
-    alert("You are already on the latest version");
+    await update.downloadAndInstall();
+    // optionally relaunch afterwards
   }
 }
 ```
+
+With `dialog: true`, built-in updater dialogs can be shown depending on plugin behavior.
+
+## Local Testing Strategy
+
+For local verification without full release pipeline:
+
+1. create a signed installer artifact
+2. generate local `latest.json` pointing to reachable URL
+3. temporarily override updater endpoint for test build
+4. verify check/download/install flow
 
 ## Troubleshooting
 
-### Updates Not Working
+### Update check fails
 
-1. **Check network connectivity**:
-   - Ensure update endpoint is accessible
-   - Check CORS headers if self-hosted
+- verify endpoint URL resolves
+- verify app has network access
+- verify manifest JSON is valid
 
-2. **Verify signature**:
+### Signature mismatch
 
-   ```bash
-   # Re-generate signature
-   tauri signer sign --private-key-path ~/.tauri/signer/private.key \
-     --password "your-password" path/to/installer.msi
-   ```
+- confirm `pubkey` matches private key used in CI signing
+- confirm `.sig` belongs to exact installer file
+- regenerate signatures if artifact changed
 
-3. **Check logs**:
-   - On Windows: Check `%APPDATA%/trackion/logs/` for updater logs
-   - In dev: Check browser console and Tauri logs
+### No update detected
 
-### Signature Mismatch
+- confirm version in `latest.json` is newer than installed app
+- confirm semver format is valid
 
-If you get signature mismatch errors:
+## Security Guidelines
 
-1. Verify the public key in `tauri.conf.json` matches the signing key
-2. Re-sign the installer with the correct key
-3. Ensure the installer file hasn't been modified after signing
+1. never commit private signing keys
+2. rotate signing credentials on schedule
+3. serve updater endpoints over HTTPS
+4. review release asset integrity before publishing
 
-## Version Numbering
+## Related Pages
 
-Update versions must follow semantic versioning:
-
-- Valid: `0.1.0`, `1.0.0`, `2.1.3`
-- Invalid: `0.1`, `1.0.0.0`, `latest`
-
-The updater compares versions to determine if update is available:
-
-- Current: `0.1.0`
-- Available: `0.1.1` → Update available ✓
-- Available: `0.1.0` → No update
-- Available: `0.0.9` → No update (downgrade)
-
-## Security Considerations
-
-1. **Private Key**: Never commit to git, only store in GitHub Secrets
-2. **Password**: Use a strong password, rotate periodically
-3. **Endpoint**: Use HTTPS for update checks
-4. **Signature Verification**: Always enabled for auto-update
-5. **Update Frequency**: Check on app start, not on every action
-
-## References
-
-- [Tauri Updater Plugin Docs](https://v2.tauri.app/plugin/updater/)
-- [Code Signing Guide](https://v2.tauri.app/distribute/sign/windows/)
-- [Semantic Versioning](https://semver.org/)
+- release pipeline and artifacts: [Desktop Distribution](/desktop-distribution)
+- local desktop workflows: [Desktop Development](/desktop-development)

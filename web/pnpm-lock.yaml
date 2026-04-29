@@ -20,6 +20,9 @@ importers:
       '@hugeicons/react':
         specifier: ^1.1.6
         version: 1.1.6(react@19.2.4)
+      '@rrweb/replay':
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20
       '@tailwindcss/vite':
         specifier: ^4.2.1
         version: 4.2.1(vite@8.0.0(@types/node@24.12.0)(esbuild@0.27.3)(jiti@2.6.1))
@@ -27,8 +30,8 @@ importers:
         specifier: ^5.90.21
         version: 5.90.21(react@19.2.4)
       '@trackion/js':
-        specifier: ^0.2.0
-        version: 0.2.0(react@19.2.4)
+        specifier: file:../../trackion-js
+        version: file:../../trackion-js(react@19.2.4)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -68,12 +71,6 @@ importers:
       recharts:
         specifier: 2.15.4
         version: 2.15.4(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
-      rrweb:
-        specifier: 2.0.0-alpha.4
-        version: 2.0.0-alpha.4
-      rrweb-player:
-        specifier: 1.0.0-alpha.4
-        version: 1.0.0-alpha.4
       shadcn:
         specifier: ^4.0.8
         version: 4.0.8(@types/node@24.12.0)(typescript@5.9.3)
@@ -1008,6 +1005,9 @@ packages:
   '@rolldown/pluginutils@1.0.0-rc.9':
     resolution: {integrity: sha512-w6oiRWgEBl04QkFZgmW+jnU1EC9b57Oihi2ot3HNWIQRqgHp5PnYDia5iZ5FF7rpa4EQdiqMDXjlqKGXBhsoXw==}
 
+  '@rrweb/replay@2.0.0-alpha.20':
+    resolution: {integrity: sha512-VodsLb+C2bYNNVbb0U14tKLa9ctzUxYIlt9VnxPATWvfyXHLTku8BhRWptuW/iIjVjmG49LBoR1ilxw/HMiJ1w==}
+
   '@rrweb/types@2.0.0-alpha.20':
     resolution: {integrity: sha512-RbnDgKxA/odwB1R4gF7eUUj+rdSrq6ROQJsnMw7MIsGzlbSYvJeZN8YY4XqU0G6sKJvXI6bSzk7w/G94jNwzhw==}
 
@@ -1133,8 +1133,8 @@ packages:
     peerDependencies:
       react: ^18 || ^19
 
-  '@trackion/js@0.2.0':
-    resolution: {integrity: sha512-5laildp1avLT7giRlwfuOLanyQP3iEZZ1dOewRq1XerFuabC0pLzpOgtrHb8g5O0AePsCG0DLMaVcPCC4wMlzA==}
+  '@trackion/js@file:../../trackion-js':
+    resolution: {directory: ../../trackion-js, type: directory}
     engines: {node: '>=18'}
     peerDependencies:
       react: '>=18'
@@ -1147,9 +1147,6 @@ packages:
 
   '@ts-morph/common@0.27.0':
     resolution: {integrity: sha512-Wf29UqxWDpc+i61k3oIOzcUfQt79PIT9y/MWfAGlrkjg6lBC1hwDECLXPVJAhWjiGbfBCxZd65F/LIZF3+jeJQ==}
-
-  '@tsconfig/svelte@1.0.13':
-    resolution: {integrity: sha512-5lYJP45Xllo4yE/RUBccBT32eBlRDbqN8r1/MIvQbKxW3aFqaYPCNgm8D5V20X4ShHcwvYWNlKg3liDh1MlBoA==}
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -1874,9 +1871,6 @@ packages:
   fetch-blob@3.2.0:
     resolution: {integrity: sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==}
     engines: {node: ^12.20 || >= 14.13}
-
-  fflate@0.4.8:
-    resolution: {integrity: sha512-FJqqoDBR00Mdj9ppamLa/Y7vxm+PRmNWA67N846RvsoYVMKB4q3y/de5PA7gUmRMYK/8CMz2GDZQmCRN1wBcWA==}
 
   figures@6.1.0:
     resolution: {integrity: sha512-d+l3qxjSesT4V7v2fh+QnmFnUWv9lSpjarhShNTgBOfA0ttejbQUAlHLitbjkoRiDulW0OPoQPYIGhIC8ohejg==}
@@ -2777,26 +2771,14 @@ packages:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
     engines: {node: '>= 18'}
 
-  rrdom@0.1.7:
-    resolution: {integrity: sha512-ZLd8f14z9pUy2Hk9y636cNv5Y2BMnNEY99wxzW9tD2BLDfe1xFxtLjB4q/xCBYo6HRe0wofzKzjm4JojmpBfFw==}
-
   rrdom@2.0.0-alpha.20:
     resolution: {integrity: sha512-hoqjS4662LtBp82qEz9GrqU36UpEmCvTA2Hns3qdF7cklLFFy3G+0Th8hLytJENleHHWxsB5nWJ3eXz5mSRxdQ==}
-
-  rrweb-player@1.0.0-alpha.4:
-    resolution: {integrity: sha512-Wlmn9GZ5Fdqa37vd3TzsYdLl/JWEvXNUrLCrYpnOwEgmY409HwVIvvA5aIo7k582LoKgdRCsB87N+f0oWAR0Kg==}
 
   rrweb-snapshot@2.0.0-alpha.20:
     resolution: {integrity: sha512-YTNf9YVeaGRo/jxY3FKBge2c/Ojd/KTHmuWloUSB+oyPXuY73ZeeG873qMMmhIpqEn7hn7aBF1eWEQmP7wjf8A==}
 
-  rrweb-snapshot@2.0.0-alpha.4:
-    resolution: {integrity: sha512-KQ2OtPpXO5jLYqg1OnXS/Hf+EzqnZyP5A+XPqBCjYpj3XIje/Od4gdUwjbFo3cVuWq5Cw5Y1d3/xwgIS7/XpQQ==}
-
   rrweb@2.0.0-alpha.20:
     resolution: {integrity: sha512-CZKDlm+j1VA50Ko3gnMbpvguCAleljsTNXPnVk9aeNP8o6T6kolRbISHyDZpqZ4G+bdDLlQOignPP3jEsXs8Gg==}
-
-  rrweb@2.0.0-alpha.4:
-    resolution: {integrity: sha512-wEHUILbxDPcNwkM3m4qgPgXAiBJyqCbbOHyVoNEVBJzHszWEFYyTbrZqUdeb1EfmTRC2PsumCIkVcomJ/xcOzA==}
 
   run-applescript@7.1.0:
     resolution: {integrity: sha512-DPe5pVFaAsinSaV6QjQ6gdiedWDcRCbUuiQfQa2wmWV7+xC9bGulGI8+TdRmoFkAPaBXk8CrAbnlY2ISniJ47Q==}
@@ -3999,6 +3981,11 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.0-rc.9': {}
 
+  '@rrweb/replay@2.0.0-alpha.20':
+    dependencies:
+      '@rrweb/types': 2.0.0-alpha.20
+      rrweb: 2.0.0-alpha.20
+
   '@rrweb/types@2.0.0-alpha.20': {}
 
   '@rrweb/utils@2.0.0-alpha.20': {}
@@ -4088,7 +4075,7 @@ snapshots:
       '@tanstack/query-core': 5.90.20
       react: 19.2.4
 
-  '@trackion/js@0.2.0(react@19.2.4)':
+  '@trackion/js@file:../../trackion-js(react@19.2.4)':
     dependencies:
       rrweb: 2.0.0-alpha.20
     optionalDependencies:
@@ -4099,8 +4086,6 @@ snapshots:
       fast-glob: 3.3.3
       minimatch: 10.2.4
       path-browserify: 1.0.1
-
-  '@tsconfig/svelte@1.0.13': {}
 
   '@tybys/wasm-util@0.10.1':
     dependencies:
@@ -4885,8 +4870,6 @@ snapshots:
     dependencies:
       node-domexception: 1.0.0
       web-streams-polyfill: 3.3.3
-
-  fflate@0.4.8: {}
 
   figures@6.1.0:
     dependencies:
@@ -5675,24 +5658,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  rrdom@0.1.7:
-    dependencies:
-      rrweb-snapshot: 2.0.0-alpha.4
-
   rrdom@2.0.0-alpha.20:
     dependencies:
       rrweb-snapshot: 2.0.0-alpha.20
 
-  rrweb-player@1.0.0-alpha.4:
-    dependencies:
-      '@tsconfig/svelte': 1.0.13
-      rrweb: 2.0.0-alpha.4
-
   rrweb-snapshot@2.0.0-alpha.20:
     dependencies:
       postcss: 8.5.8
-
-  rrweb-snapshot@2.0.0-alpha.4: {}
 
   rrweb@2.0.0-alpha.20:
     dependencies:
@@ -5704,17 +5676,6 @@ snapshots:
       mitt: 3.0.1
       rrdom: 2.0.0-alpha.20
       rrweb-snapshot: 2.0.0-alpha.20
-
-  rrweb@2.0.0-alpha.4:
-    dependencies:
-      '@rrweb/types': 2.0.0-alpha.20
-      '@types/css-font-loading-module': 0.0.7
-      '@xstate/fsm': 1.6.5
-      base64-arraybuffer: 1.0.2
-      fflate: 0.4.8
-      mitt: 3.0.1
-      rrdom: 0.1.7
-      rrweb-snapshot: 2.0.0-alpha.4
 
   run-applescript@7.1.0: {}
 
