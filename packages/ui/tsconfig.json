@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "paths": {
+      "@trackion/ui/*": ["./src/*"]
+    }
+  }
+}
