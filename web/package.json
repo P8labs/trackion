@@ -18,7 +18,7 @@
     "@rrweb/replay": "2.0.0-alpha.20",
     "@tailwindcss/vite": "^4.2.1",
     "@tanstack/react-query": "^5.90.21",
-    "@trackion/js": "file:../../trackion-js",
+    "@trackion/js": "^0.2.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
