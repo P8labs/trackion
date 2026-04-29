@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Badge } from "../../components/ui/badge";
-import CodeBox from "../../components/CodeBox";
+import CodeBox from "../../components/core/code-box";
 import { useProject, useUpdateProject } from "../../hooks/useApi";
 import { parseDomainsInput } from "../../lib/domain";
 import { useStore } from "../../store";

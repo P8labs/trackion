@@ -1,46 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
-import { useStore } from "../../store";
-import {
-  getCurrentUser,
-  getServerHealth,
-  getUsageSummary,
-} from "../../lib/api";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "../../components/ui/avatar";
+import { useStore } from "@/store";
+import { Avatar, AvatarFallback, AvatarImage } from "@trackion/ui/avatar";
 import moment from "moment";
-import { WEB_VERSION } from "../../lib/constants";
-import { PLine } from "@/components/Line";
-import PlusDecor from "@/components/PlusDecor";
+import { WEB_VERSION } from "@/lib/constants";
+import { PlusDecor, PLine } from "@trackion/ui/decoration";
+import { userHooks } from "@/hooks/queries/use-user";
 
 export function SettingsPage() {
-  const { serverUrl, authToken, user: storedUser } = useStore();
+  const { user: storedUser } = useStore();
 
-  const { data: usage } = useQuery({
-    queryKey: ["settings-usage", serverUrl],
-    queryFn: () => getUsageSummary(serverUrl, authToken!),
-    enabled: !!authToken,
-  });
-
-  const { data: profile } = useQuery({
-    queryKey: ["current-user", serverUrl],
-    queryFn: () => getCurrentUser(serverUrl, authToken!),
-    enabled: !!authToken && usage?.mode === "saas",
-    retry: false,
-  });
-
+  const { data: profile } = userHooks.useUser();
   const {
     data: health,
     isLoading: healthLoading,
     isError: healthError,
-  } = useQuery({
-    queryKey: ["server-health", serverUrl],
-    queryFn: () => getServerHealth(serverUrl),
-    retry: 1,
-    refetchInterval: 30000,
-  });
+  } = userHooks.useServerHealth();
 
   const currentUser = profile ?? storedUser;
   const userInitials = (currentUser?.name || currentUser?.email || "TR")
@@ -134,13 +107,11 @@ export function SettingsPage() {
 
           <div className="space-y-2 text-sm text-muted-foreground max-w-xl">
             <p>
-              All tracking data is stored on your server. No external
-              collection.
-            </p>
-            <p>Event retention: {usage?.retention_days ?? 30} days.</p>
-            <p>
-              Deleted projects removed after {usage?.delete_after_days ?? 7}{" "}
-              days.
+              All tracking data is stored on your server if using the
+              self-hosted version.
+              <br />
+              On delete of projects or events, data is will delete permanently
+              and cannot be recovered.
             </p>
           </div>
         </div>

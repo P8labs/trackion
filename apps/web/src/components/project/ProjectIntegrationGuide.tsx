@@ -1,6 +1,6 @@
 import { Code, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import CodeBox from "../CodeBox";
+import CodeBox from "../core/code-box";
 
 interface ProjectIntegrationGuideProps {
   project: {

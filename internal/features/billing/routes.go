@@ -14,7 +14,7 @@ func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	handler := NewHandler(service)
 
 	r.Get("/usage", handler.GetUsage)
-	r.Get("/plan", handler.GetPlan)
+	// r.Get("/plan", handler.GetPlan) // for now no need
 
 	return r
 }

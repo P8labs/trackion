@@ -17,3 +17,4 @@ export * from "./skeleton";
 export * from "./tabs";
 export * from "./textarea";
 export * from "./theme-toggle";
+export * from "./code-box";

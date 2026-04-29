@@ -11,7 +11,7 @@ import {
 import { Button } from "@trackion/ui/button";
 import { FullLine, PLine, Strip, PlusDecor } from "@trackion/ui/decoration";
 
-import CodeBox from "@/components/CodeBox";
+import { CodeBox } from "@trackion/ui/code-box";
 import { SCRIPT_TAG_CODE } from "@/lib/constants";
 import { Icons } from "@/lib/icons";
 

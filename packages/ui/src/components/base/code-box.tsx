@@ -2,8 +2,8 @@ import { useState, useMemo } from "react";
 import hljs from "highlight.js/lib/core";
 import javascript from "highlight.js/lib/languages/javascript";
 import xml from "highlight.js/lib/languages/xml";
-import { Button } from "./ui/button";
 import { Check, Copy } from "lucide-react";
+import { Button } from "@trackion/ui/button";
 
 hljs.registerLanguage("javascript", javascript);
 hljs.registerLanguage("html", xml);
@@ -14,7 +14,7 @@ type CodeBoxProps = {
   showbtn?: boolean;
 };
 
-export default function CodeBox({
+export function CodeBox({
   code,
   language = "javascript",
   showbtn = true,

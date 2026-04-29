@@ -15,7 +15,7 @@ import { useStore } from "@/store";
 import { getProjects } from "@/lib/api";
 import { useReplaySessions } from "@/hooks/useApi";
 import type { Project } from "@/types";
-import Topbar from "@/components/layouts/topbar";
+import { Topbar } from "@/components/layouts/topbar";
 import { cn } from "@/lib/utils";
 
 export function ProjectDashboardLayout() {

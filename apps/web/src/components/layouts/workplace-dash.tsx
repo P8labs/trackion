@@ -10,7 +10,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { cn } from "@/lib/utils";
 
-import Topbar from "@/components/layouts/topbar";
+import { Topbar } from "@/components/layouts/topbar";
 import { Badge } from "@trackion/ui/badge";
 import { userHooks } from "@/hooks/queries/use-user";
 
@@ -23,9 +23,7 @@ const links = [
 
 export function ProjectsWorkspaceLayout() {
   const location = useLocation();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   const { data: usageData, isLoading: usageLoading } = userHooks.useUsage();
   const {
     data: serverHealth,

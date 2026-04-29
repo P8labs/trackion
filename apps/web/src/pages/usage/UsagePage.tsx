@@ -5,12 +5,13 @@ import {
   Folder01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useUsage } from "../../hooks/useApi";
 import { PLine } from "@/components/Line";
 import moment from "moment";
+import { userHooks } from "@/hooks/queries/use-user";
+import { ErrorBanner } from "@/components/core/error-banner";
 
 export function UsagePage() {
-  const { data: usage, isLoading, isError } = useUsage();
+  const { data: usage, isLoading, error } = userHooks.useUsage();
 
   const eventPercent = useMemo(() => {
     if (!usage || usage.events_limit <= 0) {
@@ -18,22 +19,6 @@ export function UsagePage() {
     }
 
     return Math.min((usage.events_used / usage.events_limit) * 100, 100);
-  }, [usage]);
-
-  const projectPercent = useMemo(() => {
-    if (!usage || usage.projects_limit <= 0) {
-      return 0;
-    }
-
-    return Math.min((usage.projects_used / usage.projects_limit) * 100, 100);
-  }, [usage]);
-
-  const configPercent = useMemo(() => {
-    if (!usage || usage.config_unlimited || usage.config_keys_limit <= 0) {
-      return 0;
-    }
-
-    return Math.min((usage.configs_used / usage.config_keys_limit) * 100, 100);
   }, [usage]);
 
   const periodEndLabel = usage
@@ -62,14 +47,8 @@ export function UsagePage() {
     );
   }
 
-  if (isError || !usage) {
-    return (
-      <div className="mx-auto w-full max-w-5xl border border-border/60 px-5 py-5">
-        <p className="text-sm text-destructive">
-          Unable to load usage details.
-        </p>
-      </div>
-    );
+  if (error || !usage) {
+    return <ErrorBanner label="Unable to load usage details." error={error} />;
   }
 
   return (
@@ -157,11 +136,11 @@ export function UsagePage() {
         <div className="h-2 rounded bg-muted/40">
           <div
             className="h-2 rounded bg-primary/60"
-            style={{ width: `${projectPercent}%` }}
+            style={{ width: `${usage.projects_used_percent}%` }}
           />
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
-          <span>Used {projectPercent.toFixed(1)}%</span>
+          <span>Used {usage.projects_used_percent.toFixed(1)}%</span>
           <span>{usage.projects_remaining} slots remaining</span>
         </div>
       </section>
@@ -182,7 +161,7 @@ export function UsagePage() {
           <div className="h-2 rounded bg-muted/40">
             <div
               className="h-2 rounded bg-primary/60"
-              style={{ width: `${configPercent}%` }}
+              style={{ width: `${usage.config_keys_used_percent}%` }}
             />
           </div>
         )}
@@ -190,7 +169,7 @@ export function UsagePage() {
           <span>
             {usage.config_unlimited
               ? "Unlimited plan"
-              : `Used ${configPercent.toFixed(1)}%`}
+              : `Used ${usage.config_keys_used_percent.toFixed(1)}%`}
           </span>
           <span>
             {usage.config_unlimited

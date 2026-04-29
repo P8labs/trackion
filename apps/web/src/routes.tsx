@@ -51,17 +51,17 @@ const RemoteConfigPage = lazy(() =>
   })),
 );
 const CreateProjectPage = lazy(() =>
-  import("./pages/dashboard/CreateProjectPage").then((m) => ({
+  import("./pages/projects/CreateProjectPage").then((m) => ({
     default: m.CreateProjectPage,
   })),
 );
 const SettingsPage = lazy(() =>
-  import("./pages/dashboard/SettingsPage").then((m) => ({
+  import("./pages/settings/SettingsPage").then((m) => ({
     default: m.SettingsPage,
   })),
 );
 const UsagePage = lazy(() =>
-  import("./pages/dashboard/UsagePage").then((m) => ({
+  import("./pages/usage/UsagePage").then((m) => ({
     default: m.UsagePage,
   })),
 );

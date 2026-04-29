@@ -265,7 +265,6 @@ export interface ErrorStats {
   time_range: string;
 }
 
-// Billing and Usage Types
 export interface UsagePlan {
   plan: "free" | "pro";
   status: string;
@@ -284,6 +283,10 @@ export interface UsagePlan {
   feature_flags_used: number;
   error_retention_days: number;
   supports_rollout: boolean;
+
+  events_used_percent: number;
+  projects_used_percent: number;
+  config_keys_used_percent: number;
 }
 
 export interface PlanLimits {

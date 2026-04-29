@@ -1,6 +1,7 @@
 import {
   PlanInfo,
   Project,
+  ProjectSettings,
   SelfhostTokenResponse,
   ServerHealth,
   UsagePlan,
@@ -23,25 +24,25 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
     getCurrentUser: () => api.apiCall<User>("GET", "/auth/me"),
 
     getUsage: () => api.apiCall<UsagePlan>("GET", "/api/billing/usage"),
-    getPlanInfo: () => api.apiCall<PlanInfo>("GET", "/api/billing/plan"),
 
     getProjects: () => api.apiCall<Project[]>("GET", "/api/projects"),
     getProject: (id: string) =>
       api.apiCall<Project>("GET", `/api/projects/${id}`),
+
+    createProject: (data: {
+      name: string;
+      domains: string[];
+      settings: ProjectSettings;
+    }) =>
+      api.apiCall<Project>("POST", "/api/projects", {
+        body: JSON.stringify(data),
+      }),
+
     //
 
     //
     //
     //
-
-    // createProject: (data: {
-    //   name: string;
-    //   domains: string[];
-    //   settings: ProjectSettings;
-    // }) =>
-    //   api.apiCall<Project>("POST", "/api/projects", {
-    //     body: JSON.stringify(data),
-    //   }),
 
     // updateProject: (id: string, data: Partial<UpdateProject>) =>
     //   api.apiCall<Project>("PUT", `/api/projects/${id}`, {

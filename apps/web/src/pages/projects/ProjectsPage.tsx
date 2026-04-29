@@ -6,15 +6,13 @@ import { PLine, PlusDecor } from "@trackion/ui/decoration";
 import { Input } from "@trackion/ui/input";
 import { Skeleton } from "@trackion/ui/skeleton";
 
-import { useProjects } from "@/hooks/useApi";
-import { useStore } from "@/store";
 import { ErrorBanner } from "@/components/core/error-banner";
+import { projectHooks } from "@/hooks/queries/use-project";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
 
-  const { setCurrentProject } = useStore();
-  const { data: projects = [], isLoading, error } = useProjects();
+  const { data: projects = [], isLoading, error } = projectHooks.useProjects();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -125,7 +123,6 @@ export function ProjectsPage() {
               <div
                 key={project.id}
                 onClick={() => {
-                  setCurrentProject(project);
                   navigate(`/projects/${project.id}/overview`);
                 }}
                 className="px-4 md:px-6 py-4 border-b border-border/60 cursor-pointer transition hover:bg-muted/20 relative"

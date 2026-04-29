@@ -33,7 +33,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@trackion/ui/lib";
 
-export default function Topbar({
+export function Topbar({
   sidebarOpen,
   setSidebarOpen,
 }: {

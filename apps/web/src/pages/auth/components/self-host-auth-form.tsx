@@ -1,11 +1,6 @@
-import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
+import { Button } from "@trackion/ui/button";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@trackion/ui/field";
+import { Input } from "@trackion/ui/input";
 import { userHooks } from "@/hooks/queries/use-user";
 import { SERVER_URL } from "@/lib/constants";
 import { cn } from "@/lib/utils";

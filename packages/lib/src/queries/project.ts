@@ -1,4 +1,5 @@
 import { createApi } from "../api";
+import { ProjectSettings } from "../types";
 
 export const projectQueryKeys = {
   projects: ["projects"] as const,
@@ -14,6 +15,13 @@ export function createProjectQueries(api: ReturnType<typeof createApi>) {
     project: (id: string) => ({
       queryKey: projectQueryKeys.project(id),
       queryFn: () => api.getProject(id),
+    }),
+    createProject: () => ({
+      mutationFn: (data: {
+        name: string;
+        domains: string[];
+        settings: ProjectSettings;
+      }) => api.createProject(data),
     }),
   };
 }
