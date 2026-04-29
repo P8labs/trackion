@@ -165,11 +165,11 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
     const project = projects?.find((p) => p.id === segment);
     if (project) return project.name;
 
-    return segment.substring(0, 16);
+    return capitalizeFirstLetter(segment.substring(0, 16));
   };
 
   return (
-    <div className="flex items-center gap-1 text-sm min-w-0">
+    <div className="flex items-center gap-1 text- min-w-0">
       {segments.map((segment, index) => {
         const path = "/" + segments.slice(0, index + 1).join("/");
         const isLast = index === segments.length - 1;
@@ -197,4 +197,8 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
       })}
     </div>
   );
+}
+
+function capitalizeFirstLetter(str: string) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
