@@ -1,6 +1,6 @@
 import { Code, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
-import CodeBox from "../core/code-box";
+import { CodeBox } from "@trackion/ui/code-box";
 
 interface ProjectIntegrationGuideProps {
   project: {

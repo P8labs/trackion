@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Badge } from "../../components/ui/badge";
-import CodeBox from "../../components/core/code-box";
 import { useProject, useUpdateProject } from "../../hooks/useApi";
 import { parseDomainsInput } from "../../lib/domain";
 import { useStore } from "../../store";
@@ -18,6 +17,7 @@ import {
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Checkbox } from "../../components/ui/checkbox";
+import { CodeBox } from "@trackion/ui/code-box";
 
 const defaultSettings = {
   auto_pageview: true,

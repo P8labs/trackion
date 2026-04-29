@@ -1,5 +1,5 @@
 {
-  "name": "trackion",
+  "name": "@trackion/desktop",
   "private": true,
   "version": "2.3.2",
   "type": "module",

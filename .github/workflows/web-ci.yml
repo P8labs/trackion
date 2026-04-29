@@ -10,6 +10,8 @@ on:
       - ready_for_review
     paths:
       - "apps/web/**"
+      - "packages/ui/**"
+      - "packages/lib/**"
 
 permissions:
   contents: read
@@ -18,9 +20,6 @@ jobs:
   web-checks:
     name: Web Checks
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: apps/web
 
     steps:
       - name: Checkout
@@ -41,8 +40,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm -r --filter "./packages/*" build
+
       - name: Type-check web
-        run: pnpm exec tsc --noEmit
+        run: pnpm --filter web exec tsc --noEmit
 
       - name: Build web
-        run: pnpm run build
+        run: pnpm --filter web build

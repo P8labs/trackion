@@ -11,17 +11,13 @@ on:
       - ready_for_review
     paths:
       - "apps/desktop/**"
-
-permissions:
-  contents: read
+      - "packages/ui/**"
+      - "packages/lib/**"
 
 jobs:
   desktop-build:
     name: Desktop Build Check
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: apps/desktop
 
     steps:
       - name: Checkout
@@ -47,16 +43,22 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: apps/desktop/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Type-check desktop
-        run: pnpm exec tsc --noEmit
+        run: pnpm --filter desktop exec tsc --noEmit
+
+      - name: Build packages
+        run: pnpm -r --filter "@trackion/*" build
+
+      - name: Type-check desktop
+        run: pnpm --filter desktop exec tsc --noEmit
 
       - name: Build desktop frontend
-        run: pnpm run build
+        run: pnpm --filter desktop build
 
       - name: Build Tauri app
-        run: pnpm run tauri build --no-sign
+        run: pnpm --filter desktop tauri build --no-sign

@@ -298,8 +298,6 @@ importers:
         specifier: ^8.5.1
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.12)(typescript@5.9.3)
 
-  packages/types: {}
-
   packages/ui:
     dependencies:
       '@base-ui/react':
