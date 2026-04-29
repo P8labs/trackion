@@ -166,7 +166,7 @@ export function DashboardChart({ projectId }: ChartDataProps) {
                 axisLine={false}
                 tickMargin={8}
                 tickFormatter={(value) => {
-                  const d = parseGoDate(value);
+                  const d = new Date(value);
 
                   if (timeRange === "30m" || timeRange === "1h") {
                     return d.toLocaleTimeString([], {
