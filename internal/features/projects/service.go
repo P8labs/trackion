@@ -237,7 +237,13 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 
 	if _, err := gorm.G[db.Project](s.db).
 		Where(repo.Project.ID.Eq(pid)).
-		Updates(ctx, project); err != nil {
+		Set(
+			repo.Project.Name.Set(project.Name),
+			repo.Project.Domains.Set(project.Domains),
+			repo.Project.Properties.Set(props),
+		).
+		Update(ctx); err != nil {
+
 		return errors.New("unable to update project")
 	}
 	return nil

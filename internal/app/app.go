@@ -15,7 +15,6 @@ import (
 	"trackion/internal/features/projects"
 	"trackion/internal/features/replay"
 	"trackion/internal/features/runtime"
-	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
 	"trackion/internal/res"
 
@@ -47,28 +46,38 @@ func (app *Application) mount() http.Handler {
 
 	authService := auth.NewService(app.db, *app.config)
 	authHandler := auth.NewHandler(authService, *app.config)
+	authMw := auth.NewMiddleware(app.db, *app.config)
 
 	r.Mount("/events", events.Routes(app.db, *app.config))
 	r.Mount("/replay", replay.Routes(app.db, *app.config))
 	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
-	r.Post("/api/auth/verify", authHandler.VerifyToken)
 
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
-		r.Mount("/auth", auth.Routes(app.db, *app.config))
+		r.Get("/auth/login/github", authHandler.GithubLogin)
+		r.Get("/auth/login/google", authHandler.GoogleLogin)
+
+		r.Get("/auth/callback/github", authHandler.GithubCallback)
+		r.Get("/auth/callback/google", authHandler.GoogleCallback)
+
 	}
 
-	mw := auth.NewMiddleware(app.db, *app.config)
+	r.Route("/api/v1", func(r chi.Router) {
+		// before auth means public routes that don't require authentication
+		r.Post("/auth/verify", authHandler.VerifyToken)
 
-	r.Route("/api", func(r chi.Router) {
-		r.Use(mw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(app.db, *app.config))
-		r.Mount("/runtime", runtime.Routes(app.db, *app.config))
-		r.Mount("/analytics", dashboard.Routes(app.db))
-		r.Mount("/replay", replay.PrivateRoutes(app.db))
-		r.Mount("/errors", errortracking.Routes(app.db))
-		r.Mount("/settings", settings.Routes(app.db, *app.config))
-		r.Mount("/billing", billing.Routes(app.db, *app.config))
+		r.Group(func(r chi.Router) {
+			r.Use(authMw.AuthMiddleware)
+			// all routes here require authentication
+			r.Post("/auth/logout", authHandler.Logout)
+			r.Get("/auth/me", authHandler.Me)
+
+			r.Mount("/billing", billing.Routes(app.db, *app.config))
+			r.Mount("/projects", projects.Routes(app.db, *app.config))
+			r.Mount("/errors", errortracking.Routes(app.db))
+			r.Mount("/analytics", dashboard.Routes(app.db))
+
+		})
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

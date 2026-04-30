@@ -218,6 +218,6 @@ func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
 
 	res.Success(w, verifyTokenResponse{
 		Token: token,
-		User:  &user,
+		User:  user,
 	}, "Token verified")
 }

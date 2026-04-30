@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"trackion/internal/res"
 
 	"github.com/go-chi/chi/v5"
@@ -20,7 +21,7 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) ListErrors(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("project_id")
+	projectID := strings.TrimSpace(chi.URLParam(r, "id"))
 	if projectID == "" {
 		res.Error(w, "project_id is required", http.StatusBadRequest)
 		return
@@ -58,7 +59,7 @@ func (h *handler) GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	projectID := r.URL.Query().Get("project_id")
+	projectID := strings.TrimSpace(chi.URLParam(r, "id"))
 	if projectID == "" {
 		res.Error(w, "project_id is required", http.StatusBadRequest)
 		return
@@ -85,7 +86,7 @@ func (h *handler) GetErrorDetail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) GetErrorStats(w http.ResponseWriter, r *http.Request) {
-	projectID := r.URL.Query().Get("project_id")
+	projectID := strings.TrimSpace(chi.URLParam(r, "id"))
 	if projectID == "" {
 		res.Error(w, "project_id is required", http.StatusBadRequest)
 		return
@@ -103,7 +104,7 @@ func (h *handler) GetErrorStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"total_errors": count,
 		"time_range":   timeRange,
 	}

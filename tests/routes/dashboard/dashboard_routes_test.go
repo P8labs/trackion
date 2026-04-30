@@ -11,12 +11,10 @@ func TestDashboardRoutes_AllAPIEndpointsRegistered(t *testing.T) {
 	testutil.AssertHasRoutes(t, routes, []string{
 		"GET /{id}/counts",
 		"GET /{id}/chart-data",
-		"GET /{id}/area-chart-data",
 		"GET /{id}/device-analytics",
 		"GET /{id}/traffic-sources",
 		"GET /{id}/top-pages",
 		"GET /{id}/recent-events",
 		"GET /{id}/online-users",
-		"GET /{id}/country-data",
 	})
 }

@@ -10,18 +10,14 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - "desktop/**"
-
-permissions:
-  contents: read
+      - "apps/desktop/**"
+      - "packages/ui/**"
+      - "packages/lib/**"
 
 jobs:
   desktop-build:
     name: Desktop Build Check
     runs-on: windows-latest
-    defaults:
-      run:
-        working-directory: desktop
 
     steps:
       - name: Checkout
@@ -35,7 +31,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop/src-tauri -> target"
+          workspaces: "./apps/desktop/src-tauri -> target"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -47,16 +43,19 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: desktop/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm -r --filter @trackion/ui --filter @trackion/lib build
+
       - name: Type-check desktop
-        run: pnpm exec tsc --noEmit
+        run: pnpm --filter desktop exec tsc --noEmit
 
       - name: Build desktop frontend
-        run: pnpm run build
+        run: pnpm --filter desktop build
 
       - name: Build Tauri app
-        run: pnpm run tauri build --no-sign
+        run: pnpm --filter desktop tauri build --no-sign

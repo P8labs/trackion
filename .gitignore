@@ -3,11 +3,12 @@ builds/*
 .env.*
 .local.*
 
-docs/node_modules/*
+node_modules/*
+node_modules
 node_modules
 target
-docs/.vitepress/dist
-docs/.vitepress/cache
+apps/docs/.vitepress/dist
+apps/docs/.vitepress/cache
 trackion.wiki/*
 *.dump
 scripts/db/*

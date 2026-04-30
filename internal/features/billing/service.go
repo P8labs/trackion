@@ -18,26 +18,6 @@ var (
 	ErrRolloutNotAllowed = errors.New("rollout percentage not available on free plan")
 )
 
-type Usage struct {
-	Plan                string    `json:"plan"`
-	Status              string    `json:"status"`
-	CurrentPeriodEnd    time.Time `json:"current_period_end"`
-	LastUsageReset      time.Time `json:"last_usage_reset"`
-	EventsUsed          int       `json:"events_used"`
-	EventsLimit         int       `json:"events_limit"`
-	EventsRemaining     int       `json:"events_remaining"`
-	ProjectsUsed        int       `json:"projects_used"`
-	ProjectsLimit       int       `json:"projects_limit"`
-	ProjectsRemaining   int       `json:"projects_remaining"`
-	ConfigsUsed         int       `json:"configs_used"`
-	ConfigKeysLimit     int       `json:"config_keys_limit"`
-	ConfigKeysRemaining int       `json:"config_keys_remaining"`
-	ConfigUnlimited     bool      `json:"config_unlimited"`
-	FeatureFlagsUsed    int       `json:"feature_flags_used"`
-	ErrorRetentionDays  int       `json:"error_retention_days"`
-	SupportsRollout     bool      `json:"supports_rollout"`
-}
-
 type Service interface {
 	GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error)
 	CheckProjectLimit(ctx context.Context, userID uuid.UUID) error
@@ -283,36 +263,50 @@ func (s *service) GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error
 	}
 
 	eventsRemaining := max(subscription.MonthlyEventLimit-subscription.EventsUsedThisMonth, 0)
-
 	projectsRemaining := max(subscription.MaxProjects-subscription.ProjectsUsed, 0)
 
 	configUnlimited := subscription.MaxConfigKeys < 0
 	configKeysRemaining := -1
 	if !configUnlimited {
-		configKeysRemaining = subscription.MaxConfigKeys - int(configCount)
-		if configKeysRemaining < 0 {
-			configKeysRemaining = 0
-		}
+		configKeysRemaining = max(subscription.MaxConfigKeys-int(configCount), 0)
+	}
+
+	eventsUsedPercent := 0.0
+	if subscription.MonthlyEventLimit > 0 {
+		eventsUsedPercent = float64(subscription.EventsUsedThisMonth) / float64(subscription.MonthlyEventLimit) * 100
+	}
+
+	projectsUsedPercent := 0.0
+	if subscription.MaxProjects > 0 {
+		projectsUsedPercent = float64(subscription.ProjectsUsed) / float64(subscription.MaxProjects) * 100
+	}
+
+	configKeysUsedPercent := 0.0
+	if !configUnlimited && subscription.MaxConfigKeys > 0 {
+		configKeysUsedPercent = float64(configCount) / float64(subscription.MaxConfigKeys) * 100
 	}
 
 	return &Usage{
-		Plan:                subscription.Plan,
-		Status:              subscription.Status,
-		CurrentPeriodEnd:    subscription.CurrentPeriodEnd,
-		LastUsageReset:      subscription.LastUsageReset,
-		EventsUsed:          subscription.EventsUsedThisMonth,
-		EventsLimit:         subscription.MonthlyEventLimit,
-		EventsRemaining:     eventsRemaining,
-		ProjectsUsed:        subscription.ProjectsUsed,
-		ProjectsLimit:       subscription.MaxProjects,
-		ProjectsRemaining:   projectsRemaining,
-		ConfigsUsed:         int(configCount),
-		ConfigKeysLimit:     subscription.MaxConfigKeys,
-		ConfigKeysRemaining: configKeysRemaining,
-		ConfigUnlimited:     configUnlimited,
-		FeatureFlagsUsed:    int(flagCount),
-		ErrorRetentionDays:  subscription.ErrorRetentionDays,
-		SupportsRollout:     subscription.SupportsRollout,
+		Plan:                  subscription.Plan,
+		Status:                subscription.Status,
+		CurrentPeriodEnd:      subscription.CurrentPeriodEnd,
+		LastUsageReset:        subscription.LastUsageReset,
+		EventsUsed:            subscription.EventsUsedThisMonth,
+		EventsLimit:           subscription.MonthlyEventLimit,
+		EventsRemaining:       eventsRemaining,
+		ProjectsUsed:          subscription.ProjectsUsed,
+		ProjectsLimit:         subscription.MaxProjects,
+		ProjectsRemaining:     projectsRemaining,
+		ConfigsUsed:           int(configCount),
+		ConfigKeysLimit:       subscription.MaxConfigKeys,
+		ConfigKeysRemaining:   configKeysRemaining,
+		ConfigUnlimited:       configUnlimited,
+		FeatureFlagsUsed:      int(flagCount),
+		ErrorRetentionDays:    subscription.ErrorRetentionDays,
+		SupportsRollout:       subscription.SupportsRollout,
+		EventsUsedPercent:     eventsUsedPercent,
+		ProjectsUsedPercent:   projectsUsedPercent,
+		ConfigKeysUsedPercent: configKeysUsedPercent,
 	}, nil
 }
 

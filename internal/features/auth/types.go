@@ -7,6 +7,6 @@ type verifyTokenRequest struct {
 }
 
 type verifyTokenResponse struct {
-	Token string   `json:"token"`
-	User  *db.User `json:"user,omitempty"`
+	Token string  `json:"token"`
+	User  db.User `json:"user"`
 }

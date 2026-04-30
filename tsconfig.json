@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "@trackion/ui": ["./packages/ui/src"],
+      "@trackion/lib": ["./packages/lib/src"],
+      "@trackion/types": ["./packages/types/src"]
+    }
+  }
+}

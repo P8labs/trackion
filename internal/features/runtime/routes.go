@@ -20,17 +20,3 @@ func PublicRoutes(db *gorm.DB, cfg config.Config) *chi.Mux {
 
 	return r
 }
-
-func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
-	r := chi.NewRouter()
-	service := NewService(db, cfg)
-	handler := NewHandler(service)
-
-	r.Get("/projects/{id}/runtime", handler.GetProjectRuntime)
-	r.Put("/projects/{id}/runtime/flags/{key}", handler.UpsertFlag)
-	r.Delete("/projects/{id}/runtime/flags/{key}", handler.DeleteFlag)
-	r.Put("/projects/{id}/runtime/config/{key}", handler.UpsertConfig)
-	r.Delete("/projects/{id}/runtime/config/{key}", handler.DeleteConfig)
-
-	return r
-}

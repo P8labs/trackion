@@ -1,0 +1,134 @@
+{
+  "name": "@trackion/ui",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "prebuild": "node scripts/generate-exports.mjs",
+    "build:components": "tsup src/components/*/*.tsx --format esm --dts --splitting false",
+    "build:core": "tsup src/lib/index.ts src/providers/index.ts --format esm --dts --splitting false",
+    "build": "pnpm run build:components && pnpm run build:core"
+  },
+  "peerDependencies": {
+    "lucide-react": "^1.12.0",
+    "@base-ui/react": "^1.4.1",
+    "react": "^18 || ^19",
+    "tailwindcss": "^4.2.4",
+    "react-dom": "^18 || ^19"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "highlight.js": "^11.11.1",
+    "recharts": "2.15.4",
+    "shadcn": "^4.6.0",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tsup": "^8.5.1"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./providers": {
+      "import": "./dist/providers/index.js",
+      "types": "./dist/providers/index.d.ts"
+    },
+    "./lib": {
+      "import": "./dist/lib/index.js",
+      "types": "./dist/lib/index.d.ts"
+    },
+    "./alert-dialog": {
+      "import": "./dist/base/alert-dialog.js",
+      "types": "./dist/base/alert-dialog.d.ts"
+    },
+    "./avatar": {
+      "import": "./dist/base/avatar.js",
+      "types": "./dist/base/avatar.d.ts"
+    },
+    "./badge": {
+      "import": "./dist/base/badge.js",
+      "types": "./dist/base/badge.d.ts"
+    },
+    "./button": {
+      "import": "./dist/base/button.js",
+      "types": "./dist/base/button.d.ts"
+    },
+    "./card": {
+      "import": "./dist/base/card.js",
+      "types": "./dist/base/card.d.ts"
+    },
+    "./chart": {
+      "import": "./dist/base/chart.js",
+      "types": "./dist/base/chart.d.ts"
+    },
+    "./checkbox": {
+      "import": "./dist/base/checkbox.js",
+      "types": "./dist/base/checkbox.d.ts"
+    },
+    "./code-box": {
+      "import": "./dist/base/code-box.js",
+      "types": "./dist/base/code-box.d.ts"
+    },
+    "./dialog": {
+      "import": "./dist/base/dialog.js",
+      "types": "./dist/base/dialog.d.ts"
+    },
+    "./dropdown-menu": {
+      "import": "./dist/base/dropdown-menu.js",
+      "types": "./dist/base/dropdown-menu.d.ts"
+    },
+    "./field": {
+      "import": "./dist/base/field.js",
+      "types": "./dist/base/field.d.ts"
+    },
+    "./input": {
+      "import": "./dist/base/input.js",
+      "types": "./dist/base/input.d.ts"
+    },
+    "./label": {
+      "import": "./dist/base/label.js",
+      "types": "./dist/base/label.d.ts"
+    },
+    "./progress": {
+      "import": "./dist/base/progress.js",
+      "types": "./dist/base/progress.d.ts"
+    },
+    "./select": {
+      "import": "./dist/base/select.js",
+      "types": "./dist/base/select.d.ts"
+    },
+    "./separator": {
+      "import": "./dist/base/separator.js",
+      "types": "./dist/base/separator.d.ts"
+    },
+    "./skeleton": {
+      "import": "./dist/base/skeleton.js",
+      "types": "./dist/base/skeleton.d.ts"
+    },
+    "./tabs": {
+      "import": "./dist/base/tabs.js",
+      "types": "./dist/base/tabs.d.ts"
+    },
+    "./textarea": {
+      "import": "./dist/base/textarea.js",
+      "types": "./dist/base/textarea.d.ts"
+    },
+    "./theme-toggle": {
+      "import": "./dist/base/theme-toggle.js",
+      "types": "./dist/base/theme-toggle.d.ts"
+    },
+    "./decoration": {
+      "import": "./dist/core/decoration.js",
+      "types": "./dist/core/decoration.d.ts"
+    },
+    "./loader": {
+      "import": "./dist/core/loader.js",
+      "types": "./dist/core/loader.d.ts"
+    }
+  }
+}

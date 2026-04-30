@@ -9,12 +9,6 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - "cmd/**"
-      - "internal/**"
-      - "pkg/**"
-      - "go.mod"
-      - "go.sum"
 
 permissions:
   contents: read

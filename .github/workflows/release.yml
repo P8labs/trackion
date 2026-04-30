@@ -126,14 +126,14 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: desktop/pnpm-lock.yaml
+          cache-dependency-path: apps/desktop/pnpm-lock.yaml
 
       - name: Clean Tauri build
         shell: bash
         run: |
-          rm -rf desktop/src-tauri/target
+          rm -rf apps/desktop/src-tauri/target
       - name: Install dependencies
-        run: cd desktop && pnpm install --frozen-lockfile
+        run: cd apps/desktop && pnpm install --frozen-lockfile
 
       - name: Determine version
         shell: bash
@@ -154,7 +154,7 @@ jobs:
       - name: Build desktop frontend
         shell: bash
         run: |
-          cd desktop
+          cd apps/desktop
           pnpm run build
 
       - name: Build Tauri app
@@ -164,7 +164,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_SERVER_URL: "https://api.trackion.tech"
         run: |
-          Set-Location -Path desktop
+          Set-Location -Path apps/desktop
           pnpm run tauri build
 
       - name: Create latest.json for updater
@@ -173,8 +173,8 @@ jobs:
           REPO: ${{ github.repository }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          $outDir = "desktop/src-tauri/target/release/bundle/updater"
-          $bundleDir = "desktop/src-tauri/target/release/bundle"
+          $outDir = "apps/desktop/src-tauri/target/release/bundle/updater"
+          $bundleDir = "apps/desktop/src-tauri/target/release/bundle"
 
           New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
@@ -239,7 +239,7 @@ jobs:
       - name: Create portable zip
         shell: pwsh
         run: |
-          $nsisInstaller = Get-ChildItem "desktop/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" | Select-Object -First 1
+          $nsisInstaller = Get-ChildItem "apps/desktop/src-tauri/target/release/bundle/nsis" -Filter "*-setup.exe" | Select-Object -First 1
           if (-not $nsisInstaller) {
             throw "NSIS installer not found"
           }
@@ -253,7 +253,7 @@ jobs:
             throw "NSIS installer exited with code $($installerProcess.ExitCode)"
           }
 
-          $portableBundleDir = "desktop/src-tauri/target/release/bundle/portable"
+          $portableBundleDir = "apps/desktop/src-tauri/target/release/bundle/portable"
           New-Item -ItemType Directory -Force -Path $portableBundleDir | Out-Null
           $portableZip = Join-Path $portableBundleDir "trackion_${{ steps.version.outputs.version }}_x64.zip"
           Compress-Archive -Path (Join-Path $portableInstall '*') -DestinationPath $portableZip -Force
@@ -263,11 +263,11 @@ jobs:
         with:
           name: desktop-windows
           path: |
-            desktop/src-tauri/target/release/bundle/msi/**
-            desktop/src-tauri/target/release/bundle/nsis/**
-            desktop/src-tauri/target/release/bundle/portable/**
-            desktop/src-tauri/target/release/bundle/**/*.sig
-            desktop/src-tauri/target/release/bundle/**/latest.json
+            apps/desktop/src-tauri/target/release/bundle/msi/**
+            apps/desktop/src-tauri/target/release/bundle/nsis/**
+            apps/desktop/src-tauri/target/release/bundle/portable/**
+            apps/desktop/src-tauri/target/release/bundle/**/*.sig
+            apps/desktop/src-tauri/target/release/bundle/**/latest.json
           retention-days: 1
 
   prepare-release:

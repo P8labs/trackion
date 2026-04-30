@@ -1,5 +1,5 @@
-$outDir = "desktop/src-tauri/target/release/bundle/updater"
-$bundleDir = "desktop/src-tauri/target/release/bundle"
+$outDir = "apps/desktop/src-tauri/target/release/bundle/updater"
+$bundleDir = "apps/desktop/src-tauri/target/release/bundle"
 
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 

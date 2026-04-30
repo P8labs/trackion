@@ -1,0 +1,11 @@
+{
+  "name": "trackion",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build"
+  }
+}

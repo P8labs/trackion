@@ -9,7 +9,9 @@ on:
       - reopened
       - ready_for_review
     paths:
-      - "web/**"
+      - "apps/web/**"
+      - "packages/ui/**"
+      - "packages/lib/**"
 
 permissions:
   contents: read
@@ -18,9 +20,6 @@ jobs:
   web-checks:
     name: Web Checks
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
 
     steps:
       - name: Checkout
@@ -36,13 +35,16 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: web/pnpm-lock.yaml
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Build packages
+        run: pnpm -r --filter @trackion/ui --filter @trackion/lib build
+
       - name: Type-check web
-        run: pnpm exec tsc --noEmit
+        run: pnpm --filter web exec tsc --noEmit
 
       - name: Build web
-        run: pnpm run build
+        run: pnpm --filter web build
