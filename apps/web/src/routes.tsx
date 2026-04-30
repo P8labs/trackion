@@ -31,7 +31,7 @@ const RealtimePage = lazy(() =>
   })),
 );
 const SessionReplayPage = lazy(() =>
-  import("./pages/dashboard/SessionReplayPage").then((m) => ({
+  import("./pages/projects/replay/SessionReplayPage").then((m) => ({
     default: m.SessionReplayPage,
   })),
 );
@@ -66,12 +66,12 @@ const UsagePage = lazy(() =>
   })),
 );
 const ErrorListPage = lazy(() =>
-  import("./pages/errors/ErrorListPage").then((m) => ({
+  import("./pages/projects/errors/ErrorListPage").then((m) => ({
     default: m.ErrorListPage,
   })),
 );
 const ErrorDetailPage = lazy(() =>
-  import("./pages/errors/ErrorDetailPage").then((m) => ({
+  import("./pages/projects/errors/ErrorDetailPage").then((m) => ({
     default: m.ErrorDetailPage,
   })),
 );

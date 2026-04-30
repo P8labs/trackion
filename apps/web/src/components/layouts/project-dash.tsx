@@ -32,11 +32,6 @@ export function ProjectDashboardLayout() {
         icon: Activity04Icon,
       },
       {
-        name: "Errors",
-        path: `/projects/${projectId}/errors`,
-        icon: WifiError02Icon,
-      },
-      {
         name: "Breakdown",
         path: `/projects/${projectId}/breakdown`,
         icon: ChartRoseIcon,
@@ -45,6 +40,11 @@ export function ProjectDashboardLayout() {
         name: "Realtime",
         path: `/projects/${projectId}/realtime`,
         icon: LiveStreaming02Icon,
+      },
+      {
+        name: "Errors",
+        path: `/projects/${projectId}/errors`,
+        icon: WifiError02Icon,
       },
       {
         name: "Session Replay",

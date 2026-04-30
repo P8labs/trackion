@@ -1,12 +1,20 @@
 import { Maximize, Minimize, Pause, Play, SkipForward } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import "@rrweb/replay/dist/style.css";
+import { projectHooks } from "@/hooks/queries/use-project";
 
 type Props = {
-  events: any[];
+  projectId: string;
+  sessionId: string;
 };
 
-export function ReplayPlayer({ events }: Props) {
+export function ReplayPlayer({ projectId, sessionId }: Props) {
+  const {
+    data: replayPayload,
+    isLoading: replayLoading,
+    error: replayError,
+  } = projectHooks.useReplaySession(projectId, sessionId);
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const replayerRef = useRef<any>(null);
@@ -18,6 +26,8 @@ export function ReplayPlayer({ events }: Props) {
   const [duration, setDuration] = useState(0);
   const [speed, setSpeed] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const events: any[] = replayPayload?.events || [];
 
   useEffect(() => {
     if (!events?.length || !containerRef.current) return;
@@ -78,7 +88,7 @@ export function ReplayPlayer({ events }: Props) {
         replayerRef.current = null;
       }
     };
-  }, [events]);
+  }, [replayPayload]);
 
   useEffect(() => {
     const handler = () => {
@@ -156,6 +166,14 @@ export function ReplayPlayer({ events }: Props) {
 
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
+
+  if (replayLoading) {
+    return <div>Loading replay…</div>;
+  }
+
+  if (replayError) {
+    return <div>Failed to load replay.</div>;
+  }
 
   return (
     <div

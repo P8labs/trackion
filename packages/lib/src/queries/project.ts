@@ -6,6 +6,17 @@ export const projectQueryKeys = {
   project: (id: string) => ["projects", id] as const,
   projectRuntime: (projectId: string) =>
     ["projects", projectId, "runtime"] as const,
+  replaySessions: (projectId: string, limit: number) =>
+    ["projects", projectId, "replay-sessions", limit] as const,
+  replaySession: (projectId: string, sessionId: string) =>
+    ["projects", projectId, "replay-sessions", sessionId] as const,
+
+  errorGroups: (projectId: string, timeRange: string) =>
+    ["projects", projectId, "error-groups", timeRange] as const,
+  errorDetail: (projectId: string, stackId: string) =>
+    ["projects", projectId, "error-details", stackId] as const,
+  errorStats: (projectId: string) =>
+    ["projects", projectId, "error-stats"] as const,
 };
 
 export function createProjectQueries(api: ReturnType<typeof createApi>) {
@@ -22,6 +33,36 @@ export function createProjectQueries(api: ReturnType<typeof createApi>) {
     projectRuntime: (projectId: string) => ({
       queryKey: projectQueryKeys.projectRuntime(projectId),
       queryFn: () => api.getProjectRuntime(projectId),
+    }),
+
+    replaySessions: (
+      projectId: string,
+      limit: number,
+      refetchInterval?: number,
+    ) => ({
+      queryKey: projectQueryKeys.replaySessions(projectId, limit),
+      queryFn: () => api.getReplays(projectId, limit),
+      refetchInterval,
+    }),
+
+    replaySession: (projectId: string, sessionId: string) => ({
+      queryKey: projectQueryKeys.replaySession(projectId, sessionId),
+      queryFn: () => api.getReplaySession(projectId, sessionId),
+    }),
+
+    errorGroups: (projectId: string, timeRange: string) => ({
+      queryKey: projectQueryKeys.errorGroups(projectId, timeRange),
+      queryFn: () => api.getErrors(projectId, timeRange),
+    }),
+
+    errorDetail: (projectId: string, stackId: string) => ({
+      queryKey: projectQueryKeys.errorDetail(projectId, stackId),
+      queryFn: () => api.getErrorDetail(projectId, stackId),
+    }),
+
+    errorStats: (projectId: string) => ({
+      queryKey: projectQueryKeys.errorStats(projectId),
+      queryFn: () => api.getErrorStats(projectId),
     }),
   };
 }
@@ -65,6 +106,11 @@ export function createProjectMutations(api: ReturnType<typeof createApi>) {
     deleteRuntimeConfig: (projectId: string) => ({
       mutationFn: (configKey: string) =>
         api.deleteRuntimeConfig(projectId, configKey),
+    }),
+
+    deleteReplaySession: (projectId: string) => ({
+      mutationFn: (sessionId: string) =>
+        api.deleteReplaySession(projectId, sessionId),
     }),
   };
 }

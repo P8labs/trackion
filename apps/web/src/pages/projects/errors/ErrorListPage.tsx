@@ -1,71 +1,31 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { AlertCircle, Bug } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
-import { Skeleton } from "../../components/ui/skeleton";
-import { useStore } from "../../store";
-import { getGroupedErrors, getErrorStats } from "../../lib/api";
-import type { GroupedError } from "../../types";
-import { formatDistanceToNow } from "date-fns";
+import { Button } from "@trackion/ui/button";
+import { Badge } from "@trackion/ui/badge";
+import { Skeleton } from "@trackion/ui/skeleton";
+import type { GroupedError } from "@trackion/lib/types";
+import { projectHooks } from "@/hooks/queries/use-project";
+import moment from "moment";
 
 export function ErrorListPage() {
   const navigate = useNavigate();
-  const { authToken, serverUrl, currentProject } = useStore();
+  const { id: projectId = "" } = useParams<{ id: string }>();
   const [timeRange, setTimeRange] = useState("7d");
 
-  const { data: errors, isLoading: errorsLoading } = useQuery({
-    queryKey: ["grouped-errors", currentProject?.id, timeRange],
-    queryFn: () =>
-      getGroupedErrors(currentProject!.id, timeRange, serverUrl, authToken!),
-    enabled: !!currentProject && !!authToken,
-  });
-
-  const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["error-stats", currentProject?.id, timeRange],
-    queryFn: () =>
-      getErrorStats(currentProject!.id, timeRange, serverUrl, authToken!),
-    enabled: !!currentProject && !!authToken,
-  });
+  const { data: errors, isLoading: errorsLoading } =
+    projectHooks.useErrorGroups(projectId, timeRange);
+  const { data: stats, isLoading: statsLoading } =
+    projectHooks.useErrorStats(projectId);
 
   const handleRowClick = (fingerprint: string) => {
-    navigate(`/projects/${currentProject?.id}/errors/${fingerprint}`);
+    navigate(`/projects/${projectId}/errors/${fingerprint}`);
   };
 
   const truncateMessage = (message: string, maxLength = 100) => {
     if (message.length <= maxLength) return message;
     return message.substring(0, maxLength) + "...";
   };
-
-  const formatTimeAgo = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch {
-      return dateString;
-    }
-  };
-
-  if (!currentProject) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="w-full max-w-md border border-border/60 p-6 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight mb-3">
-            No Project Selected
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Please select a project to view error tracking.
-          </p>
-          <Button
-            onClick={() => navigate("/projects")}
-            className="w-full h-10 text-sm"
-          >
-            Go to Projects
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto border-b border-border/60">
@@ -75,7 +35,7 @@ export function ErrorListPage() {
             Error Tracking
           </h1>
           <p className="mt-1 text-xs text-muted-foreground">
-            Grouped exceptions for {currentProject.name}
+            Grouped exceptions for this project in the last {timeRange}
           </p>
         </div>
 
@@ -134,7 +94,7 @@ export function ErrorListPage() {
               <button
                 key={error.fingerprint}
                 onClick={() => handleRowClick(error.fingerprint)}
-                className="w-full grid grid-cols-[minmax(0,1fr)_90px_120px_120px] items-start gap-3 px-4 py-2.5 md:px-6 text-left transition hover:bg-muted/20"
+                className="cursor-pointer w-full grid grid-cols-[minmax(0,1fr)_90px_120px_120px] items-start gap-3 px-4 py-2.5 md:px-6 text-left transition hover:bg-muted/20"
               >
                 <div className="min-w-0 pr-2">
                   <div className="flex items-start gap-2">
@@ -159,11 +119,11 @@ export function ErrorListPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground pt-0.5">
-                  {formatTimeAgo(error.last_seen)}
+                  {moment(error.last_seen).toNow(true)} ago
                 </p>
 
                 <p className="text-xs text-muted-foreground pt-0.5">
-                  {formatTimeAgo(error.first_seen)}
+                  {moment(error.first_seen).toNow(true)} ago
                 </p>
               </button>
             ))}

@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon, RefreshIcon } from "@hugeicons/core-free-icons";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,37 +13,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  queryKeys,
-  useDeleteReplaySession,
-  useProject,
-  useReplaySession,
-  useReplaySessions,
-} from "@/hooks/useApi";
-import { useStore } from "@/store";
+} from "@trackion/ui/alert-dialog";
 import { useQueryClient } from "@tanstack/react-query";
-import { ReplayPlayer } from "./components/ReplayPlayer";
+import { ReplayPlayer } from "@/components/core/project/replay-player";
+import { projectHooks } from "@/hooks/queries/use-project";
+import { projectQueryKeys } from "@trackion/lib/queries";
 
 export function SessionReplayPage() {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
+
   const { id: projectId = "" } = useParams<{ id: string }>();
-  const { currentProject } = useStore();
-
-  const { data: projectFromRoute } = useProject(projectId);
-  const activeProject = projectId
-    ? projectFromRoute ||
-      (currentProject?.id === projectId ? currentProject : null)
-    : currentProject;
-
   const [manualSelectedSessionId, setManualSelectedSessionId] = useState("");
 
   const {
     data: sessions = [],
     isLoading: sessionsLoading,
     refetch: refetchSessions,
-  } = useReplaySessions(activeProject?.id || "", 100, 15000);
+  } = projectHooks.useReplaySessions(projectId, 10, 15000);
 
   const selectedSessionId = useMemo(() => {
     if (!sessions.length) {
@@ -62,29 +46,7 @@ export function SessionReplayPage() {
     return sessions[0].session_id;
   }, [manualSelectedSessionId, sessions]);
 
-  const {
-    data: replayPayload,
-    isLoading: replayLoading,
-    error: replayError,
-  } = useReplaySession(activeProject?.id || "", selectedSessionId);
-
-  const deleteMutation = useDeleteReplaySession(activeProject?.id || "");
-
-  useEffect(() => {
-    if (!activeProject?.id) {
-      return;
-    }
-
-    const latestReplayTime = sessions[0]?.last_seen_at;
-    if (!latestReplayTime) {
-      return;
-    }
-
-    localStorage.setItem(
-      `replay-last-seen-${activeProject.id}`,
-      latestReplayTime,
-    );
-  }, [activeProject?.id, sessions]);
+  const deleteMutation = projectHooks.useDeleteReplaySession(projectId);
 
   const selectedSession = useMemo(
     () =>
@@ -93,29 +55,13 @@ export function SessionReplayPage() {
     [sessions, selectedSessionId],
   );
 
-  const replayEvents = replayPayload?.events || [];
-
-  if (!activeProject) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh] p-6">
-        <Card className="p-10 max-w-md text-center">
-          <h2 className="text-2xl font-semibold mb-3">Select a project</h2>
-          <p className="text-sm text-muted-foreground mb-6">
-            Open a project to view and manage recorded session replays.
-          </p>
-          <Button onClick={() => navigate("/projects")}>Go to Projects</Button>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <section className="flex flex-col">
       <div className="px-4 md:px-6 py-4 border-b border-border/60 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold">Session Replay</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Playback recorded sessions for {activeProject.name}
+            Playback recorded sessions
           </p>
         </div>
 
@@ -144,10 +90,10 @@ export function SessionReplayPage() {
           </div>
 
           <div className="flex-1 overflow-y-auto divide-y divide-border/40">
-            {sessionsLoading ? (
-              <State>Loading sessions…</State>
-            ) : sessions.length === 0 ? (
-              <State>No sessions yet</State>
+            {sessions.length === 0 ? (
+              <div className="flex items-center justify-center h-full min-h-75 text-sm text-muted-foreground">
+                No sessions yet
+              </div>
             ) : (
               sessions.map((session) => {
                 const active = session.session_id === selectedSessionId;
@@ -187,7 +133,14 @@ export function SessionReplayPage() {
 
         <div className="flex flex-col">
           {!selectedSession ? (
-            <State>Select a session</State>
+            <div>
+              <div className="px-4 md:px-6 py-6">
+                <h2 className="text-lg font-medium">No session selected</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select a session from the left to view its replay.
+                </p>
+              </div>
+            </div>
           ) : (
             <>
               <div className="px-4 md:px-6 py-3 border-b border-border/60 flex items-center justify-between">
@@ -203,10 +156,6 @@ export function SessionReplayPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">
-                    {replayEvents.length} events
-                  </span>
-
                   <AlertDialog>
                     <AlertDialogTrigger className="h-8 px-2 text-xs text-destructive hover:bg-muted/20">
                       <HugeiconsIcon icon={Delete02Icon} size={16} />
@@ -229,9 +178,9 @@ export function SessionReplayPage() {
                               selectedSession.session_id,
                             );
                             await queryClient.invalidateQueries({
-                              queryKey: queryKeys.replaySessions(
-                                activeProject.id,
-                                100,
+                              queryKey: projectQueryKeys.replaySessions(
+                                projectId,
+                                10,
                               ),
                             });
                             setManualSelectedSessionId("");
@@ -246,28 +195,15 @@ export function SessionReplayPage() {
               </div>
 
               <div className="flex-1">
-                {replayLoading ? (
-                  <State>Loading replay…</State>
-                ) : replayError ? (
-                  <State>Error loading replay</State>
-                ) : replayEvents.length === 0 ? (
-                  <State>No replay events</State>
-                ) : (
-                  <ReplayPlayer events={replayEvents} />
-                )}
+                <ReplayPlayer
+                  projectId={projectId}
+                  sessionId={selectedSession.session_id}
+                />
               </div>
             </>
           )}
         </div>
       </div>
     </section>
-  );
-}
-
-function State({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-center h-full min-h-75 text-sm text-muted-foreground">
-      {children}
-    </div>
   );
 }

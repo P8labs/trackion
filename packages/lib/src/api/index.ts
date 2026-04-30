@@ -1,7 +1,12 @@
 import {
   CreateProjectInput,
+  ErrorOccurrence,
+  ErrorStats,
+  GroupedError,
   Project,
   ProjectRuntime,
+  ReplaySessionPayload,
+  ReplaySessionSummary,
   SelfhostTokenResponse,
   ServerHealth,
   UsagePlan,
@@ -82,6 +87,42 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
       api.apiCall<void>(
         "DELETE",
         `/api/v1/projects/${projectId}/runtime/config/${configKey}`,
+      ),
+
+    getReplays: (projectId: string, limit = 10) =>
+      api.apiCall<ReplaySessionSummary[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/replays?limit=${limit}`,
+      ),
+
+    getReplaySession: (projectId: string, sessionId: string) =>
+      api.apiCall<ReplaySessionPayload>(
+        "GET",
+        `/api/v1/projects/${projectId}/replays/${sessionId}`,
+      ),
+
+    deleteReplaySession: (projectId: string, sessionId: string) =>
+      api.apiCall<void>(
+        "DELETE",
+        `/api/v1/projects/${projectId}/replays/${sessionId}`,
+      ),
+
+    getErrors: (projectId: string, timeRange: string = "7d") =>
+      api.apiCall<GroupedError[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/errors?time_range=${timeRange}`,
+      ),
+
+    getErrorDetail: (projectId: string, fingerprint: string) =>
+      api.apiCall<ErrorOccurrence[]>(
+        "GET",
+        `/api/v1/projects/${projectId}/errors/${fingerprint}`,
+      ),
+
+    getErrorStats: (projectId: string) =>
+      api.apiCall<ErrorStats>(
+        "GET",
+        `/api/v1/projects/${projectId}/errors/stats`,
       ),
 
     // TODO NEED ATTENTION!

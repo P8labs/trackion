@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@trackion/ui/button";
-import { Skeleton } from "@trackion/ui/skeleton";
 import { Badge } from "@trackion/ui/badge";
 import { useStore } from "@/store";
 import { CodeBox } from "@trackion/ui/code-box";

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import moment from "moment";
 import {
   ArrowLeft,
   AlertCircle,
@@ -11,34 +11,28 @@ import {
   Copy,
   Check,
 } from "lucide-react";
-import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
-import { Skeleton } from "../../components/ui/skeleton";
-import { useStore } from "../../store";
-import { getErrorOccurrences } from "../../lib/api";
-import type { ErrorOccurrence } from "../../types";
-import { formatDistanceToNow } from "date-fns";
+import { Button } from "@trackion/ui/button";
+import { Badge } from "@trackion/ui/badge";
+import { Skeleton } from "@trackion/ui/skeleton";
+import type { ErrorOccurrence } from "@trackion/lib/types";
+import { projectHooks } from "@/hooks/queries/use-project";
 
 export function ErrorDetailPage() {
-  const { fingerprint } = useParams<{ fingerprint: string }>();
+  const { fingerprint = "", id: projectId = "" } = useParams<{
+    fingerprint: string;
+    id: string;
+  }>();
+
   const navigate = useNavigate();
-  const { authToken, serverUrl, currentProject } = useStore();
   const [copiedFingerprint, setCopiedFingerprint] = useState(false);
 
-  const { data: occurrences, isLoading } = useQuery({
-    queryKey: ["error-occurrences", currentProject?.id, fingerprint],
-    queryFn: () =>
-      getErrorOccurrences(
-        currentProject!.id,
-        fingerprint!,
-        serverUrl,
-        authToken!,
-      ),
-    enabled: !!currentProject && !!fingerprint && !!authToken,
-  });
+  const { data: occurrences, isLoading } = projectHooks.useErrorDetail(
+    projectId,
+    fingerprint,
+  );
 
   const handleBack = () => {
-    navigate(`/projects/${currentProject?.id}/errors`);
+    navigate(`/projects/${projectId}/errors`);
   };
 
   const copyFingerprint = async () => {
@@ -49,49 +43,17 @@ export function ErrorDetailPage() {
     }
   };
 
-  const formatTimeAgo = (dateString: string) => {
-    try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
-    } catch {
-      return dateString;
-    }
-  };
-
   const formatStackTrace = (stackTrace: string) => {
     if (!stackTrace) return "No stack trace available";
 
     return stackTrace;
   };
 
-  if (!currentProject) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <div className="w-full max-w-md border border-border/60 p-6 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight mb-3">
-            No Project Selected
-          </h2>
-          <p className="text-muted-foreground mb-6">
-            Please select a project to view error details.
-          </p>
-          <Button
-            onClick={() => navigate("/projects")}
-            className="w-full h-10 text-sm"
-          >
-            Go to Projects
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!fingerprint) {
-    return <div>Error fingerprint required</div>;
-  }
-
   const firstOccurrence = occurrences?.[0];
   const uniqueUsers = new Set(
     (occurrences || []).filter((o) => o.user_id).map((o) => o.user_id),
   ).size;
+
   const compactUrls = useMemo(() => {
     if (!occurrences || occurrences.length === 0) {
       return [] as Array<{ url: string; count: number }>;
@@ -177,7 +139,7 @@ export function ErrorDetailPage() {
                 Last Seen
               </p>
               <p className="mt-1 text-sm text-foreground">
-                {formatTimeAgo(occurrences[0].timestamp)}
+                {moment(occurrences[0].timestamp).format("YYYY-MM-DD HH:mm:ss")}
               </p>
             </div>
             <div className="px-4 py-3 md:px-6 border-r border-border/60">
@@ -279,7 +241,7 @@ export function ErrorDetailPage() {
                   className="grid grid-cols-[120px_minmax(0,1fr)_150px_140px_140px] items-start gap-3 px-4 py-2.5 md:px-6 hover:bg-muted/20"
                 >
                   <p className="text-xs text-muted-foreground pt-0.5">
-                    {formatTimeAgo(occurrence.timestamp)}
+                    {moment(occurrence.timestamp).format("YYYY-MM-DD HH:mm:ss")}
                   </p>
 
                   <div className="min-w-0">

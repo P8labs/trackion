@@ -20,6 +20,39 @@ export const projectHooks = {
     return useAppQuery(q.project.projectRuntime(projectId));
   },
 
+  useReplaySessions(
+    projectId: string,
+    limit: number,
+    refetchInterval?: number,
+  ) {
+    const q = useQueries();
+    return useAppQuery(
+      q.project.replaySessions(projectId, limit, refetchInterval),
+    );
+  },
+
+  useReplaySession(projectId: string, sessionId: string) {
+    const q = useQueries();
+    return useAppQuery(q.project.replaySession(projectId, sessionId), {
+      enabled: !!sessionId,
+    });
+  },
+
+  useErrorGroups(projectId: string, timeRange: string) {
+    const q = useQueries();
+    return useAppQuery(q.project.errorGroups(projectId, timeRange));
+  },
+
+  useErrorDetail(projectId: string, stackId: string) {
+    const q = useQueries();
+    return useAppQuery(q.project.errorDetail(projectId, stackId));
+  },
+
+  useErrorStats(projectId: string) {
+    const q = useQueries();
+    return useAppQuery(q.project.errorStats(projectId));
+  },
+
   useCreateProject() {
     const m = useMutations();
     return useAppMutation(m.project.createProject());
@@ -53,5 +86,10 @@ export const projectHooks = {
   useDeleteRuntimeConfig(projectId: string) {
     const m = useMutations();
     return useAppMutation(m.project.deleteRuntimeConfig(projectId));
+  },
+
+  useDeleteReplaySession(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.deleteReplaySession(projectId));
   },
 };
