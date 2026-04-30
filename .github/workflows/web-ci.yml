@@ -41,7 +41,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages
-        run: pnpm -r --filter "./packages/*" build
+        run: pnpm -r --filter @trackion/ui --filter @trackion/lib build
 
       - name: Type-check web
         run: pnpm --filter web exec tsc --noEmit

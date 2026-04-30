@@ -52,7 +52,7 @@ jobs:
         run: pnpm --filter desktop exec tsc --noEmit
 
       - name: Build packages
-        run: pnpm -r --filter "@trackion/*" build
+        run: pnpm -r --filter @trackion/ui --filter @trackion/lib build
 
       - name: Type-check desktop
         run: pnpm --filter desktop exec tsc --noEmit
