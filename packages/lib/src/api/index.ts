@@ -142,7 +142,10 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
       ),
 
     getDashboardCounts: (projectId: string) =>
-      api.apiCall<DashboardStats>("GET", `/api/analytics/${projectId}/counts`),
+      api.apiCall<DashboardStats>(
+        "GET",
+        `/api/v1/analytics/${projectId}/counts`,
+      ),
 
     getChartData: (
       projectId: string,
@@ -156,54 +159,54 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
       }
       return api.apiCall<AreaChartDataPoint[]>(
         "GET",
-        `/api/analytics/${projectId}/chart-data?${params.toString()}`,
+        `/api/v1/analytics/${projectId}/chart-data?${params.toString()}`,
       );
     },
 
     getCountryMapData: (projectId: string) =>
       api.apiCall<CountryMapData>(
         "GET",
-        `/api/analytics/${projectId}/country-map`,
+        `/api/v1/analytics/${projectId}/country-map`,
       ),
 
     getTrafficHeatmap: (projectId: string) =>
       api.apiCall<TrafficHeatmapData>(
         "GET",
-        `/api/analytics/${projectId}/traffic-heatmap`,
+        `/api/v1/analytics/${projectId}/traffic-heatmap`,
       ),
 
     getRecentEvents: (projectId: string, page = 1, pageSize = 20) =>
       api.apiCall<PaginatedEventsResponse>(
         "GET",
-        `/api/analytics/${projectId}/recent-events?page=${page}&page_size=${pageSize}`,
+        `/api/v1/analytics/${projectId}/recent-events?page=${page}&page_size=${pageSize}`,
       ),
 
     getRealtimeEvents: (projectId: string, limit = 10) =>
       api.apiCall<RealtimeEventData[]>(
         "GET",
-        `/api/analytics/${projectId}/realtime-events?limit=${limit}`,
+        `/api/v1/analytics/${projectId}/realtime-events?limit=${limit}`,
       ),
 
     getDeviceAnalytics: (projectId: string) => {
       return api.apiCall<DeviceAnalytics>(
         "GET",
-        `/api/analytics/${projectId}/device-analytics`,
+        `/api/v1/analytics/${projectId}/device-analytics`,
       );
     },
 
     getTrafficSources: (projectId: string) => {
       return api.apiCall<TrafficSource>(
         "GET",
-        `/api/analytics/${projectId}/traffic-sources`,
+        `/api/v1/analytics/${projectId}/traffic-sources`,
       );
     },
     getTopPages: (projectId: string) =>
-      api.apiCall<TopPage[]>("GET", `/api/analytics/${projectId}/top-pages`),
+      api.apiCall<TopPage[]>("GET", `/api/v1/analytics/${projectId}/top-pages`),
 
     getTopCountries: (projectId: string) =>
       api.apiCall<CountryDataItem[]>(
         "GET",
-        `/api/analytics/${projectId}/top-countries`,
+        `/api/v1/analytics/${projectId}/top-countries`,
       ),
     //
 

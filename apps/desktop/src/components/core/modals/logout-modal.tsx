@@ -25,10 +25,14 @@ export function LogoutModal({ open, onOpenChange }: LogoutModalProps) {
   const { logout } = useStore();
   const logoutMutation = userHooks.useLogout();
   const handleLogoutConfirm = async () => {
-    await logoutMutation.mutateAsync({});
+    try {
+      await logoutMutation.mutateAsync({});
+    } catch (error) {
+      logout();
+    }
     logout();
-    onOpenChange(false);
     navigate("/auth");
+    onOpenChange(false);
   };
 
   return (

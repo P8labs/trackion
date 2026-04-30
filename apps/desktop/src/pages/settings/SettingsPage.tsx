@@ -190,42 +190,7 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="px-4 md:px-6 py-6 border-t border-border/60">
-          <p className="text-sm font-medium mb-4">Resources</p>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <a
-                href="/docs/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Documentation
-              </a>
-
-              <a
-                href="/docs/quick-start/"
-                target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Quick Start
-              </a>
-
-              <a
-                href="/terms"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Terms
-              </a>
-
-              <a
-                href="/privacy"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
-              >
-                Privacy
-              </a>
-            </div>
-
             <p className="text-xs text-muted-foreground">
               © {new Date().getFullYear()} Trackion. Built at P8labs.
             </p>

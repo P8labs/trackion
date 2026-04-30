@@ -15,7 +15,6 @@ import (
 	"trackion/internal/features/projects"
 	"trackion/internal/features/replay"
 	"trackion/internal/features/runtime"
-	"trackion/internal/features/settings"
 	"trackion/internal/features/tracker"
 	"trackion/internal/res"
 
@@ -53,8 +52,6 @@ func (app *Application) mount() http.Handler {
 	r.Mount("/replay", replay.Routes(app.db, *app.config))
 	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
 
-	r.Post("/api/auth/verify", authHandler.VerifyToken) // TODO: backwards compatibility, move to should be /api/v1/auth/verify
-
 	if app.config.IsSaaS() {
 		auth.InitOAuth(*app.config)
 		r.Get("/auth/login/github", authHandler.GithubLogin)
@@ -64,18 +61,6 @@ func (app *Application) mount() http.Handler {
 		r.Get("/auth/callback/google", authHandler.GoogleCallback)
 
 	}
-
-	// backwords compatibility, move all routes to /api/v1
-	r.Route("/api", func(r chi.Router) {
-		r.Use(authMw.AuthMiddleware)
-		r.Mount("/projects", projects.Routes(app.db, *app.config))
-		r.Mount("/runtime", runtime.Routes(app.db, *app.config))
-		r.Mount("/analytics", dashboard.Routes(app.db))
-		r.Mount("/replay", replay.PrivateRoutes(app.db))
-		r.Mount("/errors", errortracking.Routes(app.db))
-		r.Mount("/settings", settings.Routes(app.db, *app.config))
-		r.Mount("/billing", billing.Routes(app.db, *app.config))
-	})
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// before auth means public routes that don't require authentication
