@@ -1,5 +1,4 @@
-import { FullLine, PLine } from "@/components/Line";
-import PlusDecor from "@/components/PlusDecor";
+import { FullLine, PLine, PlusDecor } from "@trackion/ui/decoration";
 import { Link } from "react-router-dom";
 
 export function Footer() {

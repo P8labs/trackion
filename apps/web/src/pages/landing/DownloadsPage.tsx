@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@/components/ui/button";
+import { Button } from "@trackion/ui/button";
 import { Icons } from "@/lib/icons";
 import { Download, ExternalLink } from "lucide-react";
 import { PublicPageLayout } from "./components/PublicPageLayout";
-import { FullLine, PLine } from "@/components/Line";
+import { FullLine, PLine } from "@trackion/ui/decoration";
 import moment from "moment";
 import { Link } from "react-router-dom";
 

@@ -1,4 +1,4 @@
-import PlusDecor from "@/components/PlusDecor";
+import { PlusDecor } from "@trackion/ui/decoration";
 import { PauseIcon, PlayIcon } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 

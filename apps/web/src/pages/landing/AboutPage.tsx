@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 import { Code, Zap, Database } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@trackion/ui/button";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 import { Icons } from "@/lib/icons";
-import { FullLine, PLine } from "@/components/Line";
+import { FullLine, PLine } from "@trackion/ui/decoration";
 
 export function AboutPage() {
   return (

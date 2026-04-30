@@ -1,6 +1,6 @@
 import { Component, type ReactNode } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@trackion/ui/button";
 
 interface Props {
   children: ReactNode;

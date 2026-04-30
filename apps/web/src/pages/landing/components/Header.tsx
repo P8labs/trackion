@@ -1,5 +1,5 @@
-import PlusDecor from "@/components/PlusDecor";
-import { Button } from "@/components/ui/button";
+import { Button } from "@trackion/ui/button";
+import { PlusDecor } from "@trackion/ui/decoration";
 import { Link } from "react-router-dom";
 
 export function Header() {

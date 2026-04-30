@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@trackion/ui/button";
 import { useStore } from "@/store";
-import { FullLine } from "@/components/Line";
-import PlusDecor from "@/components/PlusDecor";
 import Loader from "@/Loader";
+import { FullLine, PlusDecor } from "@trackion/ui/decoration";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();

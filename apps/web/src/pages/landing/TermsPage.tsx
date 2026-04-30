@@ -1,4 +1,4 @@
-import { FullLine, PLine } from "@/components/Line";
+import { FullLine, PLine } from "@trackion/ui/decoration";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function TermsPage() {

@@ -5,10 +5,10 @@ import {
   Folder01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PLine } from "@/components/Line";
 import moment from "moment";
 import { userHooks } from "@/hooks/queries/use-user";
 import { ErrorBanner } from "@/components/core/error-banner";
+import { PLine } from "@trackion/ui/decoration";
 
 export function UsagePage() {
   const { data: usage, isLoading, error } = userHooks.useUsage();
