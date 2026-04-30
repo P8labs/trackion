@@ -1,20 +1,20 @@
+import { Navigate } from "react-router-dom";
 import { AuthPage } from "./pages/auth/AuthPage";
 import { AuthCallbackPage } from "./pages/auth/AuthCallbackPage";
-import { ProjectsPage } from "./pages/dashboard/ProjectsPage";
-import { CreateProjectPage } from "./pages/dashboard/CreateProjectPage";
-import { SettingsPage } from "./pages/dashboard/SettingsPage";
-import { UsagePage } from "./pages/dashboard/UsagePage";
-import { Navigate } from "react-router-dom";
-import { OverviewPage } from "./pages/dashboard/OverviewPage";
-import { EventsPage } from "./pages/dashboard/EventsPage";
-import { BreakdownPage } from "./pages/dashboard/BreakdownPage";
-import { RealtimePage } from "./pages/dashboard/RealtimePage";
-import { SessionReplayPage } from "./pages/dashboard/SessionReplayPage";
-import { ProjectDetailPage } from "./pages/dashboard/ProjectDetailPage";
-import { RemoteConfigPage } from "./pages/dashboard/RemoteConfigPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
-import { ErrorListPage } from "./pages/errors/ErrorListPage";
-import { ErrorDetailPage } from "./pages/errors/ErrorDetailPage";
+import { ProjectsPage } from "./pages/projects/ProjectsPage";
+import { CreateProjectPage } from "./pages/projects/CreateProjectPage";
+import { SettingsPage } from "./pages/settings/SettingsPage";
+import { UsagePage } from "./pages/usage/UsagePage";
+import { OverviewPage } from "./pages/projects/dashboard/OverviewPage";
+import { EventsPage } from "./pages/projects/dashboard/EventsPage";
+import { BreakdownPage } from "./pages/projects/dashboard/BreakdownPage";
+import { RealtimePage } from "./pages/projects/dashboard/RealtimePage";
+import { SessionReplayPage } from "./pages/projects/replay/SessionReplayPage";
+import { ProjectDetailPage } from "./pages/projects/ProjectDetailPage";
+import { RemoteConfigPage } from "./pages/projects/RemoteConfigPage";
+import { ErrorListPage } from "./pages/projects/errors/ErrorListPage";
+import { ErrorDetailPage } from "./pages/projects/errors/ErrorDetailPage";
 
 export const workspaceRoutes = [
   { path: "/", element: <ProjectsPage /> },

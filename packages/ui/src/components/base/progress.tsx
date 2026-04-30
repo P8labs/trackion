@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@trackion/ui/lib";
+import { cn } from "../../lib/utils";
 import * as React from "react";
 
 interface ProgressProps extends React.HTMLAttributes<HTMLDivElement> {

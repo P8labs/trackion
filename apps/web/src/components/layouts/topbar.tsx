@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@trackion/ui/dropdown-menu";
 import { ThemeToggle } from "@trackion/ui/theme-toggle";
+import { cn } from "@trackion/ui/lib";
 import {
   Cancel01Icon,
   LayoutDashboard,
@@ -17,7 +18,6 @@ import {
   Settings01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "@trackion/ui/lib";
 import { userHooks } from "@/hooks/queries/use-user";
 import { LogoutModal } from "@/components/core/modals/logout-modal";
 

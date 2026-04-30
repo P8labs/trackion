@@ -1,4 +1,4 @@
-import { cn } from "@trackion/ui/lib";
+import { cn } from "../../lib/utils";
 import * as React from "react";
 
 function Label({ className, ...props }: React.ComponentProps<"label">) {

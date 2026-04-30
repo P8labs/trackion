@@ -5,10 +5,12 @@ import { Button } from "@trackion/ui/button";
 import { useStore } from "@/store";
 import Loader from "@/Loader";
 import { FullLine, PlusDecor } from "@trackion/ui/decoration";
+import { useGlobal } from "@/providers/global-provider";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { isAuthenticated, serverUrl, setAuth } = useStore();
+  const { login } = useGlobal();
   const hasHandledCallback = useRef(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
@@ -41,6 +43,7 @@ export function AuthCallbackPage() {
 
     if (authToken && authToken.trim()) {
       setAuth(authToken.trim(), serverUrl);
+      login(authToken.trim());
       setStatus("success");
       window.history.replaceState({}, document.title, window.location.pathname);
       navigate("/projects", { replace: true });

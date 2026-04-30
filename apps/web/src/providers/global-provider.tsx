@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useState } from "react";
 import { createApi, createApiClient } from "@trackion/lib/api";
 import { useStore } from "@/store";
 
@@ -8,21 +8,27 @@ type GlobalContextType = {
     google: string;
     github: string;
   };
+  login: (token: string) => void;
 };
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
 
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const store = useStore.getState();
+  const [authToken, setAuthToken] = useState(store.authToken);
 
+  const login = (token: string) => {
+    setAuthToken(token);
+    store.setAuth(token, store.serverUrl);
+  };
   const api = useMemo(() => {
     const client = createApiClient({
       baseUrl: store.serverUrl,
-      getAuthToken: () => store.authToken,
+      getAuthToken: () => authToken,
     });
 
     return createApi(client);
-  }, []);
+  }, [authToken]);
 
   const loginUrls = useMemo(() => {
     const baseUrl = store.serverUrl.replace(/\/+$/, "");
@@ -33,7 +39,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
   }, [store.serverUrl]);
 
   return (
-    <GlobalContext.Provider value={{ api, loginUrls }}>
+    <GlobalContext.Provider value={{ api, loginUrls, login }}>
       {children}
     </GlobalContext.Provider>
   );

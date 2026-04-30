@@ -1,7 +1,7 @@
 "use client";
 
 import { Separator as SeparatorPrimitive } from "@base-ui/react/separator";
-import { cn } from "@trackion/ui/lib";
+import { cn } from "../../lib/utils";
 
 function Separator({
   className,

@@ -25,8 +25,8 @@ export function LogoutModal({ open, onOpenChange }: LogoutModalProps) {
   const { logout } = useStore();
   const logoutMutation = userHooks.useLogout();
   const handleLogoutConfirm = async () => {
-    await logoutMutation.mutateAsync({});
     logout();
+    await logoutMutation.mutateAsync({});
     onOpenChange(false);
     navigate("/auth");
   };

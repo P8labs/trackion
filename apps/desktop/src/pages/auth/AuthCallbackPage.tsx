@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle2, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@trackion/ui/button";
 import { useStore } from "@/store";
-import { FullLine } from "@/components/Line";
-import PlusDecor from "@/components/PlusDecor";
+import { FullLine, PlusDecor } from "@trackion/ui/decoration";
+import { useGlobal } from "@/providers/global-provider";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
   const { isAuthenticated, serverUrl, setAuth } = useStore();
+  const { login } = useGlobal();
   const hasHandledCallback = useRef(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
@@ -35,6 +35,7 @@ export function AuthCallbackPage() {
 
     if (authToken && authToken.trim()) {
       setAuth(authToken.trim(), serverUrl);
+      login(authToken.trim());
       setStatus("success");
       window.history.replaceState({}, document.title, window.location.pathname);
       navigate("/projects", { replace: true });
@@ -70,7 +71,6 @@ export function AuthCallbackPage() {
           <div className="mt-6 z-10">
             {status === "loading" && (
               <div className="flex items-start gap-3 px-4 py-4">
-                <Spinner className="mt-0.5 size-4 text-primary" />
                 <div>
                   <p className="text-sm font-medium">Verifying session</p>
                   <p className="text-xs text-muted-foreground mt-1">

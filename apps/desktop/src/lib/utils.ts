@@ -1,10 +1,3 @@
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
-
 export function formatTimeSpent(seconds: number) {
   if (seconds === 0) return "0s";
   const hours = Math.floor(seconds / 3600);
@@ -18,14 +11,4 @@ export function formatTimeSpent(seconds: number) {
     return secs > 0 ? `${minutes}m ${secs}s` : `${minutes}m`;
   }
   return `${secs}s`;
-}
-
-export function parseGoDate(value: string): Date {
-  const normalized = value
-    .replace(" ", "T")
-    .replace(" +", "+")
-    .replace(/([+-]\d{2})(\d{2})/, "$1:$2")
-    .replace(" IST", "");
-
-  return new Date(normalized);
 }
