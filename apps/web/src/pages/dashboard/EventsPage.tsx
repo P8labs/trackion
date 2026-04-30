@@ -9,7 +9,7 @@ import { Badge } from "../../components/ui/badge";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { EventDetailsModal } from "../../components/events/EventDetailsModal";
 import { AdvancedEventFilter } from "../../components/events/AdvancedEventFilter";
-import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
+import { OnlineUsersChip } from "../../components/core/project/analytics/online-users-chip";
 import {
   queryKeys,
   useProject,
@@ -262,7 +262,7 @@ export function EventsPage() {
             </div>
 
             <div className="flex items-center gap-3">
-              <OnlineUsers projectId={activeProject.id} />
+              <OnlineUsersChip projectId={activeProject.id} />
               <Button
                 variant="ghost"
                 onClick={handleRefresh}

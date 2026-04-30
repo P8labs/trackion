@@ -20,10 +20,10 @@ export interface ProjectSettings {
   clicks: boolean;
 }
 
-export interface UpdateProject {
-  name?: string;
-  domains?: string[];
-  settings?: ProjectSettings;
+export interface CreateProjectInput {
+  name: string;
+  domains: string[];
+  settings: ProjectSettings;
 }
 
 export interface Event {
@@ -231,6 +231,10 @@ export interface RuntimeConfig {
 }
 
 export interface ProjectRuntime {
+  project: {
+    id: string;
+    name: string;
+  };
   flags: RuntimeFlag[];
   configs: RuntimeConfig[];
 }

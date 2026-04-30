@@ -22,11 +22,6 @@ export const userHooks = {
     return useAppQuery(q.user.usage());
   },
 
-  usePlanInfo() {
-    const q = useQueries();
-    return useAppQuery(q.user.planInfo());
-  },
-
   useLoginWithToken() {
     const m = useMutations();
     return useAppMutation(m.user.loginWithToken());

@@ -12,7 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
-var version = "dev"
+var version = "0.0.0-dev"
 
 func main() {
 

@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useStore } from "../../store";
 import { Button } from "../../components/ui/button";
 import { Card } from "../../components/ui/card";
-import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
+import { OnlineUsersChip } from "../../components/core/project/analytics/online-users-chip";
 import {
   queryKeys,
   useProject,
@@ -85,7 +85,7 @@ export function RealtimePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <OnlineUsers projectId={activeProject.id} />
+            <OnlineUsersChip projectId={activeProject.id} />
             <Button
               variant="ghost"
               onClick={handleRefresh}

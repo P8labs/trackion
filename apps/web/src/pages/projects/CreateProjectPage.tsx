@@ -2,17 +2,20 @@ import { useNavigate } from "react-router-dom";
 import type { ProjectSettings } from "@trackion/lib/types";
 import { PLine, PlusDecor } from "@trackion/ui/decoration";
 import { projectHooks } from "@/hooks/queries/use-project";
-import { parseDomainsInput } from "@/lib/domain";
 import { Globe } from "lucide-react";
 import { Badge } from "@trackion/ui/badge";
 import { Button } from "@trackion/ui/button";
-import { Checkbox } from "@trackion/ui/checkbox";
 import { Input } from "@trackion/ui/input";
-import z from "zod";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@trackion/ui/field";
 import { ErrorBanner } from "@/components/core/error-banner";
+import { ProjectFeatureToggle } from "@/components/core/project/feature-toggle";
+import {
+  createProjectSchema,
+  defaultProjectSettings,
+  type CreateProjectData,
+} from "./shared";
 
 export function CreateProjectPage() {
   return (
@@ -22,45 +25,15 @@ export function CreateProjectPage() {
         <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
           Project Setup
         </p>
-
         <h1 className="mt-1 text-xl font-medium tracking-tight">
           Create project
         </h1>
         <PlusDecor />
       </div>
-
       <CreateProjectForm />
     </section>
   );
 }
-
-const defaultSettings: ProjectSettings = {
-  auto_pageview: true,
-  time_spent: true,
-  campaign: true,
-  clicks: true,
-};
-
-const createProjectSchema = z.object({
-  name: z.string().min(2, "Project name must be at least 2 characters"),
-  domains: z.array(
-    z
-      .string()
-      .min(5, "Please enter at least one domain")
-      .refine((v) => {
-        const { invalidDomains } = parseDomainsInput(v);
-        return invalidDomains.length === 0;
-      }, "One or more domains are invalid. Please check your input."),
-  ),
-  settings: z.object({
-    auto_pageview: z.boolean(),
-    time_spent: z.boolean(),
-    campaign: z.boolean(),
-    clicks: z.boolean(),
-  }),
-});
-
-type CreateProjectData = z.infer<typeof createProjectSchema>;
 
 export function CreateProjectForm() {
   const navigate = useNavigate();
@@ -70,7 +43,7 @@ export function CreateProjectForm() {
     defaultValues: {
       name: "",
       domains: [],
-      settings: defaultSettings,
+      settings: defaultProjectSettings,
     },
   });
 
@@ -203,29 +176,33 @@ export function CreateProjectForm() {
             Tracking Features
           </p>
           <div className="mt-4 grid gap-0 border border-border/60 sm:grid-cols-2">
-            <FeatureToggle
+            <ProjectFeatureToggle
               title="Auto Pageview"
               description="Capture page views automatically on route changes."
               checked={form.watch("settings.auto_pageview")}
               onChange={(checked) => toggleSetting("auto_pageview", checked)}
+              disabled={createProjectMutation.isPending}
             />
-            <FeatureToggle
+            <ProjectFeatureToggle
               title="Time Spent"
               description="Measure engaged time on each page."
               checked={form.watch("settings.time_spent")}
               onChange={(checked) => toggleSetting("time_spent", checked)}
+              disabled={createProjectMutation.isPending}
             />
-            <FeatureToggle
+            <ProjectFeatureToggle
               title="Campaign"
               description="Track UTM source, medium, and campaign values."
               checked={form.watch("settings.campaign")}
               onChange={(checked) => toggleSetting("campaign", checked)}
+              disabled={createProjectMutation.isPending}
             />
-            <FeatureToggle
+            <ProjectFeatureToggle
               title="Click Tracking"
               description="Track CTA clicks and interaction hotspots."
               checked={form.watch("settings.clicks")}
               onChange={(checked) => toggleSetting("clicks", checked)}
+              disabled={createProjectMutation.isPending}
             />
           </div>
           <PlusDecor />
@@ -252,32 +229,5 @@ export function CreateProjectForm() {
         <PlusDecor />
       </div>
     </form>
-  );
-}
-
-interface FeatureToggleProps {
-  title: string;
-  description: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}
-
-function FeatureToggle({
-  title,
-  description,
-  checked,
-  onChange,
-}: FeatureToggleProps) {
-  return (
-    <label className="flex cursor-pointer items-start gap-3 border-b border-border/60 px-3 py-3 transition-colors odd:border-r hover:bg-muted/15 last:border-b-0 sm:nth-last-[-n+2]:border-b-0">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(next) => onChange(!!next)}
-      />
-      <div className="space-y-1">
-        <div className="text-sm font-medium leading-none">{title}</div>
-        <div className="text-xs text-muted-foreground">{description}</div>
-      </div>
-    </label>
   );
 }

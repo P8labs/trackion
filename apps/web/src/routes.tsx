@@ -11,7 +11,7 @@ const AuthCallbackPage = lazy(() =>
   })),
 );
 const OverviewPage = lazy(() =>
-  import("./pages/dashboard/OverviewPage").then((m) => ({
+  import("./pages/projects/dashboard/OverviewPage").then((m) => ({
     default: m.OverviewPage,
   })),
 );
@@ -41,12 +41,12 @@ const ProjectsPage = lazy(() =>
   })),
 );
 const ProjectDetailPage = lazy(() =>
-  import("./pages/dashboard/ProjectDetailPage").then((m) => ({
+  import("./pages/projects/ProjectDetailPage").then((m) => ({
     default: m.ProjectDetailPage,
   })),
 );
 const RemoteConfigPage = lazy(() =>
-  import("./pages/dashboard/RemoteConfigPage").then((m) => ({
+  import("./pages/projects/RemoteConfigPage").then((m) => ({
     default: m.RemoteConfigPage,
   })),
 );

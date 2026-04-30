@@ -7,15 +7,41 @@ import { Skeleton } from "../../components/ui/skeleton";
 import {
   useDeleteFeatureFlag,
   useDeleteRemoteConfig,
-  useProject,
-  useProjectRuntime,
   useUpsertFeatureFlag,
   useUpsertRemoteConfig,
 } from "../../hooks/useApi";
+import { projectHooks } from "@/hooks/queries/use-project";
+import { ErrorBanner } from "@/components/core/error-banner";
+import z from "zod";
+import { useForm } from "react-hook-form";
+
+const runtimeConfigSchema = z.object({
+  flags: z.array(
+    z.object({
+      key: z.string(),
+      enabled: z.boolean(),
+      rollout_percentage: z.number().min(0).max(100),
+    }),
+  ),
+  configs: z.array(
+    z.object({
+      key: z.string(),
+      value: z.unknown().refine((val) => {
+        try {
+          JSON.stringify(val);
+          return true;
+        } catch {
+          return false;
+        }
+      }, "Value must be JSON serializable"),
+    }),
+  ),
+});
+
+type RuntimeConfigForm = z.infer<typeof runtimeConfigSchema>;
 
 export function RemoteConfigPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id = "" } = useParams<{ id: string }>();
 
   const [flagKey, setFlagKey] = useState("");
   const [flagEnabled, setFlagEnabled] = useState(true);
@@ -34,13 +60,10 @@ export function RemoteConfigPage() {
   }, [configValue]);
 
   const {
-    data: project,
-    isLoading: projectLoading,
+    data: runtimeData,
+    isLoading: runtimeLoading,
     error,
-  } = useProject(id || "");
-  const { data: runtimeData, isLoading: runtimeLoading } = useProjectRuntime(
-    id || "",
-  );
+  } = projectHooks.useProjectRuntime(id);
 
   const upsertFlagMutation = useUpsertFeatureFlag(id || "");
   const deleteFlagMutation = useDeleteFeatureFlag(id || "");
@@ -89,7 +112,7 @@ export function RemoteConfigPage() {
     setConfigValue("{}");
   };
 
-  if (projectLoading) {
+  if (runtimeLoading) {
     return (
       <div className="max-w-5xl mx-auto">
         <div className="border-b border-border/60 px-4 py-4 md:px-6">
@@ -112,14 +135,12 @@ export function RemoteConfigPage() {
     );
   }
 
-  if (error || !project) {
+  if (!runtimeData || error) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <p className="text-sm text-muted-foreground">Project not found.</p>
-        <Button onClick={() => navigate("/projects")} className="mt-3">
-          Back to Projects
-        </Button>
-      </div>
+      <ErrorBanner
+        label="Failed to load runtime data. Please try again later."
+        error={error}
+      />
     );
   }
 
@@ -130,7 +151,7 @@ export function RemoteConfigPage() {
           Remote Config
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Manage feature flags and runtime config for {project.name}
+          Manage feature flags and runtime config for {runtimeData.project.name}
         </p>
       </section>
       <section className="grid lg:grid-cols-2 border-y border-border/60">
@@ -143,16 +164,7 @@ export function RemoteConfigPage() {
           </div>
 
           <div className="px-4 md:px-6 py-3">
-            <div
-              className="
-                flex items-center h-9
-                border border-border/60
-                bg-background
-                overflow-hidden
-                focus-within:border-primary/60
-                transition
-              "
-            >
+            <div className=" flex items-center h-9 border border-border/60 bg-background overflow-hidden focus-within:border-primary/60 transition">
               <input
                 value={flagKey}
                 onChange={(e) => setFlagKey(e.target.value)}

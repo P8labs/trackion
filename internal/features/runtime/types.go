@@ -14,6 +14,10 @@ type ConfigDTO struct {
 }
 
 type ProjectRuntimeDTO struct {
+	Project struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	} `json:"project"`
 	Flags   []FlagDTO   `json:"flags"`
 	Configs []ConfigDTO `json:"configs"`
 }

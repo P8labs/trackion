@@ -1,7 +1,7 @@
 import {
-  PlanInfo,
+  CreateProjectInput,
   Project,
-  ProjectSettings,
+  ProjectRuntime,
   SelfhostTokenResponse,
   ServerHealth,
   UsagePlan,
@@ -9,47 +9,50 @@ import {
 } from "../types";
 import { createApiClient } from "./client";
 
-export { createApiClient } from "./client";
-
 export function createApi(api: ReturnType<typeof createApiClient>) {
   return {
     getServerHealth: () => api.apiCall<ServerHealth>("GET", "/health"),
-
     loginWithToken: (token: string) =>
-      api.apiCall<SelfhostTokenResponse>("POST", "/api/auth/verify", {
+      api.apiCall<SelfhostTokenResponse>("POST", "/api/v1/auth/verify", {
         body: JSON.stringify({ token }),
       }),
-    logout: () => api.apiCall<{}>("POST", "/auth/logout"),
+    logout: () => api.apiCall<void>("POST", "/api/v1/auth/logout"),
+    getCurrentUser: () => api.apiCall<User>("GET", "/api/v1/auth/me"),
+    getUsage: () => api.apiCall<UsagePlan>("GET", "/api/v1/billing/usage"),
 
-    getCurrentUser: () => api.apiCall<User>("GET", "/auth/me"),
-
-    getUsage: () => api.apiCall<UsagePlan>("GET", "/api/billing/usage"),
-
-    getProjects: () => api.apiCall<Project[]>("GET", "/api/projects"),
+    getProjects: () => api.apiCall<Project[]>("GET", "/api/v1/projects"),
     getProject: (id: string) =>
-      api.apiCall<Project>("GET", `/api/projects/${id}`),
-
-    createProject: (data: {
-      name: string;
-      domains: string[];
-      settings: ProjectSettings;
-    }) =>
-      api.apiCall<Project>("POST", "/api/projects", {
+      api.apiCall<Project>("GET", `/api/v1/projects/${id}`),
+    createProject: (data: CreateProjectInput) =>
+      api.apiCall<Project>("POST", "/api/v1/projects", {
+        body: JSON.stringify(data),
+      }),
+    updateProject: (id: string, data: CreateProjectInput) =>
+      api.apiCall<Project>("PUT", `/api/v1/projects/${id}`, {
         body: JSON.stringify(data),
       }),
 
+    deleteProject: (id: string) =>
+      api.apiCall<void>("DELETE", `/api/v1/projects/${id}`),
+
+    getProjectRuntime: (projectId: string) =>
+      api.apiCall<ProjectRuntime>(
+        "GET",
+        `/api/v1/projects/${projectId}/runtime`,
+      ),
+
+    // TODO NEED ATTENTION!
+    getOnlineUsers: (projectId: string) =>
+      api.apiCall<{ online_users: number }>(
+        "GET",
+        `/api/v1/analytics/${projectId}/online-users`,
+      ),
+
     //
 
     //
     //
     //
-
-    // updateProject: (id: string, data: Partial<UpdateProject>) =>
-    //   api.apiCall<Project>("PUT", `/api/projects/${id}`, {
-    //     body: JSON.stringify(data),
-    //   }),
-
-    // deleteProject: (id: string) => api.apiCall("DELETE", `/api/projects/${id}`),
 
     // getDashboardCounts: (projectId: string) =>
     //   api.apiCall<DashboardStats>("GET", `/api/analytics/${projectId}/counts`),
@@ -104,3 +107,5 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
     //   ),
   };
 }
+
+export { createApiClient } from "./client";

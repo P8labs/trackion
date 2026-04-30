@@ -26,6 +26,7 @@ type ProjectSettingsDTO struct {
 }
 
 func ToProjectResponse(p db.Project) ProjectResponse {
+
 	updatedAt := p.CreatedAt
 	if !p.UpdatedAt.IsZero() {
 		updatedAt = p.UpdatedAt
@@ -35,8 +36,6 @@ func ToProjectResponse(p db.Project) ProjectResponse {
 	if len(p.Properties) > 0 {
 		_ = json.Unmarshal(p.Properties, &cfg)
 	}
-
-	applyDefaults(&cfg)
 
 	return ProjectResponse{
 		ID:      p.ID.String(),
@@ -68,18 +67,4 @@ func jsonToStringSlice(d datatypes.JSON) []string {
 	var out []string
 	_ = json.Unmarshal(d, &out)
 	return out
-}
-
-func applyDefaults(cfg *ProjectSettings) {
-
-	if !cfg.AutoPageview {
-		cfg.AutoPageview = true
-	}
-	if !cfg.TrackTimeSpent {
-		cfg.TrackTimeSpent = true
-	}
-	if !cfg.TrackCampaign {
-		cfg.TrackCampaign = true
-	}
-	// TrackClicks default is false → leave as-is
 }

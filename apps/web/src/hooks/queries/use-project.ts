@@ -1,4 +1,9 @@
-import { useAppMutation, useAppQuery, useQueries } from "../use-queries";
+import {
+  useAppMutation,
+  useAppQuery,
+  useMutations,
+  useQueries,
+} from "../use-queries";
 
 export const projectHooks = {
   useProjects() {
@@ -10,8 +15,23 @@ export const projectHooks = {
     return useAppQuery(q.project.project(projectId));
   },
 
-  useCreateProject() {
+  useProjectRuntime(projectId: string) {
     const q = useQueries();
-    return useAppMutation(q.project.createProject());
+    return useAppQuery(q.project.projectRuntime(projectId));
+  },
+
+  useCreateProject() {
+    const m = useMutations();
+    return useAppMutation(m.project.createProject());
+  },
+
+  useEditProject(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.editProject(projectId));
+  },
+
+  useDeleteProject(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.deleteProject(projectId));
   },
 };

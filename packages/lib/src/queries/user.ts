@@ -28,12 +28,6 @@ export function createUserQueries(api: ReturnType<typeof createApi>) {
       staleTime: 5 * 60 * 1000,
     }),
 
-    planInfo: () => ({
-      queryKey: userQueryKeys.planInfo,
-      queryFn: api.getPlanInfo,
-      staleTime: 60 * 60 * 1000,
-    }),
-
     logout: () => ({
       queryKey: userQueryKeys.logout,
       queryFn: api.logout,

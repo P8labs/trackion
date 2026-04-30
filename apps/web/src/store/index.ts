@@ -7,11 +7,13 @@ type State = {
   serverUrl: string;
   authToken: string | null;
   user: User | null;
-  currentProject: Project | null;
   isAuthenticated: boolean;
 
   setAuth: (token: string, serverUrl: string, user?: User) => void;
   logout: () => void;
+
+  // TODO REMOVE!!
+  currentProject: Project | null;
   setCurrentProject: (project: Project | null) => void;
 };
 

@@ -1,14 +1,6 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@trackion/ui/alert-dialog";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@trackion/ui/avatar";
 import {
   DropdownMenu,
@@ -17,21 +9,17 @@ import {
   DropdownMenuTrigger,
 } from "@trackion/ui/dropdown-menu";
 import { ThemeToggle } from "@trackion/ui/theme-toggle";
-import { useProjects, useUser } from "@/hooks/useApi";
-import { useStore } from "@/store";
-import type { Project } from "@/types";
 import {
   Cancel01Icon,
   LayoutDashboard,
   Logout,
   Menu01Icon,
   Settings01Icon,
-  ShieldAlert,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@trackion/ui/lib";
+import { userHooks } from "@/hooks/queries/use-user";
+import { LogoutModal } from "@/components/core/modals/logout-modal";
 
 export function Topbar({
   sidebarOpen,
@@ -41,23 +29,14 @@ export function Topbar({
   setSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const navigate = useNavigate();
-  const { logout } = useStore();
-  const { data: user, isLoading: userLoading } = useUser();
+  const { data: user, isLoading: userLoading } = userHooks.useUser();
 
-  const { data: projects = [] } = useProjects();
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const profileName = userLoading ? "Loading user..." : user?.name || "User";
   const profileEmail = userLoading
     ? "Fetching profile"
     : user?.email || "No email";
-
-  const handleLogoutConfirm = async () => {
-    await logout();
-    setLogoutDialogOpen(false);
-    setSidebarOpen(false);
-    navigate("/auth");
-  };
 
   return (
     <header className="h-14 flex items-center justify-between border-b border-border/60 px-4 md:px-6 bg-border/10">
@@ -73,7 +52,7 @@ export function Topbar({
           )}
         </button>
 
-        <Breadcrumb projects={projects} />
+        <Breadcrumb />
       </div>
 
       <div className="flex items-center gap-3">
@@ -119,40 +98,12 @@ export function Topbar({
         </DropdownMenu>
       </div>
 
-      <AlertDialog
-        open={logoutDialogOpen}
-        onOpenChange={(open) => setLogoutDialogOpen(open)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogMedia>
-              <HugeiconsIcon
-                icon={ShieldAlert}
-                className="h-6 w-6 text-destructive"
-              />
-            </AlertDialogMedia>
-            <AlertDialogTitle>Confirm logout</AlertDialogTitle>
-            <AlertDialogDescription>
-              You will be signed out from this browser session and redirected to
-              the login page.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleLogoutConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Logout
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <LogoutModal open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} />
     </header>
   );
 }
 
-function Breadcrumb({ projects }: { projects: Project[] }) {
+function Breadcrumb() {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -162,8 +113,9 @@ function Breadcrumb({ projects }: { projects: Project[] }) {
     if (segment === "projects") return "Projects";
     if (segment === "dashboard") return "Projects";
 
-    const project = projects?.find((p) => p.id === segment);
-    if (project) return project.name;
+    if (segment.length > 16) {
+      return "...";
+    }
 
     return capitalizeFirstLetter(segment.substring(0, 16));
   };

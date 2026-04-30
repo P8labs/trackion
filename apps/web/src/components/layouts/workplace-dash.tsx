@@ -1,28 +1,27 @@
 import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import {
   AccountSetting01Icon,
   AddSquareIcon,
   AutoConversationsIcon,
   Folder01Icon,
 } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 
 import { cn } from "@/lib/utils";
 
 import { Topbar } from "@/components/layouts/topbar";
 import { Badge } from "@trackion/ui/badge";
 import { userHooks } from "@/hooks/queries/use-user";
+import { NavItem } from "./nav-item";
 
 const links = [
-  { to: "/projects", label: "Projects", icon: Folder01Icon },
-  { to: "/projects/new", label: "Create Project", icon: AddSquareIcon },
-  { to: "/usage", label: "Usage", icon: AutoConversationsIcon },
-  { to: "/settings", label: "Settings", icon: AccountSetting01Icon },
+  { path: "/projects", name: "Projects", icon: Folder01Icon },
+  { path: "/projects/new", name: "Create Project", icon: AddSquareIcon },
+  { path: "/usage", name: "Usage", icon: AutoConversationsIcon },
+  { path: "/settings", name: "Settings", icon: AccountSetting01Icon },
 ];
 
 export function ProjectsWorkspaceLayout() {
-  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data: usageData, isLoading: usageLoading } = userHooks.useUsage();
   const {
@@ -62,22 +61,13 @@ export function ProjectsWorkspaceLayout() {
               <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
                 Dashboard
               </p>
-              {links.map((Item) => (
-                <Link
-                  key={Item.to}
-                  to={Item.to}
-                  className={cn(
-                    "flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors",
-                    location.pathname === Item.to
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-                  )}
-                >
-                  <span>
-                    <HugeiconsIcon icon={Item.icon} />
-                  </span>
-                  <span>{Item.label}</span>
-                </Link>
+              {links.map((item) => (
+                <NavItem
+                  key={item.path}
+                  name={item.name}
+                  path={item.path}
+                  icon={item.icon}
+                />
               ))}
             </div>
           </nav>

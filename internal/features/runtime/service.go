@@ -64,7 +64,9 @@ func (s *Service) GetPublicRuntime(ctx context.Context, projectID, userID string
 }
 
 func (s *Service) GetProjectRuntime(ctx context.Context, projectID string) (ProjectRuntimeDTO, error) {
-	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+	p, err := s.ensureProjectOwnership(ctx, projectID)
+
+	if err != nil {
 		return ProjectRuntimeDTO{}, err
 	}
 
@@ -74,6 +76,13 @@ func (s *Service) GetProjectRuntime(ctx context.Context, projectID string) (Proj
 	}
 
 	out := ProjectRuntimeDTO{
+		Project: struct {
+			ID   string `json:"id"`
+			Name string `json:"name"`
+		}{
+			ID:   p.ID.String(),
+			Name: p.Name,
+		},
 		Flags:   make([]FlagDTO, 0, len(entry.flags)),
 		Configs: make([]ConfigDTO, 0, len(entry.configs)),
 	}
@@ -103,7 +112,7 @@ func (s *Service) GetProjectRuntime(ctx context.Context, projectID string) (Proj
 }
 
 func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params UpsertFlagParams) error {
-	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
 
@@ -161,7 +170,7 @@ func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params 
 }
 
 func (s *Service) DeleteFlag(ctx context.Context, projectID, key string) error {
-	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
 
@@ -182,7 +191,7 @@ func (s *Service) DeleteFlag(ctx context.Context, projectID, key string) error {
 }
 
 func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, params UpsertConfigParams) error {
-	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
 
@@ -262,7 +271,7 @@ func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, param
 }
 
 func (s *Service) DeleteConfig(ctx context.Context, projectID, key string) error {
-	if err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
 		return err
 	}
 
@@ -282,43 +291,34 @@ func (s *Service) DeleteConfig(ctx context.Context, projectID, key string) error
 	return nil
 }
 
-func (s *Service) ensureProjectOwnership(ctx context.Context, projectID string) error {
+func (s *Service) ensureProjectOwnership(ctx context.Context, projectID string) (db.Project, error) {
 	userIDRaw, ok := ctx.Value(auth.UserIdContextKey).(string)
+
 	if !ok || userIDRaw == "" {
-		return errors.New("unauthorized")
+		return db.Project{}, errors.New("unauthorized")
 	}
 
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
-		return errors.New("invalid project id")
-	}
-
-	if auth.SystemUserID == userIDRaw {
-		_, err := gorm.G[db.Project](s.db).
-			Select("id").
-			Where(repo.Project.ID.Eq(projectUUID)).
-			First(ctx)
-		if err != nil {
-			return errors.New("project not found")
-		}
-		return nil
+		return db.Project{}, errors.New("invalid project id")
 	}
 
 	userID, err := uuid.Parse(userIDRaw)
 	if err != nil {
-		return errors.New("invalid user id")
+		return db.Project{}, errors.New("invalid user id")
 	}
 
-	_, err = gorm.G[db.Project](s.db).
-		Select("id").
+	p, err := gorm.G[db.Project](s.db).
+		Select("id, name").
 		Where(repo.Project.ID.Eq(projectUUID)).
 		Where(repo.Project.UserID.Eq(userID)).
 		First(ctx)
+
 	if err != nil {
-		return errors.New("project not found")
+		return db.Project{}, errors.New("project not found")
 	}
 
-	return nil
+	return p, nil
 }
 
 func (s *Service) getRuntimeSnapshot(ctx context.Context, projectID string) (runtimeCacheEntry, error) {

@@ -4,14 +4,15 @@ import {
   EyeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
-import { useDashboardCounts } from "../../hooks/useApi";
+import { useDashboardCounts } from "../../../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ErrorBanner } from "../../error-banner";
 
-interface DashboardCountsProps {
+interface DashboardStatsProps {
   projectId: string;
 }
-export function DashboardCounts({ projectId }: DashboardCountsProps) {
+export function DashboardStats({ projectId }: DashboardStatsProps) {
   const { data, isLoading, error } = useDashboardCounts(projectId);
 
   const counts = [
@@ -39,6 +40,12 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
 
   return (
     <div className="border-b border-border/60 relative">
+      {!isLoading && error && (
+        <ErrorBanner
+          label="Some error occurred, unable to load stats"
+          error={error}
+        />
+      )}
       <div className="grid grid-cols-2 md:grid-cols-4">
         {isLoading &&
           [...Array(4)].map((_, i) => (
@@ -51,29 +58,16 @@ export function DashboardCounts({ projectId }: DashboardCountsProps) {
             </div>
           ))}
 
-        {!isLoading && error && (
-          <div className="col-span-full px-4 py-6 text-sm text-muted-foreground text-center">
-            Failed to load stats
-          </div>
-        )}
-
         {!isLoading &&
           !error &&
           counts.map((stat) => {
             return (
               <div
                 key={stat.title}
-                className="
-                  px-4 py-4
-                  border-r border-border/60
-                  flex items-center justify-between relative
-                  first:border-l
-                  last:border-r
-                "
+                className="px-4 py-4 border-r border-border/60 flex items-center justify-between relative first:border-l last:border-r"
               >
                 <div>
                   <p className="text-xs text-muted-foreground">{stat.title}</p>
-
                   <p className="text-lg font-medium mt-1">{stat.value}</p>
                 </div>
 

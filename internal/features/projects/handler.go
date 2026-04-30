@@ -78,13 +78,11 @@ func (h *handler) UpdateProject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert request to service parameters
 	params := UpdateProjectParams{
 		Name:    body.Name,
 		Domains: body.Domains,
 	}
 
-	// Handle nested settings structure
 	if body.Settings != nil {
 		params.AutoPageview = &body.Settings.AutoPageview
 		params.TrackTimeSpent = &body.Settings.TrackTimeSpent

@@ -6,7 +6,7 @@ import { Button } from "../../components/ui/button";
 import { AnalyticsBreakdown } from "../../components/dashboard/AnalyticsBreakdown";
 import { TopPages } from "../../components/dashboard/TopPages";
 import { TopCountries } from "../../components/dashboard/TopCountries";
-import { OnlineUsers } from "../../components/dashboard/OnlineUsers";
+import { OnlineUsersChip } from "../../components/core/project/analytics/online-users-chip";
 import { queryKeys, useProject } from "../../hooks/useApi";
 import { PLine } from "@/components/Line";
 import { RefreshIcon } from "@hugeicons/core-free-icons";
@@ -93,7 +93,7 @@ export function BreakdownPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <OnlineUsers projectId={activeProject.id} />
+            <OnlineUsersChip projectId={activeProject.id} />
             <Button
               variant="ghost"
               onClick={handleRefresh}

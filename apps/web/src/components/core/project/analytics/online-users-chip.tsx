@@ -1,11 +1,10 @@
-import { useOnlineUsers } from "../../hooks/useApi";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 
 interface OnlineUsersProps {
   projectId: string;
 }
-export function OnlineUsers({ projectId }: OnlineUsersProps) {
-  const { data, isLoading } = useOnlineUsers(projectId);
-
+export function OnlineUsersChip({ projectId }: OnlineUsersProps) {
+  const { data, isLoading } = analyticsHooks.useOnlineUsers(projectId);
   const onlineCount = data?.online_users || 0;
 
   return (
