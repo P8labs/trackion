@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { DashboardStats } from "@/components/core/project/analytics/dashboard-stats";
-import { DashboardChart } from "@/components/dashboard/DashboardChart";
-import { OverviewGeoTraffic } from "@/components/dashboard/OverviewGeoTraffic";
+import { DashboardChart } from "@/components/core/project/analytics/dashboard-chart";
+import { GeoTraffic } from "@/components/core/project/analytics/geo-traffic";
 
 import { projectHooks } from "@/hooks/queries/use-project";
 import { ErrorBanner } from "@/components/core/error-banner";
 import { BaseHeader } from "@/components/core/project/analytics/base-header";
 import { LoadingBanner } from "@/components/core/loading-banner";
+import { analyticsQueryKeys } from "@trackion/lib/queries";
+import { TrafficHeatmap } from "@/components/core/project/analytics/traffic-heatmap";
 
 export function OverviewPage() {
   const { id = "" } = useParams<{ id: string }>();
@@ -33,6 +35,11 @@ export function OverviewPage() {
         label={activeProject.name}
         description={"Real-time analytics and insights"}
         projectId={activeProject.id}
+        refreshKeys={[
+          [analyticsQueryKeys.stats(activeProject.id)],
+          [analyticsQueryKeys.onlineUsers(activeProject.id)],
+          [analyticsQueryKeys.chartData(activeProject.id, "7d", "all")],
+        ]}
       />
 
       <div className="relative">
@@ -43,7 +50,10 @@ export function OverviewPage() {
           <DashboardChart projectId={activeProject.id} />
         </Suspense>
         <Suspense fallback={<OverviewCardFallback heightClass="h-[28rem]" />}>
-          <OverviewGeoTraffic projectId={activeProject.id} />
+          <section className="grid xl:grid-cols-[2fr_1fr] border-y border-border/60">
+            <GeoTraffic projectId={activeProject.id} />
+            <TrafficHeatmap projectId={activeProject.id} />
+          </section>
         </Suspense>
       </div>
     </section>

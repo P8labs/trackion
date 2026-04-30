@@ -7,8 +7,8 @@ import { userHooks } from "@/hooks/queries/use-user";
 
 export function SettingsPage() {
   const { user: storedUser } = useStore();
-
   const { data: profile } = userHooks.useUser();
+
   const {
     data: health,
     isLoading: healthLoading,

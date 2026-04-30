@@ -90,8 +90,8 @@ func (app *Application) mount() http.Handler {
 			r.Mount("/billing", billing.Routes(app.db, *app.config))
 			r.Mount("/projects", projects.Routes(app.db, *app.config))
 			r.Mount("/errors", errortracking.Routes(app.db))
+			r.Mount("/analytics", dashboard.Routes(app.db))
 
-			// r.Mount("/analytics", dashboard.Routes(app.db))
 		})
 	})
 

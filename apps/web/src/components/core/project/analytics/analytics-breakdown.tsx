@@ -17,9 +17,9 @@ import {
   FaTag,
   FaTabletAlt,
 } from "react-icons/fa";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { LoadingSpinner } from "../LoadingSpinner";
-import { useDeviceAnalytics, useTrafficSources } from "../../hooks/useApi";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@trackion/ui/tabs";
+import { LoadingBanner } from "@/components/core/loading-banner";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 
 interface AnalyticsBreakdownProps {
   projectId: string;
@@ -230,17 +230,15 @@ function TrafficSourcesList({
 
 export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
   const { data: deviceData, isLoading: deviceLoading } =
-    useDeviceAnalytics(projectId);
+    analyticsHooks.useDeviceAnalytics(projectId);
   const { data: trafficData, isLoading: trafficLoading } =
-    useTrafficSources(projectId);
+    analyticsHooks.useTrafficSources(projectId);
 
   return (
     <div className="grid border-b border-border/60 md:grid-cols-2">
       <section className="border-r border-border/60 h-90 flex flex-col">
         {deviceLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <LoadingSpinner />
-          </div>
+          <LoadingBanner />
         ) : (
           <Tabs defaultValue="devices" className="w-full flex flex-col flex-1">
             <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
@@ -297,9 +295,7 @@ export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
 
       <section className="h-90 flex flex-col">
         {trafficLoading ? (
-          <div className="flex flex-1 items-center justify-center">
-            <LoadingSpinner />
-          </div>
+          <LoadingBanner />
         ) : (
           <Tabs
             defaultValue="referrers"

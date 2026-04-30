@@ -41,6 +41,8 @@ export function ProjectDashboardLayout() {
         path: `/projects/${projectId}/realtime`,
         icon: LiveStreaming02Icon,
       },
+    ],
+    integrations: [
       {
         name: "Errors",
         path: `/projects/${projectId}/errors`,
@@ -88,6 +90,20 @@ export function ProjectDashboardLayout() {
                 Analytics
               </p>
               {Links.analytics.map((item) => (
+                <NavItem
+                  key={item.path}
+                  name={item.name}
+                  path={item.path}
+                  icon={item.icon}
+                />
+              ))}
+            </div>
+
+            <div className="space-y-1 pt-2">
+              <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
+                Integrations
+              </p>
+              {Links.integrations.map((item) => (
                 <NavItem
                   key={item.path}
                   name={item.name}

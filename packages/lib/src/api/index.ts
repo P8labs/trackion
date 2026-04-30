@@ -1,14 +1,24 @@
 import {
+  AreaChartDataPoint,
+  CountryDataItem,
+  CountryMapData,
   CreateProjectInput,
+  DashboardStats,
+  DeviceAnalytics,
   ErrorOccurrence,
   ErrorStats,
   GroupedError,
+  PaginatedEventsResponse,
   Project,
   ProjectRuntime,
+  RealtimeEventData,
   ReplaySessionPayload,
   ReplaySessionSummary,
   SelfhostTokenResponse,
   ServerHealth,
+  TopPage,
+  TrafficHeatmapData,
+  TrafficSource,
   UsagePlan,
   User,
 } from "../types";
@@ -125,57 +135,81 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
         `/api/v1/projects/${projectId}/errors/stats`,
       ),
 
-    // TODO NEED ATTENTION!
     getOnlineUsers: (projectId: string) =>
       api.apiCall<{ online_users: number }>(
         "GET",
         `/api/v1/analytics/${projectId}/online-users`,
       ),
 
+    getDashboardCounts: (projectId: string) =>
+      api.apiCall<DashboardStats>("GET", `/api/analytics/${projectId}/counts`),
+
+    getChartData: (
+      projectId: string,
+      timeRange: string,
+      eventFilter: string,
+    ) => {
+      const params = new URLSearchParams();
+      params.append("time_range", timeRange);
+      if (eventFilter) {
+        params.append("event_filter", eventFilter);
+      }
+      return api.apiCall<AreaChartDataPoint[]>(
+        "GET",
+        `/api/analytics/${projectId}/chart-data?${params.toString()}`,
+      );
+    },
+
+    getCountryMapData: (projectId: string) =>
+      api.apiCall<CountryMapData>(
+        "GET",
+        `/api/analytics/${projectId}/country-map`,
+      ),
+
+    getTrafficHeatmap: (projectId: string) =>
+      api.apiCall<TrafficHeatmapData>(
+        "GET",
+        `/api/analytics/${projectId}/traffic-heatmap`,
+      ),
+
+    getRecentEvents: (projectId: string, page = 1, pageSize = 20) =>
+      api.apiCall<PaginatedEventsResponse>(
+        "GET",
+        `/api/analytics/${projectId}/recent-events?page=${page}&page_size=${pageSize}`,
+      ),
+
+    getRealtimeEvents: (projectId: string, limit = 10) =>
+      api.apiCall<RealtimeEventData[]>(
+        "GET",
+        `/api/analytics/${projectId}/realtime-events?limit=${limit}`,
+      ),
+
+    getDeviceAnalytics: (projectId: string) => {
+      return api.apiCall<DeviceAnalytics>(
+        "GET",
+        `/api/analytics/${projectId}/device-analytics`,
+      );
+    },
+
+    getTrafficSources: (projectId: string) => {
+      return api.apiCall<TrafficSource>(
+        "GET",
+        `/api/analytics/${projectId}/traffic-sources`,
+      );
+    },
+    getTopPages: (projectId: string) =>
+      api.apiCall<TopPage[]>("GET", `/api/analytics/${projectId}/top-pages`),
+
+    getTopCountries: (projectId: string) =>
+      api.apiCall<CountryDataItem[]>(
+        "GET",
+        `/api/analytics/${projectId}/top-countries`,
+      ),
     //
 
     //
     //
     //
-
-    // getDashboardCounts: (projectId: string) =>
-    //   api.apiCall<DashboardStats>("GET", `/api/analytics/${projectId}/counts`),
-
-    // getAreaChartData: (
-    //   projectId: string,
-    //   timeRange: string,
-    //   eventFilter: string,
-    // ) => {
-    //   const params = new URLSearchParams();
-    //   params.append("time_range", timeRange);
-    //   if (eventFilter) {
-    //     params.append("event_filter", eventFilter);
-    //   }
-    //   return api.apiCall<AreaChartDataPoint[]>(
-    //     "GET",
-    //     `/api/analytics/${projectId}/area-chart-data?${params.toString()}`,
-    //   );
-    // },
-
-    // getDeviceAnalytics: (projectId: string) => {
-    //   return api.apiCall<DeviceAnalytics>(
-    //     "GET",
-    //     `/api/analytics/${projectId}/device-analytics`,
-    //   );
-    // },
-
-    // getTrafficSources: (projectId: string) => {
-    //   return api.apiCall<TrafficSource>(
-    //     "GET",
-    //     `/api/analytics/${projectId}/traffic-sources`,
-    //   );
-    // },
-
-    // getTopPages: (projectId: string) =>
-    //   api.apiCall<Array<TopPage>>(
-    //     "GET",
-    //     `/api/analytics/${projectId}/top-pages`,
-    //   ),
 
     // // TODO!! check for these to functions looks same
     // getRecentEventsFormatted: (projectId: string, limit = 50) =>

@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Checkbox } from "../../components/ui/checkbox";
-import { Label } from "../../components/ui/label";
+import { Button } from "@trackion/ui/button";
+import { Input } from "@trackion/ui/input";
+import { Checkbox } from "@trackion/ui/checkbox";
+import { Label } from "@trackion/ui/label";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FilterIcon, ChevronDown } from "@hugeicons/core-free-icons";
 
@@ -48,7 +48,6 @@ export function AdvancedEventFilter({
 
   return (
     <div className="space-y-3">
-      {/* Filter Toggle */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border/60 bg-muted/15 hover:bg-muted/25 transition-colors"
@@ -72,10 +71,8 @@ export function AdvancedEventFilter({
         />
       </button>
 
-      {/* Filter Panel */}
       {isExpanded && (
         <div className="border border-border/60 rounded-lg bg-muted/15 p-4 space-y-4">
-          {/* Event Types */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">
               Event Type
@@ -102,7 +99,6 @@ export function AdvancedEventFilter({
             </div>
           </div>
 
-          {/* Date Range */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="date-from" className="text-sm font-semibold">
@@ -140,7 +136,6 @@ export function AdvancedEventFilter({
             </div>
           </div>
 
-          {/* Session Filter */}
           <div className="space-y-2">
             <Label htmlFor="session-filter" className="text-sm font-semibold">
               Session ID
@@ -155,7 +150,6 @@ export function AdvancedEventFilter({
             />
           </div>
 
-          {/* Reset Button */}
           {activeFilterCount > 0 && (
             <Button
               variant="outline"

@@ -4,16 +4,17 @@ import {
   EyeIcon,
   UserGroupIcon,
 } from "@hugeicons/core-free-icons";
-import { useDashboardCounts } from "../../../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ErrorBanner } from "../../error-banner";
+import { ErrorBanner } from "@/components/core/error-banner";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 
 interface DashboardStatsProps {
   projectId: string;
 }
 export function DashboardStats({ projectId }: DashboardStatsProps) {
-  const { data, isLoading, error } = useDashboardCounts(projectId);
+  const { data, isLoading, error } =
+    analyticsHooks.useDashboardStats(projectId);
 
   const counts = [
     {

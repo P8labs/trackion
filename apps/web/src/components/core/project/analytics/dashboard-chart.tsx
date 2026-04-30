@@ -1,14 +1,13 @@
 import { useMemo, useState } from "react";
 import { Calendar01Icon, FilterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../ui/select";
+} from "@trackion/ui/select";
 import {
   ChartContainer,
   ChartLegend,
@@ -16,10 +15,12 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "../ui/chart";
-import { LoadingSpinner } from "../LoadingSpinner";
-import { useAreaChartData } from "../../hooks/useApi";
+} from "@trackion/ui/chart";
+
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { LoadingBanner } from "@/components/core/loading-banner";
+import { ErrorBanner } from "@/components/core/error-banner";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 
 interface ChartDataProps {
   projectId: string;
@@ -55,7 +56,7 @@ export function DashboardChart({ projectId }: ChartDataProps) {
   const [timeRange, setTimeRange] = useState("24h");
   const [eventFilter, setEventFilter] = useState("");
 
-  const { data, isLoading, error } = useAreaChartData(
+  const { data, isLoading, error } = analyticsHooks.useChartData(
     projectId,
     timeRange,
     eventFilter,
@@ -136,7 +137,6 @@ export function DashboardChart({ projectId }: ChartDataProps) {
 
       <div className="relative grid grid-cols-3 border-t border-border/60 text-xs">
         <Stat label="Total" value={chartSummary.total} />
-
         <Stat label="Peak" value={chartSummary.peak} />
         <Stat label="Latest" value={chartSummary.latest} />
       </div>
@@ -144,12 +144,10 @@ export function DashboardChart({ projectId }: ChartDataProps) {
       <div className="px-4 md:px-6 py-6 relative">
         {isLoading ? (
           <div className="h-72 flex items-center justify-center">
-            <LoadingSpinner />
+            <LoadingBanner />
           </div>
         ) : error ? (
-          <div className="h-72 flex items-center justify-center text-muted-foreground">
-            Failed to load chart
-          </div>
+          <ErrorBanner error={error} label="Failed to load chart data" />
         ) : !data ? (
           <div className="h-72 flex items-center justify-center text-muted-foreground">
             No data available

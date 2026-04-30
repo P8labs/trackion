@@ -16,17 +16,17 @@ const OverviewPage = lazy(() =>
   })),
 );
 const EventsPage = lazy(() =>
-  import("./pages/dashboard/EventsPage").then((m) => ({
+  import("./pages/projects/dashboard/EventsPage").then((m) => ({
     default: m.EventsPage,
   })),
 );
 const BreakdownPage = lazy(() =>
-  import("./pages/dashboard/BreakdownPage").then((m) => ({
+  import("./pages/projects/dashboard/BreakdownPage").then((m) => ({
     default: m.BreakdownPage,
   })),
 );
 const RealtimePage = lazy(() =>
-  import("./pages/dashboard/RealtimePage").then((m) => ({
+  import("./pages/projects/dashboard/RealtimePage").then((m) => ({
     default: m.RealtimePage,
   })),
 );

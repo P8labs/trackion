@@ -1,5 +1,5 @@
-import { useCountryData } from "../../hooks/useApi";
-import { LoadingSpinner } from "../LoadingSpinner";
+import { LoadingBanner } from "@/components/core/loading-banner";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 import { cn } from "@/lib/utils";
 
 interface TopCountriesProps {
@@ -24,7 +24,7 @@ function getCountryFlag(
 }
 
 export function TopCountries({ projectId }: TopCountriesProps) {
-  const { data, isLoading, error } = useCountryData(projectId);
+  const { data, isLoading, error } = analyticsHooks.useTopCountries(projectId);
 
   if (isLoading) {
     return (
@@ -38,7 +38,7 @@ export function TopCountries({ projectId }: TopCountriesProps) {
           </p>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <LoadingSpinner />
+          <LoadingBanner />
         </div>
       </section>
     );

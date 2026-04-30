@@ -1,13 +1,13 @@
 import { Clock, Users, Eye } from "lucide-react";
-import { useTopPages } from "../../hooks/useApi";
 import { formatTimeSpent } from "@/lib/utils";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
 
 interface TopPagesProps {
   projectId: string;
 }
 
 export function TopPages({ projectId }: TopPagesProps) {
-  const { data, isLoading, error } = useTopPages(projectId);
+  const { data, isLoading, error } = analyticsHooks.useTopPages(projectId);
 
   return (
     <section className="h-90 flex flex-col">

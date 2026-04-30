@@ -6,26 +6,21 @@ import (
 )
 
 func Routes(db *gorm.DB) *chi.Mux {
-	service := NewService(db)
-	return newRouter(service)
-}
-
-func newRouter(service Service) *chi.Mux {
 	r := chi.NewRouter()
+	service := NewService(db)
 	handler := NewHandler(service)
 
+	r.Get("/{id}/online-users", handler.GetOnlineUsers)
+	r.Get("/{id}/chart-data", handler.GetAreaChartData)
 	r.Get("/{id}/counts", handler.GetDashboardCounts)
-	r.Get("/{id}/chart-data", handler.GetChartDataFlexible) // TODO REMOVE
-	r.Get("/{id}/area-chart-data", handler.GetAreaChartData)
+	r.Get("/{id}/country-map", handler.GetCountryMapData)
+	r.Get("/{id}/traffic-heatmap", handler.GetTrafficHeatmap)
+	r.Get("/{id}/recent-events", handler.GetRecentEvents)
+	r.Get("/{id}/realtime-events", handler.GetRealtimeEvents)
 	r.Get("/{id}/device-analytics", handler.GetDeviceAnalytics)
 	r.Get("/{id}/traffic-sources", handler.GetTrafficSources)
+	r.Get("/{id}/top-countries", handler.GetCountryData)
 	r.Get("/{id}/top-pages", handler.GetTopPages)
-	r.Get("/{id}/recent-events", handler.GetRecentEventsFormatted)
-	r.Get("/{id}/recent-events-paginated", handler.GetRecentEventsPaginated)
-	r.Get("/{id}/online-users", handler.GetOnlineUsers)
-	r.Get("/{id}/country-data", handler.GetCountryData)
-	r.Get("/{id}/country-map-data", handler.GetCountryMapData)
-	r.Get("/{id}/traffic-heatmap", handler.GetTrafficHeatmap)
 
 	return r
 }

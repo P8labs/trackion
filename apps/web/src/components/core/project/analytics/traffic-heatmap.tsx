@@ -1,8 +1,6 @@
-import type { TrafficHeatmapData } from "@/types";
-
-interface TrafficHeatmapProps {
-  data?: TrafficHeatmapData;
-}
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import { ErrorBanner } from "@/components/core/error-banner";
+import { LoadingBanner } from "@/components/core/loading-banner";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -21,7 +19,10 @@ function cellToneClass(intensity: number): string {
   return "bg-primary";
 }
 
-export function TrafficHeatmap({ data }: TrafficHeatmapProps) {
+export function TrafficHeatmap({ projectId }: { projectId: string }) {
+  const { data, isLoading, error } =
+    analyticsHooks.useTrafficHeatmap(projectId);
+
   const dayGrid =
     data?.day_hour || Array.from({ length: 7 }, () => Array(24).fill(0));
 
@@ -34,6 +35,19 @@ export function TrafficHeatmap({ data }: TrafficHeatmapProps) {
   const max = Math.max(...dayGrid.flat(), 0) || 1;
   const hoursTop = Array.from({ length: 12 }, (_, i) => i);
   const hoursBottom = Array.from({ length: 12 }, (_, i) => i + 12);
+
+  if (isLoading) {
+    return <LoadingBanner label="Loading traffic heatmap..." />;
+  }
+
+  if (error) {
+    return (
+      <ErrorBanner
+        error={error}
+        label="Failed to load traffic heatmap data. Please try again later."
+      />
+    );
+  }
 
   return (
     <section className="flex flex-col relative">

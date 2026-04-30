@@ -1,24 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { useStore } from "../../store";
-import { Button } from "../../components/ui/button";
-import { Card } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
-import { Badge } from "../../components/ui/badge";
-import { LoadingSpinner } from "../../components/LoadingSpinner";
-import { EventDetailsModal } from "../../components/events/EventDetailsModal";
-import { AdvancedEventFilter } from "../../components/events/AdvancedEventFilter";
-import { OnlineUsersChip } from "../../components/core/project/analytics/online-users-chip";
-import {
-  queryKeys,
-  useProject,
-  useRecentEventsPaginated,
-} from "../../hooks/useApi";
-import { PLine } from "@/components/Line";
+import { useParams, useSearchParams } from "react-router-dom";
+import { Button } from "@trackion/ui/button";
+import { Input } from "@trackion/ui/input";
+import { Badge } from "@trackion/ui/badge";
+import { EventDetailsModal } from "@/components/core/project/modals/event-detail-modal";
+import { AdvancedEventFilter } from "@/components/core/project/events/events-filter";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  RefreshIcon,
   Search02Icon,
   Activity01Icon,
   Clock02Icon,
@@ -28,19 +16,16 @@ import {
   ChevronRight,
 } from "@hugeicons/core-free-icons";
 import moment from "moment";
-import type { RecentEventData } from "../../types";
+import { BaseHeader } from "@/components/core/project/analytics/base-header";
+import { LoadingBanner } from "@/components/core/loading-banner";
+import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import { analyticsQueryKeys } from "@trackion/lib/queries";
+import type { RecentEventData } from "@trackion/lib/types";
+import { ErrorBanner } from "@/components/core/error-banner";
 
 export function EventsPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id: projectId = "" } = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { currentProject } = useStore();
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
-
-  const { data: projectFromRoute } = useProject(id || "");
-  const activeProject = id
-    ? projectFromRoute || (currentProject?.id === id ? currentProject : null)
-    : currentProject;
 
   const [search, setSearch] = useState("");
   const [selectedEventTypes, setSelectedEventTypes] = useState<string[]>([
@@ -48,7 +33,6 @@ export function EventsPage() {
   ]);
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const [sessionFilter, setSessionFilter] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<RecentEventData | null>(
     null,
   );
@@ -64,46 +48,7 @@ export function EventsPage() {
     data: paginatedData,
     isLoading,
     error,
-  } = useRecentEventsPaginated(activeProject?.id || "", page, pageSize);
-
-  // Parse properties helper
-  const parseProperties = (properties: unknown): Record<string, unknown> => {
-    if (!properties) return {};
-    try {
-      const parsed =
-        typeof properties === "string" ? JSON.parse(properties) : properties;
-      if (parsed && typeof parsed === "object") {
-        return parsed as Record<string, unknown>;
-      }
-    } catch {
-      return {};
-    }
-    return {};
-  };
-
-  const getEventColor = (eventName: string) => {
-    switch (eventName) {
-      case "page.view":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
-      case "page.click":
-        return "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30";
-      case "page.time_spent":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30";
-      default:
-        return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30";
-    }
-  };
-
-  const getEventIcon = (eventName: string) => {
-    switch (eventName) {
-      case "page.click":
-        return MousePointerClick;
-      case "page.time_spent":
-        return TimerIcon;
-      default:
-        return Activity01Icon;
-    }
-  };
+  } = analyticsHooks.useRecentEvents(projectId, page, pageSize);
 
   const eventGroups = useMemo(() => {
     const groups = new Map<string, number>();
@@ -165,20 +110,6 @@ export function EventsPage() {
     search,
   ]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setPage(1);
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.recentEventsPaginated(
-        activeProject?.id || "",
-        page,
-        pageSize,
-      ),
-      exact: false,
-    });
-    setRefreshing(false);
-  };
-
   const handleReset = () => {
     setSelectedEventTypes(["all"]);
     setDateRange({ from: "", to: "" });
@@ -221,62 +152,22 @@ export function EventsPage() {
     return () => clearTimeout(timeout);
   }, [filteredEvents, searchParams, setSearchParams]);
 
-  if (!activeProject) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[60vh]">
-        <Card className="p-12 text-center max-w-md border-border/60">
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold tracking-tight mb-3">
-              Select a project to continue
-            </h2>
-            <p className="text-muted-foreground mb-6">
-              Open the project list and choose a project to view events and
-              activity.
-            </p>
-            <Button
-              onClick={() => navigate("/projects")}
-              className="w-full h-11 text-base"
-            >
-              Go to Projects
-            </Button>
-          </div>
-        </Card>
-      </div>
-    );
+  if (isLoading && page === 1) {
+    return <LoadingBanner />;
   }
 
   return (
     <section className="max-w-7xl mx-auto relative">
-      <PLine />
-
       <div className="px-4 md:px-6 py-6 border-b border-border/60 relative">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight md:text-2xl text-foreground">
-                Events
-              </h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                View and analyze tracked events in real-time
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <OnlineUsersChip projectId={activeProject.id} />
-              <Button
-                variant="ghost"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="h-9 gap-2 px-3 text-sm border border-border/60"
-              >
-                <HugeiconsIcon
-                  icon={RefreshIcon}
-                  className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                />
-                {refreshing ? "Refreshing" : "Refresh"}
-              </Button>
-            </div>
-          </div>
+          <BaseHeader
+            label="Events"
+            projectId={projectId}
+            description="View and analyze tracked events in real-time"
+            refreshKeys={[
+              [analyticsQueryKeys.recentEvents(projectId, page, pageSize)],
+            ]}
+          />
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="rounded-lg border border-border/60 bg-muted/15 p-3">
@@ -342,15 +233,9 @@ export function EventsPage() {
 
         <div className="space-y-3">
           {isLoading ? (
-            <div className="flex h-96 items-center justify-center">
-              <LoadingSpinner size="md" />
-            </div>
+            <LoadingBanner />
           ) : error ? (
-            <div className="flex h-96 items-center justify-center rounded-xl border border-destructive/20 bg-destructive/5">
-              <div className="text-sm text-destructive">
-                Failed to load events. Please try again.
-              </div>
-            </div>
+            <ErrorBanner error={error} />
           ) : filteredEvents.length === 0 ? (
             <div className="flex h-96 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/15">
               <div className="text-center">
@@ -487,3 +372,41 @@ export function EventsPage() {
     </section>
   );
 }
+
+const parseProperties = (properties: unknown): Record<string, unknown> => {
+  if (!properties) return {};
+  try {
+    const parsed =
+      typeof properties === "string" ? JSON.parse(properties) : properties;
+    if (parsed && typeof parsed === "object") {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {
+    return {};
+  }
+  return {};
+};
+
+const getEventColor = (eventName: string) => {
+  switch (eventName) {
+    case "page.view":
+      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
+    case "page.click":
+      return "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30";
+    case "page.time_spent":
+      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30";
+    default:
+      return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30";
+  }
+};
+
+const getEventIcon = (eventName: string) => {
+  switch (eventName) {
+    case "page.click":
+      return MousePointerClick;
+    case "page.time_spent":
+      return TimerIcon;
+    default:
+      return Activity01Icon;
+  }
+};

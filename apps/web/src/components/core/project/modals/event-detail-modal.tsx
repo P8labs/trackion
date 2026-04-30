@@ -4,10 +4,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "../../components/ui/dialog";
-import { Badge } from "../../components/ui/badge";
-import type { RecentEventData } from "../../types";
+} from "@trackion/ui/dialog";
+import { Badge } from "@trackion/ui/badge";
 import moment from "moment";
+import type { RecentEventData } from "@trackion/lib/types";
 
 interface EventDetailsModalProps {
   event: RecentEventData | null;

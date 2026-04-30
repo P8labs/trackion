@@ -193,6 +193,26 @@ export interface RecentEventData {
   created_at: string;
 }
 
+export interface RealtimeEventData {
+  id: number;
+  event_name: string;
+  event_type?: string;
+  user_id?: string;
+  session_id: string;
+  platform?: string;
+  device?: string;
+  page_path?: string;
+  created_at: string;
+}
+
+export interface PagninatedRealtimeEventsResponse {
+  events: RealtimeEventData[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface PaginatedEventsResponse {
   events: RecentEventData[];
   total: number;
