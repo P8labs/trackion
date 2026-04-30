@@ -154,7 +154,7 @@ jobs:
 
       - name: Build desktop frontend
         shell: bash
-        run: pnpm build
+        run: pnpm build:desktop
 
       - name: Build Tauri app
         shell: pwsh
