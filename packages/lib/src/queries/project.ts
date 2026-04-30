@@ -37,5 +37,34 @@ export function createProjectMutations(api: ReturnType<typeof createApi>) {
     deleteProject: (id: string) => ({
       mutationFn: () => api.deleteProject(id),
     }),
+
+    upsertRuntimeFlag: (projectId: string) => ({
+      mutationFn: (params: {
+        flagKey: string;
+        enabled: boolean;
+        rollout_percentage: number;
+      }) =>
+        api.upsertRuntimeFlag(projectId, params.flagKey, {
+          enabled: params.enabled,
+          rollout_percentage: params.rollout_percentage,
+        }),
+    }),
+
+    deleteRuntimeFlag: (projectId: string) => ({
+      mutationFn: (flagKey: string) =>
+        api.deleteRuntimeFlag(projectId, flagKey),
+    }),
+
+    upsertRuntimeConfig: (projectId: string) => ({
+      mutationFn: (params: { configKey: string; value: string }) =>
+        api.upsertRuntimeConfig(projectId, params.configKey, {
+          value: params.value,
+        }),
+    }),
+
+    deleteRuntimeConfig: (projectId: string) => ({
+      mutationFn: (configKey: string) =>
+        api.deleteRuntimeConfig(projectId, configKey),
+    }),
   };
 }

@@ -34,4 +34,24 @@ export const projectHooks = {
     const m = useMutations();
     return useAppMutation(m.project.deleteProject(projectId));
   },
+
+  useUpsertRuntimeFlag(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.upsertRuntimeFlag(projectId));
+  },
+
+  useDeleteRuntimeFlag(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.deleteRuntimeFlag(projectId));
+  },
+
+  useUpsertRuntimeConfig(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.upsertRuntimeConfig(projectId));
+  },
+
+  useDeleteRuntimeConfig(projectId: string) {
+    const m = useMutations();
+    return useAppMutation(m.project.deleteRuntimeConfig(projectId));
+  },
 };

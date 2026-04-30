@@ -41,6 +41,49 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
         `/api/v1/projects/${projectId}/runtime`,
       ),
 
+    upsertRuntimeFlag: (
+      projectId: string,
+      flagKey: string,
+      config: {
+        enabled: boolean;
+        rollout_percentage: number;
+      },
+    ) =>
+      api.apiCall<ProjectRuntime>(
+        "PUT",
+        `/api/v1/projects/${projectId}/runtime/flags/${flagKey}`,
+        {
+          body: JSON.stringify(config),
+        },
+      ),
+
+    deleteRuntimeFlag: (projectId: string, flagKey: string) =>
+      api.apiCall<void>(
+        "DELETE",
+        `/api/v1/projects/${projectId}/runtime/flags/${flagKey}`,
+      ),
+
+    upsertRuntimeConfig: (
+      projectId: string,
+      configKey: string,
+      config: {
+        value: string;
+      },
+    ) =>
+      api.apiCall<ProjectRuntime>(
+        "PUT",
+        `/api/v1/projects/${projectId}/runtime/config/${configKey}`,
+        {
+          body: JSON.stringify(config),
+        },
+      ),
+
+    deleteRuntimeConfig: (projectId: string, configKey: string) =>
+      api.apiCall<void>(
+        "DELETE",
+        `/api/v1/projects/${projectId}/runtime/config/${configKey}`,
+      ),
+
     // TODO NEED ATTENTION!
     getOnlineUsers: (projectId: string) =>
       api.apiCall<{ online_users: number }>(
