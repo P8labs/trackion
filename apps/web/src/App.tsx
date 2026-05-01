@@ -56,11 +56,11 @@ function App() {
     <GlobalProvider>
       <TrackionProvider
         options={{
-          enabled: false,
+          enabled: true,
           apiKey: flags.trackionToken,
           serverUrl: flags.trackionUrl,
           replay: {
-            enabled: false,
+            enabled: true,
           },
         }}
       >
