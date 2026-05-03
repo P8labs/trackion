@@ -98,7 +98,7 @@ Guides:
 
 > Dashboard preview (more in docs)
 
-![Trackion Dashboard](./web/public/hero_dark.png)
+![Trackion Dashboard](./apps/web/public/hero_dark.png)
 
 ## Notes
 
