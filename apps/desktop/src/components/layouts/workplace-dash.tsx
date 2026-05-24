@@ -62,12 +62,14 @@ export function ProjectsWorkspaceLayout() {
                 Dashboard
               </p>
               {links.map((item) => (
-                <NavItem
-                  key={item.path}
-                  name={item.name}
-                  path={item.path}
-                  icon={item.icon}
-                />
+                <div key={item.path} onClick={()=> setSidebarOpen(false)}>
+                  <NavItem
+                    key={item.path}
+                    name={item.name}
+                    path={item.path}
+                    icon={item.icon}
+                  />
+                </div>
               ))}
             </div>
           </nav>

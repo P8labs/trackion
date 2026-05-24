@@ -26,27 +26,27 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 	logger.Info("running custom migrations")
 
 	if err := db.Exec(`
-		UPDATE subscriptions 
-		SET 
-			max_projects = CASE 
-				WHEN plan = 'pro' THEN 5 
-				ELSE 3 
+		UPDATE subscriptions
+		SET
+			max_projects = CASE
+				WHEN plan = 'pro' THEN 5
+				ELSE 3
 			END,
-			max_config_keys = CASE 
-				WHEN plan = 'pro' THEN -1 
-				ELSE 10 
+			max_config_keys = CASE
+				WHEN plan = 'pro' THEN -1
+				ELSE 10
 			END,
-			error_retention_days = CASE 
-				WHEN plan = 'pro' THEN 14 
-				ELSE 7 
+			error_retention_days = CASE
+				WHEN plan = 'pro' THEN 14
+				ELSE 7
 			END,
-			supports_rollout = CASE 
-				WHEN plan = 'pro' THEN true 
-				ELSE false 
+			supports_rollout = CASE
+				WHEN plan = 'pro' THEN true
+				ELSE false
 			END,
-			monthly_event_limit = CASE 
-				WHEN plan = 'pro' THEN 200000 
-				ELSE 10000 
+			monthly_event_limit = CASE
+				WHEN plan = 'pro' THEN 200000
+				ELSE 10000
 			END
 		WHERE max_projects = 3 AND max_config_keys = 10 AND error_retention_days = 7
 	`).Error; err != nil {
@@ -55,7 +55,7 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 	}
 
 	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_events_properties_fingerprint 
+		CREATE INDEX IF NOT EXISTS idx_events_properties_fingerprint
 		ON events USING gin ((properties->'fingerprint'))
 	`).Error; err != nil {
 		logger.Error("failed to create fingerprint index", "error", err)
@@ -63,7 +63,7 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 	}
 
 	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_events_error_queries 
+		CREATE INDEX IF NOT EXISTS idx_events_error_queries
 		ON events (project_id, event_type, created_at DESC)
 		WHERE event_type = 'error'
 	`).Error; err != nil {
@@ -72,7 +72,7 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 	}
 
 	if err := db.Exec(`
-		CREATE INDEX IF NOT EXISTS idx_events_project_retention 
+		CREATE INDEX IF NOT EXISTS idx_events_project_retention
 		ON events (project_id, created_at)
 	`).Error; err != nil {
 		logger.Error("failed to create project retention index", "error", err)

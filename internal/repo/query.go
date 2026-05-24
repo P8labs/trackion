@@ -45,7 +45,7 @@ func (e _QueryImpl[T]) GetUserByEmail(ctx context.Context, email string) (T, err
 	var sb strings.Builder
 	_params := make([]any, 0, 1)
 
-	sb.WriteString("SELECT * FROM user WHERE email=?")
+	sb.WriteString("SELECT * FROM users WHERE email=?")
 	_params = append(_params, email)
 
 	var result T

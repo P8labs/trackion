@@ -17,6 +17,7 @@ import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import z from "zod";
+import { useGlobal } from "@/providers/global-provider";
 
 const authSchema = z.object({
   serverUrl: z.url("Enter a valid server URL."),
@@ -28,6 +29,7 @@ type AuthFormValues = z.infer<typeof authSchema>;
 export function SelfHostAuthForm() {
   const navigate = useNavigate();
   const { setAuth } = useStore();
+  const { login } = useGlobal();
   const [showSelfHostInputs, setShowSelfHostInputs] = useState(false);
 
   const form = useForm<AuthFormValues>({
@@ -41,10 +43,9 @@ export function SelfHostAuthForm() {
   const loginMutation = userHooks.useLoginWithToken();
 
   const handleTokenLogin = async (values: AuthFormValues) => {
-    setAuth(values.adminToken.trim(), values.serverUrl);
     await loginMutation.mutateAsync(values.adminToken.trim(), {
-      onSuccess: ({ token, user }) => {
-        setAuth(token, values.serverUrl, user);
+      onSuccess: ({ token }) => {
+        login(token)
         navigate("/projects");
       },
     });

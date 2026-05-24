@@ -1,6 +1,5 @@
 export interface SelfhostTokenResponse {
   token: string;
-  user: User;
 }
 
 export interface Project {
