@@ -28,7 +28,7 @@ type AuthFormValues = z.infer<typeof authSchema>;
 
 export function SelfHostAuthForm() {
   const navigate = useNavigate();
-  const { setAuth } = useStore();
+  const { setServerUrl } = useStore();
   const { login } = useGlobal();
   const [showSelfHostInputs, setShowSelfHostInputs] = useState(false);
 
@@ -43,6 +43,7 @@ export function SelfHostAuthForm() {
   const loginMutation = userHooks.useLoginWithToken();
 
   const handleTokenLogin = async (values: AuthFormValues) => {
+    setServerUrl(values.serverUrl)
     await loginMutation.mutateAsync(values.adminToken.trim(), {
       onSuccess: ({ token }) => {
         login(token)
