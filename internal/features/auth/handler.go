@@ -201,7 +201,7 @@ func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if token == "" {
-		res.Error(w, "unauthorized", http.StatusUnauthorized)
+		res.Error(w, "unauthorized access token not found", http.StatusUnauthorized)
 		return
 	}
 
@@ -210,14 +210,13 @@ func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.VerifyToken(r.Context(), token)
+	session, err := h.service.VerifyToken(r.Context(), token)
 	if err != nil {
-		res.Error(w, "unauthorized", http.StatusUnauthorized)
+		res.Error(w, "unauthorized failed to get user", http.StatusUnauthorized)
 		return
 	}
 
 	res.Success(w, verifyTokenResponse{
-		Token: token,
-		User:  user,
+		Token: session,
 	}, "Token verified")
 }

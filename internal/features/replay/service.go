@@ -260,16 +260,16 @@ func (s *Service) ensureProjectAccess(ctx context.Context, projectID string) (uu
 		return uuid.Nil, errors.New("unauthorized")
 	}
 
-	if userIDRaw == auth.SystemUserID {
-		_, err := gorm.G[db.Project](s.db).
-			Select("id").
-			Where(repo.Project.ID.Eq(projectUUID)).
-			First(ctx)
-		if err != nil {
-			return uuid.Nil, errors.New("project not found")
-		}
-		return projectUUID, nil
-	}
+	// if userIDRaw == auth.SystemUserID {
+	// 	_, err := gorm.G[db.Project](s.db).
+	// 		Select("id").
+	// 		Where(repo.Project.ID.Eq(projectUUID)).
+	// 		First(ctx)
+	// 	if err != nil {
+	// 		return uuid.Nil, errors.New("project not found")
+	// 	}
+	// 	return projectUUID, nil
+	// }
 
 	userUUID, err := uuid.Parse(userIDRaw)
 	if err != nil {

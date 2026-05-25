@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"strings"
 	"time"
 	"trackion/internal/config"
@@ -212,38 +213,65 @@ func (s *Service) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
-func (s *Service) VerifyToken(ctx context.Context, token string) (db.User, error) {
-	if s.cfg.IsSelfHost() {
-		if token != s.cfg.AdminToken {
-			return db.User{}, errors.New("unauthorized")
-		}
+func (s *Service) VerifyToken(ctx context.Context, token string) (string, error) {
+	if !s.cfg.IsSelfHost() {
+		return "", errors.New("Self host mode need to be enable to verify token")
+	}
+	if token != s.cfg.AdminToken {
+		return "", errors.New("unauthorized access to verify token")
+	}
 
-		name := "Self Hosted Admin"
+	adminEmail := "admin@trackion.local"
+	name := "Admin"
 
-		return db.User{
-			ID:        uuid.MustParse(SystemUserID),
-			Email:     "admin@trackion.local",
+	u, err := gorm.G[db.User](s.db).Where(repo.User.Email.Eq(adminEmail)).First(ctx)
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		slog.Info("USER NOT FOUND CREATING DEFAULT")
+		user := db.User{
+			Email:     adminEmail,
 			Name:      &name,
 			GithubID:  nil,
 			GoogleID:  nil,
 			CreatedAt: time.Now(),
 			AvatarUrl: nil,
-		}, nil
+		}
+
+		err := gorm.G[db.User](s.db).Create(ctx, &user)
+		if err != nil {
+			return "", err
+		}
+
+		u.ID = user.ID
+
+	} else {
+		return "", err
 	}
 
-	session, err := gorm.G[db.Session](s.db).Preload("User", nil).
-		Where(repo.Session.Token.Eq(token)).
-		Where(repo.Session.ExpiresAt.Gt(time.Now())).
-		First(ctx)
-	if err != nil {
-		return db.User{}, err
+	if err := s.ensureActiveSubscription(ctx, u.ID); err != nil {
+		return "", err
 	}
-	return (*session.User), nil
+
+	sessionToken, err := s.CreateSession(ctx, u.ID.String())
+	slog.Info(sessionToken)
+	return sessionToken, nil
 }
 
 func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUID) error {
 	if s.cfg.IsSelfHost() {
-		return nil
+		periodEnd := time.Now().AddDate(100, 0, 0)
+		sub := db.Subscription{
+			UserID:             userID,
+			Plan:               "free",
+			MonthlyEventLimit:  10_000_000_000,
+			Status:             "active",
+			CurrentPeriodEnd:   periodEnd,
+			MaxProjects:        10_000_000_000,
+			MaxConfigKeys:      10_000_000_000,
+			ErrorRetentionDays: 90,
+			SupportsRollout:    true,
+		}
+		return gorm.G[db.Subscription](s.db).Create(ctx, &sub)
+
 	}
 
 	periodEnd := time.Now().AddDate(0, 1, 0)
@@ -261,7 +289,7 @@ func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUI
 
 func (s *Service) ensureActiveSubscription(ctx context.Context, userID uuid.UUID) error {
 	if s.cfg.IsSelfHost() {
-		return nil
+		return s.createDefaultSubscription(ctx, userID)
 	}
 
 	subscription, err := gorm.G[db.Subscription](s.db).Where(repo.Subscription.UserID.Eq(userID)).First(ctx)

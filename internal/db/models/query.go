@@ -4,7 +4,7 @@ type Query[T any] interface {
 	// SELECT * FROM @@table WHERE id=@id
 	GetByID(id string) (T, error)
 
-	// SELECT * FROM user WHERE email=@email
+	// SELECT * FROM users WHERE email=@email
 	GetUserByEmail(email string) (T, error)
 
 	// SELECT * FROM user WHERE github_id=@providerId OR google_id=@providerId

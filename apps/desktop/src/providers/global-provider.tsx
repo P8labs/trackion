@@ -21,6 +21,9 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     setAuthToken(token);
     store.setAuth(token, store.serverUrl);
   };
+
+
+
   const api = useMemo(() => {
     const client = createApiClient({
       baseUrl: store.serverUrl,
@@ -28,7 +31,7 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     });
 
     return createApi(client);
-  }, [authToken]);
+  }, [authToken, store.serverUrl]);
 
   const loginUrls = useMemo(() => {
     const baseUrl = store.serverUrl.replace(/\/+$/, "");

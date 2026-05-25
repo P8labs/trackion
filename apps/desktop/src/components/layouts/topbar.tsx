@@ -27,6 +27,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useStore } from "@/store";
+import { IS_ANDROID } from "@/lib/constants";
 import { invoke } from "@tauri-apps/api/core";
 
 export function Topbar({
@@ -165,6 +166,7 @@ export function Topbar({
           </DropdownMenu>
         )}
 
+        {!IS_ANDROID && (
         <div className="flex h-full items-stretch">
           <Button
             variant="ghost"
@@ -203,6 +205,7 @@ export function Topbar({
             <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
           </Button>
         </div>
+      )}
       </div>
 
       <LogoutModal open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} />

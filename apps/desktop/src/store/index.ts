@@ -10,6 +10,7 @@ type State = {
   isAuthenticated: boolean;
 
   setAuth: (token: string, serverUrl: string, user?: User) => void;
+  setServerUrl: (serverUrl: string) => void;
   logout: () => void;
 };
 
@@ -30,6 +31,7 @@ export const useStore = create<State>()(
           isAuthenticated: true,
         }),
 
+      setServerUrl: (serverUrl) => set({ serverUrl }),
       logout: () =>
         set({
           authToken: null,

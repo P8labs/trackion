@@ -32,21 +32,6 @@ func NewMiddleware(db *gorm.DB, cfg config.Config) *Middleware {
 func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		if m.cfg.IsSelfHost() {
-
-			token := extractBearer(r)
-
-			if token != m.cfg.AdminToken {
-				res.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), UserIdContextKey, SystemUserID)
-			next.ServeHTTP(w, r.WithContext(ctx))
-			return
-		}
-
 		token := extractBearer(r)
 
 		if token == "" {
@@ -60,6 +45,14 @@ func (m *Middleware) AuthMiddleware(next http.Handler) http.Handler {
 			res.Error(w, "unauthorized auth token not found", http.StatusUnauthorized)
 			return
 		}
+
+		//  now it needs only to initial login
+		// if m.cfg.IsSelfHost() {
+		// 	if token != m.cfg.AdminToken {
+		// 		res.Error(w, "unauthorized", http.StatusUnauthorized)
+		// 		return
+		// 	}
+		// }
 
 		session, err := gorm.G[db.Session](m.db).
 			Where(repo.Session.Token.Eq(token), repo.Session.ExpiresAt.Gt(time.Now())).
