@@ -53,12 +53,12 @@ export function SelfHostAuthForm() {
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full rounded-md rounded-t-none border border-t-0 border-border/60 bg-background text-left transition-colors hover:bg-muted/20 dark:bg-muted/15 dark:hover:bg-muted/30">
       <button
         type="button"
         onClick={() => setShowSelfHostInputs((prev) => !prev)}
         aria-expanded={showSelfHostInputs}
-        className="flex w-full cursor-pointer items-start justify-between rounded-md border border-border/60 bg-background px-3 py-2.5 text-left transition-colors hover:bg-muted/20 dark:bg-muted/15 dark:hover:bg-muted/30"
+        className="flex w-full cursor-pointer items-start justify-between rounded-md rounded-t-none px-3 py-2.5 text-left transition-colors"
       >
         <div className="pr-4">
           <p className="text-sm font-medium text-foreground">
@@ -85,7 +85,7 @@ export function SelfHostAuthForm() {
             : "grid-rows-[0fr] opacity-0",
         )}
       >
-        <div className="overflow-hidden">
+        <div className="overflow-hidden px-3 py-2.5">
           <form
             onSubmit={form.handleSubmit(handleTokenLogin)}
             className="space-y-4"
