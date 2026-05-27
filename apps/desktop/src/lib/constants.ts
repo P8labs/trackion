@@ -1,6 +1,7 @@
-import { platform } from '@tauri-apps/plugin-os';
+// import { platform } from "@tauri-apps/plugin-os";
 
-const currentPlatform = platform();
+// const currentPlatform = typeof platform === "function" ? platform() : null;
+const currentPlatform = "android";
 
 export const SERVER_URL =
   import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
@@ -12,5 +13,4 @@ export const SCRIPT_TAG_CODE = `<script
   data-api-key="your-project-key"
 ></script>`;
 
-
-export const IS_ANDROID = currentPlatform == 'android';
+export const IS_ANDROID = currentPlatform == "android";

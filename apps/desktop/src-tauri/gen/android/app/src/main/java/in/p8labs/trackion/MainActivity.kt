@@ -8,38 +8,32 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
-class MainActivity : TauriActivity() {
-  override fun onCreate(savedInstanceState: Bundle?) {
-    enableEdgeToEdge()
-    super.onCreate(savedInstanceState)
 
-    val rootView: View = findViewById(android.R.id.content)
-    
-    ViewCompat.setOnApplyWindowInsetsListener(rootView) { v, insets ->
-      val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-      val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
-      val imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
-  
-      val bottomPadding = if (imeVisible) imeHeight else systemBars.bottom
-      
-      v.setPadding(
-          systemBars.left,
-          systemBars.top,
-          systemBars.right,
-          bottomPadding
-      )
-      insets
+class MainActivity : TauriActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+      enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+
     }
 
-  }
+    override fun onWebViewCreate(webView: WebView) {
+        super.onWebViewCreate(webView)
 
-  override fun onWebViewCreate(webView: WebView) {
-    super.onWebViewCreate(webView)
+        // Enable Chrome inspect debugging
+        WebView.setWebContentsDebuggingEnabled(true)
 
-    webView.setBackgroundColor(0x00000000)
-    
-    webView.fitsSystemWindows = true
+        // Transparent background
+        webView.setBackgroundColor(0x00000000)
 
-    android.util.Log.i("MainActivity", "WebView created, waiting for Rust hide() call...")
-  }
+        // Better rendering defaults
+        webView.settings.javaScriptEnabled = true
+        webView.settings.domStorageEnabled = true
+        webView.settings.allowFileAccess = true
+        webView.settings.allowContentAccess = true
+        webView.settings.loadsImagesAutomatically = true
+        webView.settings.mediaPlaybackRequiresUserGesture = false
+
+        android.util.Log.i("MainActivity", "Tauri WebView initialized")
+    }
 }

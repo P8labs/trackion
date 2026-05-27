@@ -1,30 +1,25 @@
 #[tauri::command]
-async fn handle_window_action(
-    _app: tauri::AppHandle,
-    window: tauri::Window,
-    action: &str,
-) -> Result<(), String> {
+async fn handle_window_action(window: tauri::Window, action: &str) -> Result<(), String> {
     #[cfg(desktop)]
     {
-        let rs = match action {
-            "close" => window.close(),
-            "hide" => window.hide(),
-            "min" => window.minimize(),
+        match action {
+            "close" => window.close().map_err(|e| e.to_string())?,
+            "hide" => window.hide().map_err(|e| e.to_string())?,
+            "min" => window.minimize().map_err(|e| e.to_string())?,
             "max" => {
-                if window.is_maximized().unwrap() {
-                    window.unmaximize().unwrap()
+                if window.is_maximized().map_err(|e| e.to_string())? {
+                    window.unmaximize().map_err(|e| e.to_string())?;
                 } else {
-                    window.maximize().unwrap()
+                    window.maximize().map_err(|e| e.to_string())?;
                 }
-                Ok(())
             }
-
-            _ => Ok(()),
-        };
-
-        if rs.is_err() {
-            return Err("Failed to execute the action".to_string());
+            _ => {}
         }
+    }
+
+    #[cfg(mobile)]
+    {
+        println!("Window actions ignored on mobile: {}", action);
     }
 
     Ok(())
@@ -35,11 +30,11 @@ pub fn run() {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_http::init())
-        .plugin(tauri_plugin_opener::init())
-        // .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_updater::Builder::new().build());
+        .plugin(tauri_plugin_http::init());
+    // .plugin(tauri_plugin_opener::init())
+    // .plugin(tauri_plugin_shell::init())
+    // .plugin(tauri_plugin_deep_link::init())
+    // .plugin(tauri_plugin_updater::Builder::new().build());
 
     #[cfg(target_os = "windows")]
     {

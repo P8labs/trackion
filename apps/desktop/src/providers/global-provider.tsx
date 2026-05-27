@@ -9,6 +9,7 @@ type GlobalContextType = {
     github: string;
   };
   login: (token: string) => void;
+  setupServerUrl: (url: string) => void;
 };
 
 const GlobalContext = createContext<GlobalContextType | null>(null);
@@ -16,33 +17,37 @@ const GlobalContext = createContext<GlobalContextType | null>(null);
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
   const store = useStore.getState();
   const [authToken, setAuthToken] = useState(store.authToken);
+  const [serverUrl, setServerUrl] = useState(store.serverUrl);
 
   const login = (token: string) => {
     setAuthToken(token);
     store.setAuth(token, store.serverUrl);
   };
 
-
+  const setupServerUrl = (url: string) => {
+    setServerUrl(url);
+    store.setServerUrl(url);
+  };
 
   const api = useMemo(() => {
     const client = createApiClient({
-      baseUrl: store.serverUrl,
+      baseUrl: serverUrl,
       getAuthToken: () => authToken,
     });
 
     return createApi(client);
-  }, [authToken, store.serverUrl]);
+  }, [authToken, serverUrl]);
 
   const loginUrls = useMemo(() => {
-    const baseUrl = store.serverUrl.replace(/\/+$/, "");
+    const baseUrl = serverUrl.replace(/\/+$/, "");
     return {
       google: `${baseUrl}/auth/login/google?client=desktop`,
       github: `${baseUrl}/auth/login/github?client=desktop`,
     };
-  }, [store.serverUrl]);
+  }, [serverUrl]);
 
   return (
-    <GlobalContext.Provider value={{ api, loginUrls, login }}>
+    <GlobalContext.Provider value={{ api, loginUrls, login, setupServerUrl }}>
       {children}
     </GlobalContext.Provider>
   );
