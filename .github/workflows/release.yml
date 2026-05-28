@@ -290,7 +290,9 @@ jobs:
         shell: bash
         run: |
           sdkmanager="$(command -v sdkmanager)"
+          set +o pipefail
           yes | "$sdkmanager" --licenses
+          set -o pipefail
           "$sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973"
 
       - name: Rust setup
