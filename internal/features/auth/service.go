@@ -263,11 +263,11 @@ func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUI
 		sub := db.Subscription{
 			UserID:             userID,
 			Plan:               "free",
-			MonthlyEventLimit:  10_000_000_000,
+			MonthlyEventLimit:  10000000000,
 			Status:             "active",
 			CurrentPeriodEnd:   periodEnd,
-			MaxProjects:        10_000_000_000,
-			MaxConfigKeys:      10_000_000_000,
+			MaxProjects:        10000000000,
+			MaxConfigKeys:      10000000000,
 			ErrorRetentionDays: 90,
 			SupportsRollout:    true,
 		}
