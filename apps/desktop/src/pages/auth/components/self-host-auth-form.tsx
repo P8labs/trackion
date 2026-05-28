@@ -4,7 +4,6 @@ import { Input } from "@trackion/ui/input";
 import { userHooks } from "@/hooks/queries/use-user";
 import { SERVER_URL } from "@/lib/constants";
 import { cn } from "@trackion/ui/lib";
-import { useStore } from "@/store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ChevronDownIcon,

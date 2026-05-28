@@ -15,3 +15,4 @@ scripts/db/*
 
 dbinit/
 dist/
+*.jks

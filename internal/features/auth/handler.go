@@ -192,23 +192,13 @@ func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bodyToken := strings.TrimSpace(payload.Token)
-	bearerToken := strings.TrimSpace(extractBearer(r))
-
-	token := bodyToken
-	if token == "" {
-		token = bearerToken
-	}
+	token := strings.TrimSpace(payload.Token)
 
 	if token == "" {
 		res.Error(w, "unauthorized access token not found", http.StatusUnauthorized)
 		return
 	}
 
-	if bodyToken != "" && bearerToken != "" && bodyToken != bearerToken {
-		res.Error(w, "token mismatch", http.StatusUnauthorized)
-		return
-	}
 
 	session, err := h.service.VerifyToken(r.Context(), token)
 	if err != nil {

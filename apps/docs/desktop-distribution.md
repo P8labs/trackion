@@ -4,16 +4,17 @@ This guide describes how Trackion desktop releases are built and published.
 
 ## Distribution Targets
 
-Current release workflow builds Windows artifacts:
+Current release workflow builds Windows desktop artifacts and Android APKs:
 
 - NSIS installer (`*.exe`)
 - MSI installer (`*.msi`)
 - portable ZIP package
 - updater metadata (`latest.json` + signatures)
+- ABI-specific Android APKs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`)
 
 ## Release Workflow Overview
 
-Desktop build is part of the repository-wide `release.yml` workflow, triggered by semver tags:
+Desktop and Android build are part of the repository-wide `release.yml` workflow, triggered by semver tags:
 
 - trigger pattern: `v*.*.*`
 
@@ -21,10 +22,11 @@ High-level pipeline:
 
 1. build server binaries (multi-platform)
 2. build desktop client on Windows runner
-3. generate updater metadata
-4. package release assets
-5. publish GitHub Release
-6. build/push Docker image for server
+3. build Android APKs for all supported ABIs
+4. generate updater metadata
+5. package release assets
+6. publish GitHub Release
+7. build/push Docker image for server
 
 ## Required GitHub Secrets
 
@@ -32,6 +34,12 @@ For signed updater artifacts in desktop build job:
 
 - `TAURI_SIGNING_PRIVATE_KEY`
 - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
+For signed Android release APKs:
+
+- `ANDROID_KEY_ALIAS`
+- `ANDROID_KEY_PASSWORD`
+- `ANDROID_KEY_BASE64`
 
 Generate keys:
 
@@ -41,6 +49,8 @@ tauri signer generate --password "your-strong-password"
 ```
 
 Put generated public key in `tauri.conf.json` updater `pubkey`, and private key/password in repository secrets.
+
+Android signing uses a `keystore.properties` file under `desktop/src-tauri/gen/android/` during CI. The release workflow writes it from the secrets above before running `tauri android build -- --apk --split-per-abi`.
 
 ## Local Production Build
 
@@ -53,6 +63,17 @@ pnpm tauri build
 Artifacts appear under:
 
 `desktop/src-tauri/target/release/bundle/`
+
+### Production Android APKs
+
+```bash
+cd desktop
+pnpm tauri android build -- --apk --split-per-abi
+```
+
+Android artifacts appear under:
+
+`desktop/src-tauri/gen/android/app/build/outputs/apk/`
 
 ## Versioning and Tagging
 
@@ -86,6 +107,8 @@ Release workflow constructs `latest.json` with:
 - release notes
 - `windows-x86_64` URLs and signatures
 - additional windows platform aliases
+
+The GitHub release also includes ABI-specific Android APKs for direct download.
 
 The app’s updater plugin is configured to fetch:
 

@@ -243,7 +243,8 @@ func (s *Service) VerifyToken(ctx context.Context, token string) (string, error)
 
 		u.ID = user.ID
 
-	} else {
+	} 
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
 

@@ -1,7 +1,6 @@
-// import { platform } from "@tauri-apps/plugin-os";
-
-// const currentPlatform = typeof platform === "function" ? platform() : null;
-const currentPlatform = "android";
+import { platform } from "@tauri-apps/plugin-os";
+const currentPlatform = typeof platform === "function" ? platform() : null;
+// const currentPlatform = "android";
 
 export const SERVER_URL =
   import.meta.env.VITE_SERVER_URL || "http://localhost:8000";

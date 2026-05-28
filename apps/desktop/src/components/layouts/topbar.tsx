@@ -20,6 +20,7 @@ import {
   Logout,
   Menu01Icon,
   MinusSignIcon,
+  QuestionFreeIcons,
   ReloadIcon,
   ResetPasswordFreeIcons,
   Settings01Icon,
@@ -145,7 +146,7 @@ export function Topbar({
           <DropdownMenu>
             <DropdownMenuTrigger>
               <HugeiconsIcon
-                icon={Menu01Icon}
+                icon={QuestionFreeIcons}
                 size={18}
                 className="text-muted-foreground"
               />
@@ -167,45 +168,45 @@ export function Topbar({
         )}
 
         {!IS_ANDROID && (
-        <div className="flex h-full items-stretch">
-          <Button
-            variant="ghost"
-            type="button"
-            aria-label="Minimize"
-            size="icon"
-            onClick={() => window.location.reload()}
-          >
-            <HugeiconsIcon icon={ReloadIcon} className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            aria-label="Minimize"
-            size="icon"
-            onClick={async () => await onAction("min")}
-          >
-            <HugeiconsIcon icon={MinusSignIcon} className="size-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            aria-label="Maximize"
-            size="icon"
-            onClick={async () => await onAction("max")}
-          >
-            <HugeiconsIcon icon={SquareIcon} className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            type="button"
-            aria-label="Close"
-            size="icon"
-            onClick={async () => await onAction("close")}
-          >
-            <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
-          </Button>
-        </div>
-      )}
+          <div className="flex h-full items-stretch">
+            <Button
+              variant="ghost"
+              type="button"
+              aria-label="Minimize"
+              size="icon"
+              onClick={() => window.location.reload()}
+            >
+              <HugeiconsIcon icon={ReloadIcon} className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              type="button"
+              aria-label="Minimize"
+              size="icon"
+              onClick={async () => await onAction("min")}
+            >
+              <HugeiconsIcon icon={MinusSignIcon} className="size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              type="button"
+              aria-label="Maximize"
+              size="icon"
+              onClick={async () => await onAction("max")}
+            >
+              <HugeiconsIcon icon={SquareIcon} className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              type="button"
+              aria-label="Close"
+              size="icon"
+              onClick={async () => await onAction("close")}
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <LogoutModal open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} />

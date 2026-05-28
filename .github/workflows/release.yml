@@ -269,9 +269,93 @@ jobs:
             apps/desktop/src-tauri/target/release/bundle/**/latest.json
           retention-days: 1
 
+  build-android:
+    name: Build Android APKs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK components
+        shell: bash
+        run: |
+          sdkmanager="$(command -v sdkmanager)"
+          yes | "$sdkmanager" --licenses
+          "$sdkmanager" "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.0.12077973"
+
+      - name: Rust setup
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Cargo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-android-cargo-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-android-cargo-
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Android signing
+        shell: bash
+        env:
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+        run: |
+          cd apps/desktop/src-tauri/gen/android
+          base64 -d <<< "$ANDROID_KEY_BASE64" > "$RUNNER_TEMP/trackion-android-keystore.jks"
+          cat > keystore.properties <<EOF
+          keyAlias=$ANDROID_KEY_ALIAS
+          password=$ANDROID_KEY_PASSWORD
+          storeFile=$RUNNER_TEMP/trackion-android-keystore.jks
+          EOF
+
+      - name: Build Android APKs
+        shell: bash
+        run: |
+          export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
+          cd apps/desktop
+          pnpm run tauri android build -- --ci --apk --split-per-abi
+
+      - name: Upload Android artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-apks
+          path: |
+            apps/desktop/src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+          retention-days: 1
+
   prepare-release:
     name: Prepare Release Assets
-    needs: [build-server, build-desktop]
+    needs: [build-server, build-desktop, build-android]
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -318,6 +402,10 @@ jobs:
           cp artifacts/desktop-windows/**/latest.json release-assets/updater/ 2>/dev/null || true
           cp artifacts/desktop-windows/**/*.sig release-assets/updater/ 2>/dev/null || true
 
+          # Copy Android APKs
+          mkdir -p release-assets/android
+          find artifacts/android-apks -type f -name '*.apk' -exec cp {} release-assets/android/ \; 2>/dev/null || true
+
           echo "=== Release Assets Structure ==="
           find release-assets -type f | sort
           ls -lh release-assets/**/*
@@ -353,6 +441,9 @@ jobs:
             echo "- \`trackion_${{ steps.version.outputs.version }}_x64.zip\`"
             echo "- \`latest.json\`"
             echo ""
+            echo "### Android Client"
+            echo "- ABI-specific APKs for arm64-v8a, armeabi-v7a, x86, and x86_64"
+            echo ""
             echo "### Docker Image"
             echo "\`\`\`bash"
             echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
@@ -371,6 +462,11 @@ jobs:
             echo "1. Download the MSI, EXE, or ZIP package"
             echo "2. Run the installer or extract the ZIP"
             echo "3. Follow the installation wizard or launch the app directly"
+            echo ""
+            echo "#### Android"
+            echo "1. Download the APK that matches your device ABI"
+            echo "2. Install the APK on the device or emulator"
+            echo "3. Use the release notes to confirm the supported ABI list"
             echo ""
             echo "#### Docker"
             echo "Run with Docker:"
@@ -547,6 +643,7 @@ jobs:
           files: |
             assets/server/*
             assets/desktop/*
+            assets/android/*
             assets/updater/*
           body_path: CHANGELOG.md
           draft: false

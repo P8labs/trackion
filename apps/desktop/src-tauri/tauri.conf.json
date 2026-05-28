@@ -67,7 +67,13 @@
     "deep-link": {
       "desktop": {
         "schemes": ["trackion"]
-      }
+      },
+      "mobile": [
+        {
+          "scheme": ["trackion"],
+          "appLink": false
+        }
+      ]
     },
     "updater": {
       "active": true,
