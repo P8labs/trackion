@@ -372,6 +372,7 @@ jobs:
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
           cd apps/desktop
+          cargo install tauri-cli --version "^2.0.0" --locked
           pnpm run tauri android build --split-per-abi
 
       - name: Upload Android artifacts
