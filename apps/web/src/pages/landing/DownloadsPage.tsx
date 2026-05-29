@@ -62,7 +62,7 @@ function formatAssetLabel(name: string) {
     .replace(/trackion[_-]?/i, "")
     .replace(/v?\d+\.\d+\.\d+[_-]?/i, "")
     .replace(/[_\-]+/g, " ")
-    .replace(/\.(exe|msi|zip)$/, "")
+    .replace(/\.(exe|msi|zip|apk)$/, "")
     .trim();
   return pretty || name;
 }
@@ -122,12 +122,19 @@ export default function DownloadsPage() {
     (asset) =>
       asset.name.startsWith("trackion_") &&
       !asset.name.startsWith("trackion-server_") &&
+      !asset.name.startsWith("app-") &&
       !asset.name.endsWith(".sig") &&
       asset.name !== "latest.json",
   );
+
   const serverAssets = assets.filter(
     (asset) =>
       asset.name.startsWith("trackion-server_") && !asset.name.endsWith(".sig"),
+  );
+
+  const mobileAssets = assets.filter(
+    (asset) =>
+      asset.name.startsWith("app-"),
   );
 
   return (
@@ -193,6 +200,19 @@ export default function DownloadsPage() {
         )}
 
         <section className="space-y-8">
+          <div>
+            <h2 className="text-xl font-semibold mb-3">Mobile App</h2>
+            <ul className="space-y-2">
+              {mobileAssets.map((asset) => (
+                <CompactAssetRow
+                  key={asset.id}
+                  asset={asset}
+                  label={formatAssetLabel(asset.name)}
+                />
+              ))}
+            </ul>
+          </div>
+
           <div>
             <h2 className="text-xl font-semibold mb-3">Desktop Client</h2>
             <ul className="space-y-2">
