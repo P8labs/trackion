@@ -366,7 +366,7 @@ jobs:
         run: pnpm build:android
 
       - name: Build Tauri app
-        shell: pwsh
+        shell: bash
         env:
           VITE_SERVER_URL: "https://api.trackion.tech"
         run: |
