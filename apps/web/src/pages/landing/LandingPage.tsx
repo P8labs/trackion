@@ -31,7 +31,7 @@ export function LandingPage() {
             <div className="flex items-center gap-3 text-sm">
               <span className="inline-flex h-2 w-2 rounded-full bg-(--color-chart-2)" />
               <p className="text-muted-foreground">
-                Desktop client is now available for Trackion.
+                Mobile app is now available for Trackion.
               </p>
             </div>
 
@@ -119,7 +119,7 @@ export function LandingPage() {
             <div
               className="
                 group lg:col-span-7 px-6 py-10
-                border-r border-border/60 border-b lg:border-b-0 
+                border-r border-border/60 border-b lg:border-b-0
                 relative overflow-hidden transition
                 hover:bg-muted/20
               "
@@ -139,7 +139,7 @@ export function LandingPage() {
 
               <div
                 className="
-                  mb-6 inline-flex p-2 rounded-md 
+                  mb-6 inline-flex p-2 rounded-md
                   bg-muted/40 border border-border/50
                   text-muted-foreground
                   transition group-hover:bg-muted/60 group-hover:text-foreground
@@ -211,7 +211,7 @@ export function LandingPage() {
 
               <div
                 className="
-                mb-6 inline-flex p-2 rounded-md 
+                mb-6 inline-flex p-2 rounded-md
                 bg-muted/40 border border-border/50
                 text-muted-foreground
                 transition group-hover:bg-muted/60 group-hover:text-foreground
@@ -274,8 +274,8 @@ export function LandingPage() {
 
                 <div
                   className="
-                  mb-4 inline-flex p-2 rounded-md 
-                  bg-muted/40 border border-border/50 
+                  mb-4 inline-flex p-2 rounded-md
+                  bg-muted/40 border border-border/50
                   text-muted-foreground
                   transition group-hover:bg-muted/60 group-hover:text-foreground
                   "
