@@ -322,8 +322,29 @@ jobs:
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
+      - name: Clean Tauri build
+        shell: bash
+        run: |
+          rm -rf apps/desktop/src-tauri/target
+
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
+
+      - name: Determine version
+        shell: bash
+        id: version
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Update version
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: echo "${{ steps.version.outputs.version }}" > VERSION
 
       - name: Set up Android signing
         shell: bash
@@ -340,8 +361,14 @@ jobs:
           storeFile=$RUNNER_TEMP/trackion-android-keystore.jks
           EOF
 
-      - name: Build Android APKs
+      - name: Build android frontend
         shell: bash
+        run: pnpm build:android
+
+      - name: Build Tauri app
+        shell: pwsh
+        env:
+          VITE_SERVER_URL: "https://api.trackion.tech"
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
           cd apps/desktop
@@ -478,7 +505,7 @@ jobs:
             echo ""
             echo "### Changes"
             if [ -n "$PREV_TAG" ]; then
-              git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" 
+              git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)"
             else
               git log --pretty=format:"- %s (%h)"
             fi
@@ -577,7 +604,7 @@ jobs:
                "build/trackion-server-linux-arm-v7"
           fi
 
-          echo "=== Docker Build Context ===" 
+          echo "=== Docker Build Context ==="
           ls -lh build/
 
       - name: Extract metadata

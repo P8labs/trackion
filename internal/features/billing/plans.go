@@ -1,23 +1,23 @@
 package billing
 
 import (
-	"time"
 	db "trackion/internal/db/models"
 )
 
 type PlanType string
 
 const (
-	PlanTypeFree PlanType = "free"
-	PlanTypePro  PlanType = "pro"
+	PlanTypeFree     PlanType = "free"
+	PlanTypePro      PlanType = "pro"
+	PlanTypeSelfhost PlanType = "selfhost"
 )
 
 type PlanLimits struct {
-	MonthlyEvents   int           `json:"monthly_events"`
-	MaxProjects     int           `json:"max_projects"`
-	MaxConfigKeys   int           `json:"max_config_keys"`  // per project
-	ErrorRetention  time.Duration `json:"error_retention"`  // in days
-	SupportsRollout bool          `json:"supports_rollout"` // feature flag rollout %
+	MonthlyEvents   int  `json:"monthly_events"`
+	MaxProjects     int  `json:"max_projects"`
+	MaxConfigKeys   int  `json:"max_config_keys"`  // per project
+	ErrorRetention  int  `json:"error_retention"`  // in days
+	SupportsRollout bool `json:"supports_rollout"` // feature flag rollout %
 }
 
 func GetPlanLimits(plan PlanType) PlanLimits {
@@ -27,15 +27,23 @@ func GetPlanLimits(plan PlanType) PlanLimits {
 			MonthlyEvents:   10000,
 			MaxProjects:     3,
 			MaxConfigKeys:   10,
-			ErrorRetention:  3 * 24 * time.Hour, // 3 days
+			ErrorRetention:  3, // 3 days
 			SupportsRollout: false,
 		}
 	case PlanTypePro:
 		return PlanLimits{
 			MonthlyEvents:   200000,
 			MaxProjects:     5,
-			MaxConfigKeys:   -1,                  // unlimited
-			ErrorRetention:  14 * 24 * time.Hour, // 14 days
+			MaxConfigKeys:   -1, // unlimited
+			ErrorRetention:  14, // 14 days
+			SupportsRollout: true,
+		}
+	case PlanTypeSelfhost:
+		return PlanLimits{
+			MonthlyEvents:   -1,
+			MaxProjects:     -1,
+			MaxConfigKeys:   -1, // unlimited
+			ErrorRetention:  90, // 14 days
 			SupportsRollout: true,
 		}
 	default:
@@ -61,7 +69,7 @@ func NewPlanInfoFromSubscription(subscription db.Subscription) PlanInfo {
 			MonthlyEvents:   subscription.MonthlyEventLimit,
 			MaxProjects:     subscription.MaxProjects,
 			MaxConfigKeys:   subscription.MaxConfigKeys,
-			ErrorRetention:  time.Duration(subscription.ErrorRetentionDays) * 24 * time.Hour,
+			ErrorRetention:  subscription.ErrorRetentionDays,
 			SupportsRollout: subscription.SupportsRollout,
 		},
 	}

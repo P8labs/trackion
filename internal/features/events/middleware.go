@@ -178,10 +178,7 @@ func (m Middleware) BatchRateLimit(next http.Handler) http.Handler {
 		w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(max(0, decision.Remaining)))
 
 		if !decision.Allowed {
-			retryAfterSec := int(math.Ceil(decision.RetryAfter.Seconds()))
-			if retryAfterSec < 1 {
-				retryAfterSec = 1
-			}
+			retryAfterSec := max(int(math.Ceil(decision.RetryAfter.Seconds())), 1)
 			w.Header().Set("Retry-After", strconv.Itoa(retryAfterSec))
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusTooManyRequests)

@@ -243,7 +243,7 @@ func (s *Service) VerifyToken(ctx context.Context, token string) (string, error)
 
 		u.ID = user.ID
 
-	} 
+	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		return "", err
 	}
@@ -262,12 +262,12 @@ func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUI
 		periodEnd := time.Now().AddDate(100, 0, 0)
 		sub := db.Subscription{
 			UserID:             userID,
-			Plan:               "free",
-			MonthlyEventLimit:  10000000000,
+			Plan:               "selfhost",
+			MonthlyEventLimit:  -1,
 			Status:             "active",
 			CurrentPeriodEnd:   periodEnd,
-			MaxProjects:        10000000000,
-			MaxConfigKeys:      10000000000,
+			MaxProjects:        -1,
+			MaxConfigKeys:      -1,
 			ErrorRetentionDays: 90,
 			SupportsRollout:    true,
 		}
