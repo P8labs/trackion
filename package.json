@@ -9,6 +9,6 @@
     "build": "pnpm -r build",
     "build:packages": "pnpm -r --filter @trackion/ui --filter @trackion/lib build",
     "build:desktop": "pnpm run build:packages && pnpm --filter @trackion/desktop build",
-    "build:andoid": "pnpm run build:packages && pnpm --filter @trackion/desktop build"
+    "build:android": "pnpm run build:packages && pnpm --filter @trackion/desktop build"
   }
 }
