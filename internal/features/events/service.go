@@ -20,7 +20,7 @@ type Service struct {
 	db          *gorm.DB
 	cfg         config.Config
 	geoResolver geoip.Resolver
-	billing     billing.Service
+	billing     *billing.Service
 }
 
 var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")

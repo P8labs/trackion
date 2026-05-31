@@ -20,7 +20,7 @@ import (
 
 type Service struct {
 	db      *gorm.DB
-	billing billing.Service
+	billing *billing.Service
 	config  config.Config
 }
 

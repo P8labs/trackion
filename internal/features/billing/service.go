@@ -22,8 +22,8 @@ type Service struct {
 	db *gorm.DB
 }
 
-func NewService(db *gorm.DB) Service {
-	return Service{db: db}
+func NewService(db *gorm.DB) *Service {
+	return &Service{db: db}
 }
 
 func (s *Service) GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error) {
