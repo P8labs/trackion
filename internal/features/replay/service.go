@@ -25,22 +25,8 @@ const (
 	maxSessionIDLen = 255
 )
 
-type IngestParams struct {
-	ProjectID uuid.UUID
-	SessionID string
-	EventsRaw json.RawMessage
-}
-
 type Service struct {
 	db *gorm.DB
-}
-
-type SessionSummary struct {
-	SessionID  string    `json:"session_id"`
-	ProjectID  string    `json:"project_id"`
-	StartedAt  time.Time `json:"started_at"`
-	LastSeenAt time.Time `json:"last_seen_at"`
-	ChunkCount int64     `json:"chunk_count"`
 }
 
 func NewService(db *gorm.DB) *Service {
@@ -54,6 +40,7 @@ func (s *Service) IngestAsync(params IngestParams) {
 		}
 	}()
 }
+
 func (s *Service) processReplay(params IngestParams) error {
 	sessionID := strings.TrimSpace(params.SessionID)
 

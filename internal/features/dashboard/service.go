@@ -24,26 +24,6 @@ func NewService(db *gorm.DB) Service {
 
 var nonAlnumCountryName = regexp.MustCompile(`[^a-z0-9]+`)
 
-// used in area map data
-func parseTimeRange(timeRange string) (time.Time, string) {
-	now := time.Now()
-
-	switch timeRange {
-	case "30m":
-		return now.Add(-30 * time.Minute), "minute"
-	case "1h":
-		return now.Add(-1 * time.Hour), "minute"
-	case "24h":
-		return now.Add(-24 * time.Hour), "hour"
-	case "7d":
-		return now.Add(-7 * 24 * time.Hour), "day"
-	case "30d":
-		return now.Add(-30 * 24 * time.Hour), "day"
-	default: // "today"
-		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()), "hour"
-	}
-}
-
 func (s *Service) GetDashboardCounts(ctx context.Context, projectId string) (*DashboardCounts, error) {
 	projectUUID := uuid.MustParse(projectId)
 
@@ -222,7 +202,7 @@ func (s *Service) GetTrafficHeatmap(ctx context.Context, projectId string) (*Tra
 
 	dayHour := make([][]int64, 7)
 	monthDay := make([][]int64, 7)
-	for i := 0; i < 7; i++ {
+	for i := range 7 {
 		dayHour[i] = make([]int64, 24)
 		monthDay[i] = make([]int64, 12)
 	}
@@ -820,13 +800,6 @@ func toBreakdownItems(counts map[string]int64) []BreakdownItem {
 	return items
 }
 
-type topPageRow struct {
-	Path           *string
-	TotalViews     int64
-	UniqueVisitors int64
-	AvgTimeSeconds *float64
-}
-
 func stringValue(v any) string {
 	switch x := v.(type) {
 	case string:
@@ -860,4 +833,24 @@ func floatOrZero(f *float64) float64 {
 		return 0
 	}
 	return *f
+}
+
+// used in area map data
+func parseTimeRange(timeRange string) (time.Time, string) {
+	now := time.Now()
+
+	switch timeRange {
+	case "30m":
+		return now.Add(-30 * time.Minute), "minute"
+	case "1h":
+		return now.Add(-1 * time.Hour), "minute"
+	case "24h":
+		return now.Add(-24 * time.Hour), "hour"
+	case "7d":
+		return now.Add(-7 * 24 * time.Hour), "day"
+	case "30d":
+		return now.Add(-30 * 24 * time.Hour), "day"
+	default: // "today"
+		return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()), "hour"
+	}
 }

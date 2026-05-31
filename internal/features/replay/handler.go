@@ -19,12 +19,6 @@ const (
 	maxReplayEventsPerReq = 2000
 )
 
-type IngestRequest struct {
-	ProjectID string          `json:"project_key"`
-	SessionID string          `json:"session_id"`
-	Events    json.RawMessage `json:"events"`
-}
-
 type handler struct {
 	service *Service
 }

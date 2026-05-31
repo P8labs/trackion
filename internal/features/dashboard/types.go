@@ -2,6 +2,13 @@ package dashboard
 
 import "time"
 
+type topPageRow struct {
+	Path           *string
+	TotalViews     int64
+	UniqueVisitors int64
+	AvgTimeSeconds *float64
+}
+
 type TimeSeriesData struct {
 	Date   string `json:"date"`
 	Events int64  `json:"events"`
