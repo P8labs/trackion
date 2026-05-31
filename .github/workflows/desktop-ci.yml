@@ -9,14 +9,37 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - "apps/desktop/**"
-      - "packages/ui/**"
-      - "packages/lib/**"
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect desktop-related changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --name-only \
+            origin/${{ github.base_ref }}...HEAD \
+            | grep -E '^(apps/desktop/|packages/ui/|packages/lib/)'
+          then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   desktop-build:
     name: Desktop Build Check
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+
     runs-on: windows-latest
 
     steps:

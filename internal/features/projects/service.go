@@ -18,57 +18,14 @@ import (
 	"gorm.io/gorm"
 )
 
-type CreateProjectParams struct {
-	Name     string                `json:"name" validate:"required"`
-	Domains  []string              `json:"domains"`
-	Settings CreateProjectSettings `json:"settings"`
-}
-
-type CreateProjectSettings struct {
-	AutoPageview   *bool `json:"auto_pageview"`
-	TrackTimeSpent *bool `json:"time_spent"`
-	TrackCampaign  *bool `json:"campaign"`
-	TrackClicks    *bool `json:"clicks"`
-}
-
-type UpdateProjectRequest struct {
-	Name     *string          `json:"name"`
-	Domains  *[]string        `json:"domains"`
-	Settings *ProjectSettings `json:"settings"`
-}
-
-type ProjectSettings struct {
-	AutoPageview   bool `json:"auto_pageview"`
-	TrackTimeSpent bool `json:"time_spent"`
-	TrackCampaign  bool `json:"campaign"`
-	TrackClicks    bool `json:"clicks"`
-}
-
-type UpdateProjectParams struct {
-	Name           *string   `json:"name"`
-	AutoPageview   *bool     `json:"auto_pageview"`
-	TrackTimeSpent *bool     `json:"time_spent"`
-	TrackCampaign  *bool     `json:"campaign"`
-	TrackClicks    *bool     `json:"clicks"`
-	Domains        *[]string `json:"domains"`
-}
-
-type Service interface {
-	CreateProject(ctx context.Context, params CreateProjectParams) (string, error)
-	GetProject(ctx context.Context, projectId string) (db.Project, error)
-	GetUserProjects(ctx context.Context) ([]db.Project, error)
-	UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error
-	DeleteProject(ctx context.Context, projectId string) error
-}
-
-type svc struct {
+type Service struct {
 	db      *gorm.DB
-	billing billing.Service
+	billing *billing.Service
 	config  config.Config
 }
 
 func NewService(db *gorm.DB, cfg config.Config) Service {
-	return &svc{
+	return Service{
 		db:      db,
 		billing: billing.NewService(db),
 		config:  cfg,
@@ -79,7 +36,7 @@ var (
 	ErrFailedCreation = errors.New("Unable to record the event")
 )
 
-func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (string, error) {
+func (s *Service) CreateProject(ctx context.Context, params CreateProjectParams) (string, error) {
 	name := strings.TrimSpace(params.Name)
 	if len(name) < 2 {
 		return "", errors.New("project name must be at least 2 characters")
@@ -156,7 +113,7 @@ func (s *svc) CreateProject(ctx context.Context, params CreateProjectParams) (st
 	return project.ID.String(), nil
 }
 
-func (s *svc) GetProject(ctx context.Context, projectId string) (db.Project, error) {
+func (s *Service) GetProject(ctx context.Context, projectId string) (db.Project, error) {
 	pid, err := uuid.Parse(projectId)
 	if err != nil {
 		return db.Project{}, errors.New("Unable to get project. Not found")
@@ -169,7 +126,7 @@ func (s *svc) GetProject(ctx context.Context, projectId string) (db.Project, err
 	return project, nil
 }
 
-func (s *svc) GetUserProjects(ctx context.Context) ([]db.Project, error) {
+func (s *Service) GetUserProjects(ctx context.Context) ([]db.Project, error) {
 	userId := ctx.Value(auth.UserIdContextKey).(string)
 	uid, err := uuid.Parse(userId)
 	if err != nil {
@@ -183,7 +140,7 @@ func (s *svc) GetUserProjects(ctx context.Context) ([]db.Project, error) {
 	return projects, nil
 }
 
-func (s *svc) UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error {
+func (s *Service) UpdateProject(ctx context.Context, projectId string, params UpdateProjectParams) error {
 	pid, err := uuid.Parse(projectId)
 	if err != nil {
 		return errors.New("Project not found")
@@ -249,7 +206,7 @@ func (s *svc) UpdateProject(ctx context.Context, projectId string, params Update
 	return nil
 }
 
-func (s *svc) DeleteProject(ctx context.Context, projectId string) error {
+func (s *Service) DeleteProject(ctx context.Context, projectId string) error {
 	pid, err := uuid.Parse(projectId)
 	if err != nil {
 		return errors.New("Unable to find project")

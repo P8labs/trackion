@@ -8,17 +8,39 @@ on:
       - synchronize
       - reopened
       - ready_for_review
-    paths:
-      - "apps/web/**"
-      - "packages/ui/**"
-      - "packages/lib/**"
 
 permissions:
   contents: read
 
 jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect web-related changes
+        id: changes
+        shell: bash
+        run: |
+          if git diff --name-only \
+            origin/${{ github.base_ref }}...HEAD \
+            | grep -E '^(apps/web/|packages/ui/|packages/lib/)'
+          then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   web-checks:
     name: Web Checks
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
     runs-on: ubuntu-latest
 
     steps:

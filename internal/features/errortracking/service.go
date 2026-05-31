@@ -10,21 +10,15 @@ import (
 	"gorm.io/gorm"
 )
 
-type Service interface {
-	ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]GroupedError, error)
-	GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) ([]ErrorOccurrence, error)
-	GetErrorCount(ctx context.Context, projectID string, timeRange string) (int64, error)
-}
-
-type svc struct {
+type Service struct {
 	db *gorm.DB
 }
 
 func NewService(db *gorm.DB) Service {
-	return &svc{db: db}
+	return Service{db: db}
 }
 
-func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]GroupedError, error) {
+func (s *Service) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]GroupedError, error) {
 	projectID, err := uuid.Parse(req.ProjectID)
 	if err != nil {
 		return nil, err
@@ -99,7 +93,7 @@ func (s *svc) ListGroupedErrors(ctx context.Context, req ErrorListRequest) ([]Gr
 	return groupedErrors, nil
 }
 
-func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) ([]ErrorOccurrence, error) {
+func (s *Service) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) ([]ErrorOccurrence, error) {
 	projectID, err := uuid.Parse(req.ProjectID)
 	if err != nil {
 		return nil, err
@@ -166,23 +160,7 @@ func (s *svc) GetErrorOccurrences(ctx context.Context, req ErrorDetailRequest) (
 	return occurrences, nil
 }
 
-func chooseDeviceValue(columnValue *string, metadataValue string, fallback string) string {
-	if columnValue != nil {
-		trimmed := strings.TrimSpace(*columnValue)
-		if trimmed != "" && !strings.EqualFold(trimmed, "unknown") {
-			return trimmed
-		}
-	}
-
-	meta := strings.TrimSpace(metadataValue)
-	if meta != "" && !strings.EqualFold(meta, "unknown") {
-		return meta
-	}
-
-	return fallback
-}
-
-func (s *svc) GetErrorCount(ctx context.Context, projectID string, timeRange string) (int64, error) {
+func (s *Service) GetErrorCount(ctx context.Context, projectID string, timeRange string) (int64, error) {
 	pid, err := uuid.Parse(projectID)
 	if err != nil {
 		return 0, err
@@ -215,4 +193,20 @@ func (s *svc) GetErrorCount(ctx context.Context, projectID string, timeRange str
 	}
 
 	return count, nil
+}
+
+func chooseDeviceValue(columnValue *string, metadataValue string, fallback string) string {
+	if columnValue != nil {
+		trimmed := strings.TrimSpace(*columnValue)
+		if trimmed != "" && !strings.EqualFold(trimmed, "unknown") {
+			return trimmed
+		}
+	}
+
+	meta := strings.TrimSpace(metadataValue)
+	if meta != "" && !strings.EqualFold(meta, "unknown") {
+		return meta
+	}
+
+	return fallback
 }

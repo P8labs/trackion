@@ -18,30 +18,15 @@ var (
 	ErrRolloutNotAllowed = errors.New("rollout percentage not available on free plan")
 )
 
-type Service interface {
-	GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error)
-	CheckProjectLimit(ctx context.Context, userID uuid.UUID) error
-	CheckConfigLimit(ctx context.Context, projectID uuid.UUID, currentCount int) error
-	CheckRolloutAllowed(ctx context.Context, userID uuid.UUID, rolloutPercentage int) error
-	GetErrorRetentionPeriod(ctx context.Context, userID uuid.UUID) (time.Duration, error)
-	CheckFeatureFlagRollout(ctx context.Context) error
-	IncrementEventUsage(ctx context.Context, userID uuid.UUID, count int) error
-	CheckEventLimit(ctx context.Context, userID uuid.UUID, additionalEvents int) error
-	GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error)
-	UpgradeSubscription(ctx context.Context, userID uuid.UUID) error
-	IncrementProjectUsage(ctx context.Context, userID uuid.UUID) error
-	DecrementProjectUsage(ctx context.Context, userID uuid.UUID) error
-}
-
-type service struct {
+type Service struct {
 	db *gorm.DB
 }
 
-func NewService(db *gorm.DB) Service {
-	return &service{db: db}
+func NewService(db *gorm.DB) *Service {
+	return &Service{db: db}
 }
 
-func (s *service) GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error) {
+func (s *Service) GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error) {
 	var subscription db.Subscription
 	err := s.db.WithContext(ctx).
 		Where("user_id = ? AND status = ?", userID, "active").
@@ -72,7 +57,7 @@ func (s *service) GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, 
 	return NewPlanInfoFromSubscription(subscription), nil
 }
 
-func (s *service) CheckProjectLimit(ctx context.Context, userID uuid.UUID) error {
+func (s *Service) CheckProjectLimit(ctx context.Context, userID uuid.UUID) error {
 	var subscription db.Subscription
 	err := s.db.WithContext(ctx).
 		Select("max_projects").
@@ -98,7 +83,7 @@ func (s *service) CheckProjectLimit(ctx context.Context, userID uuid.UUID) error
 	return nil
 }
 
-func (s *service) CheckConfigLimit(ctx context.Context, projectID uuid.UUID, currentCount int) error {
+func (s *Service) CheckConfigLimit(ctx context.Context, projectID uuid.UUID, currentCount int) error {
 	var project db.Project
 	err := s.db.WithContext(ctx).
 		Select("user_id").
@@ -128,7 +113,7 @@ func (s *service) CheckConfigLimit(ctx context.Context, projectID uuid.UUID, cur
 	return nil
 }
 
-func (s *service) CheckRolloutAllowed(ctx context.Context, userID uuid.UUID, rolloutPercentage int) error {
+func (s *Service) CheckRolloutAllowed(ctx context.Context, userID uuid.UUID, rolloutPercentage int) error {
 	if rolloutPercentage == 100 {
 		return nil
 	}
@@ -149,7 +134,7 @@ func (s *service) CheckRolloutAllowed(ctx context.Context, userID uuid.UUID, rol
 	return nil
 }
 
-func (s *service) GetErrorRetentionPeriod(ctx context.Context, userID uuid.UUID) (time.Duration, error) {
+func (s *Service) GetErrorRetentionPeriod(ctx context.Context, userID uuid.UUID) (time.Duration, error) {
 	var subscription db.Subscription
 	err := s.db.WithContext(ctx).
 		Select("error_retention_days").
@@ -162,7 +147,7 @@ func (s *service) GetErrorRetentionPeriod(ctx context.Context, userID uuid.UUID)
 	return time.Duration(subscription.ErrorRetentionDays) * 24 * time.Hour, nil
 }
 
-func (s *service) CheckFeatureFlagRollout(ctx context.Context) error {
+func (s *Service) CheckFeatureFlagRollout(ctx context.Context) error {
 	userID := ctx.Value(auth.UserIdContextKey)
 	if userID == nil {
 		return errors.New("user not found in context")
@@ -176,7 +161,7 @@ func (s *service) CheckFeatureFlagRollout(ctx context.Context) error {
 	return s.CheckRolloutAllowed(ctx, userUUID, 50)
 }
 
-func (s *service) IncrementEventUsage(ctx context.Context, userID uuid.UUID, count int) error {
+func (s *Service) IncrementEventUsage(ctx context.Context, userID uuid.UUID, count int) error {
 	if count <= 0 {
 		return nil
 	}
@@ -196,7 +181,8 @@ func (s *service) IncrementEventUsage(ctx context.Context, userID uuid.UUID, cou
 	return nil
 }
 
-func (s *service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additionalEvents int) error {
+// handles selfhost plan also...!
+func (s *Service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additionalEvents int) error {
 	if additionalEvents <= 0 {
 		return nil
 	}
@@ -206,11 +192,16 @@ func (s *service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additio
 		Select("events_used_this_month", "monthly_event_limit").
 		Where("user_id = ? AND status = 'active'", userID).
 		First(&subscription).Error
+
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return errors.New("no active subscription found")
 		}
 		return err
+	}
+
+	if subscription.Plan == string(PlanTypeSelfhost) {
+		return nil
 	}
 
 	if subscription.EventsUsedThisMonth+additionalEvents > subscription.MonthlyEventLimit {
@@ -220,7 +211,7 @@ func (s *service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additio
 	return nil
 }
 
-func (s *service) GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error) {
+func (s *Service) GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error) {
 	var subscription db.Subscription
 	err := s.db.WithContext(ctx).
 		Select(
@@ -310,20 +301,8 @@ func (s *service) GetUsage(ctx context.Context, userID uuid.UUID) (*Usage, error
 	}, nil
 }
 
-func (s *service) UpgradeSubscription(ctx context.Context, userID uuid.UUID) error {
-	return s.db.WithContext(ctx).Model(&db.Subscription{}).
-		Where("user_id = ? AND status = 'active'", userID).
-		Updates(map[string]any{
-			"plan":                 "pro",
-			"monthly_event_limit":  200000,
-			"max_projects":         5,
-			"max_config_keys":      -1,
-			"error_retention_days": 14,
-			"supports_rollout":     true,
-		}).Error
-}
-
-func (s *service) IncrementProjectUsage(ctx context.Context, userID uuid.UUID) error {
+// no checks in function for self host and saas
+func (s *Service) IncrementProjectUsage(ctx context.Context, userID uuid.UUID) error {
 	result := s.db.WithContext(ctx).Model(&db.Subscription{}).
 		Where("user_id = ? AND status = 'active'", userID).
 		Update("projects_used", gorm.Expr("projects_used + 1"))
@@ -339,7 +318,8 @@ func (s *service) IncrementProjectUsage(ctx context.Context, userID uuid.UUID) e
 	return nil
 }
 
-func (s *service) DecrementProjectUsage(ctx context.Context, userID uuid.UUID) error {
+// no checks in function for self host and saas
+func (s *Service) DecrementProjectUsage(ctx context.Context, userID uuid.UUID) error {
 	result := s.db.WithContext(ctx).Model(&db.Subscription{}).
 		Where("user_id = ? AND status = 'active'", userID).
 		Update("projects_used", gorm.Expr("GREATEST(0, projects_used - 1)"))
@@ -353,4 +333,18 @@ func (s *service) DecrementProjectUsage(ctx context.Context, userID uuid.UUID) e
 	}
 
 	return nil
+}
+
+// no need as of now.
+func (s *Service) UpgradeSubscription(ctx context.Context, userID uuid.UUID) error {
+	return s.db.WithContext(ctx).Model(&db.Subscription{}).
+		Where("user_id = ? AND status = 'active'", userID).
+		Updates(map[string]any{
+			"plan":                 "pro",
+			"monthly_event_limit":  200000,
+			"max_projects":         5,
+			"max_config_keys":      -1,
+			"error_retention_days": 14,
+			"supports_rollout":     true,
+		}).Error
 }

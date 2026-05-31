@@ -25,7 +25,7 @@ import (
 type Service struct {
 	db      *gorm.DB
 	cache   *runtimeCache
-	billing billing.Service
+	billing *billing.Service
 	config  config.Config
 }
 
