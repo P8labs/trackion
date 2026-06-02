@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
-	"time"
 	"trackion/internal/config"
 	"trackion/internal/core"
 	"trackion/internal/core/geoip"
@@ -17,67 +16,17 @@ import (
 	"gorm.io/gorm"
 )
 
-type EventParams struct {
-	ProjectKey string `json:"project_key"`
-	Event      string `json:"event" validate:"required"`
-	Type       string `json:"type,omitempty"`
-
-	SessionID string  `json:"session_id" validate:"required"`
-	UserID    *string `json:"user_id,omitempty"`
-
-	UserAgent string `json:"user_agent"`
-	ClientIP  string `json:"-"`
-
-	Timestamp time.Time `json:"timestamp"`
-
-	Device   *string `json:"device,omitempty"`
-	Platform *string `json:"platform,omitempty"`
-	Browser  *string `json:"browser,omitempty"`
-
-	Page struct {
-		Title    string `json:"title"`
-		Path     string `json:"path"`
-		Referrer string `json:"referrer"`
-	} `json:"page"`
-
-	Utm struct {
-		Source   string `json:"source,omitempty"`
-		Medium   string `json:"medium,omitempty"`
-		Campaign string `json:"campaign,omitempty"`
-	} `json:"utm"`
-
-	Properties map[string]any `json:"properties,omitempty"`
-}
-
-type BatchEventsParams struct {
-	ProjectKey string        `json:"project_key" validate:"required"`
-	Events     []EventParams `json:"events" validate:"required"`
-}
-
-type ProjectConfig struct {
-	AutoPageview   bool `json:"auto_pageview"`
-	TrackTimeSpent bool `json:"track_time_spent"`
-	TrackCampaign  bool `json:"track_campaign"`
-	TrackClicks    bool `json:"track_clicks"`
-}
-
-type Service interface {
-	CreateEvent(ctx context.Context, params EventParams) error
-	GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error)
-	CreateBatchEvents(ctx context.Context, params BatchEventsParams) error
-}
-
-type svc struct {
+type Service struct {
 	db          *gorm.DB
 	cfg         config.Config
 	geoResolver geoip.Resolver
-	billing     billing.Service
+	billing     *billing.Service
 }
 
 var ErrMonthlyLimitReached = errors.New("monthly event limit reached for current subscription")
 
 func NewService(db *gorm.DB, cfg config.Config) Service {
-	return &svc{
+	return Service{
 		db:          db,
 		cfg:         cfg,
 		geoResolver: geoip.New(cfg),
@@ -85,7 +34,7 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 	}
 }
 
-func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
+func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
 	geo, err := s.geoResolver.Resolve(ctx, params.ClientIP)
 	if err != nil {
 		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
@@ -160,7 +109,7 @@ func (s *svc) CreateEvent(ctx context.Context, params EventParams) error {
 	return err
 }
 
-func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
+func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
 	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	var geo *geoip.Location
@@ -215,7 +164,7 @@ func (s *svc) CreateBatchEvents(ctx context.Context, params BatchEventsParams) e
 	return err
 }
 
-func (s *svc) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {
+func (s *Service) GetProjectConfig(ctx context.Context, projectId string) (ProjectConfig, error) {
 	pid, err := uuid.Parse(projectId)
 	if err != nil {
 		return ProjectConfig{}, err

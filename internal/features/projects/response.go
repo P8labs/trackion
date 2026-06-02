@@ -2,28 +2,10 @@ package projects
 
 import (
 	"encoding/json"
-	"time"
 	db "trackion/internal/db/models"
 
 	"gorm.io/datatypes"
 )
-
-type ProjectResponse struct {
-	ID        string             `json:"id"`
-	Name      string             `json:"name"`
-	APIKey    string             `json:"api_key"`
-	Domains   []string           `json:"domains"`
-	Settings  ProjectSettingsDTO `json:"settings"`
-	CreatedAt time.Time          `json:"created_at"`
-	UpdatedAt time.Time          `json:"updated_at"`
-}
-
-type ProjectSettingsDTO struct {
-	AutoPageview bool `json:"auto_pageview"`
-	TimeSpent    bool `json:"time_spent"`
-	Campaign     bool `json:"campaign"`
-	Clicks       bool `json:"clicks"`
-}
 
 func ToProjectResponse(p db.Project) ProjectResponse {
 
