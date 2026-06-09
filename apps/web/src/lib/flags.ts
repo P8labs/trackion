@@ -7,4 +7,30 @@ export const flags = {
   trackionToken:
     import.meta.env.VITE_TRACKION_TOKEN ||
     "8673e3bb-026f-5f43-891f-16363b28d465",
+
+  device: import.meta.env.VITE_DEVICE || "web",
+  devMode: import.meta.env.DEV,
 };
+
+export type Flags = typeof flags;
+
+export function IsWeb(test?: boolean): boolean {
+  if (flags.devMode && test) {
+    return true;
+  }
+  return flags.device === "web";
+}
+
+export function IsMobile(test?: boolean): boolean {
+  if (flags.devMode && test) {
+    return true;
+  }
+  return flags.device === "mobile";
+}
+
+export function IsDesktop(test?: boolean): boolean {
+  if (flags.devMode && test) {
+    return true;
+  }
+  return flags.device === "desktop";
+}

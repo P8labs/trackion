@@ -53,17 +53,17 @@ export function ProjectDashboardLayout() {
         path: `/projects/${projectId}/replays`,
         icon: VideoReplayIcon,
       },
+      {
+        name: "Remote Config",
+        path: `/projects/${projectId}/remote-config`,
+        icon: CustomizeIcon,
+      },
     ],
     project: [
       {
         name: "Project Settings",
         path: `/projects/${projectId}/settings`,
         icon: Settings02Icon,
-      },
-      {
-        name: "Remote Config",
-        path: `/projects/${projectId}/remote-config`,
-        icon: CustomizeIcon,
       },
     ],
   };

@@ -1,3 +1,5 @@
+import { Code } from "@mantine/core";
+
 export function ErrorBanner({
   error,
   label,
@@ -6,15 +8,15 @@ export function ErrorBanner({
   label?: string;
 }) {
   return (
-    <div className="bg-destructive/10 p-4 text-sm text-destructive">
+    <div className="p-4 text-sm">
       {label ||
         "Something went wrong while fetching data. Please try again later."}
       {error && (
         <p>
           Error details:{" "}
-          <code className="bg-destructive/20 px-1 py-0.5 rounded text-destructive text-sm">
+          <Code className="px-1 py-0.5 rounded text-sm">
             {error?.message || "Unknown error"}
-          </code>
+          </Code>
         </p>
       )}
     </div>

@@ -1,5 +1,4 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@trackion/ui/avatar";
 import {
@@ -9,7 +8,6 @@ import {
   DropdownMenuTrigger,
 } from "@trackion/ui/dropdown-menu";
 import { ThemeToggle } from "@trackion/ui/theme-toggle";
-import { cn } from "@trackion/ui/lib";
 import {
   Cancel01Icon,
   LayoutDashboard,
@@ -20,6 +18,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { userHooks } from "@/hooks/queries/use-user";
 import { LogoutModal } from "@/components/core/modals/logout-modal";
+import { Anchor, Breadcrumbs } from "@mantine/core";
 
 export function Topbar({
   sidebarOpen,
@@ -30,8 +29,6 @@ export function Topbar({
 }) {
   const navigate = useNavigate();
   const { data: user, isLoading: userLoading } = userHooks.useUser();
-
-  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const profileName = userLoading ? "Loading user..." : user?.name || "User";
   const profileEmail = userLoading
@@ -87,10 +84,7 @@ export function Topbar({
 
             <div className="border-t border-border/60 my-1" />
 
-            <DropdownMenuItem
-              onClick={() => setLogoutDialogOpen(true)}
-              className="text-destructive focus:text-destructive"
-            >
+            <DropdownMenuItem className="text-destructive focus:text-destructive">
               <HugeiconsIcon icon={Logout} className="mr-2 h-4 w-4" />
               Logout
             </DropdownMenuItem>
@@ -98,14 +92,13 @@ export function Topbar({
         </DropdownMenu>
       </div>
 
-      <LogoutModal open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen} />
+      <LogoutModal close={() => {}} opened={false} />
     </header>
   );
 }
 
-function Breadcrumb() {
+export function Breadcrumb() {
   const location = useLocation();
-  const navigate = useNavigate();
 
   const segments = location.pathname.split("/").filter(Boolean);
 
@@ -121,33 +114,18 @@ function Breadcrumb() {
   };
 
   return (
-    <div className="flex items-center gap-1 text- min-w-0">
+    <Breadcrumbs
+    // className="flex items-center gap-1 text- min-w-0"
+    >
       {segments.map((segment, index) => {
         const path = "/" + segments.slice(0, index + 1).join("/");
-        const isLast = index === segments.length - 1;
-
         return (
-          <div key={path} className="flex items-center gap-1 min-w-0">
-            <button
-              onClick={() => !isLast && navigate(path)}
-              disabled={isLast}
-              className={cn(
-                "px-1.5 py-0.5 rounded truncate transition",
-                isLast
-                  ? "text-foreground cursor-default"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30 cursor-pointer",
-              )}
-            >
-              {getLabel(segment).normalize()}
-            </button>
-
-            {!isLast && (
-              <span className="text-muted-foreground/40 px-0.5">/</span>
-            )}
-          </div>
+          <Anchor key={path} href={path} className="">
+            {getLabel(segment).normalize()}
+          </Anchor>
         );
       })}
-    </div>
+    </Breadcrumbs>
   );
 }
 

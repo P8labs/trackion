@@ -15,6 +15,8 @@ import { ProjectDetailPage } from "./pages/projects/ProjectDetailPage";
 import { RemoteConfigPage } from "./pages/projects/RemoteConfigPage";
 import { ErrorListPage } from "./pages/projects/errors/ErrorListPage";
 import { ErrorDetailPage } from "./pages/projects/errors/ErrorDetailPage";
+import { CogIcon, FolderIcon } from "@hugeicons/core-free-icons";
+import { ChartPieIcon } from "lucide-react";
 
 export const workspaceRoutes = [
   { path: "/", element: <ProjectsPage /> },
@@ -44,4 +46,10 @@ export const projectRoutes = [
 export const authRoutes = [
   { path: "/auth", element: <AuthPage /> },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
+];
+
+export const workspaceLinks = [
+  { path: "/projects", name: "Projects", icon: FolderIcon },
+  { path: "/usage", name: "Usage", icon: ChartPieIcon },
+  { path: "/settings", name: "Settings", icon: CogIcon },
 ];

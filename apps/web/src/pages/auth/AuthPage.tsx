@@ -1,18 +1,16 @@
-import { Link } from "react-router-dom";
-
-import { Button } from "@trackion/ui/button";
-import { PlusDecor } from "@trackion/ui/decoration";
-
-import { flags } from "@/lib/flags";
+import { flags, IsMobile } from "@/lib/flags";
 
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 
-import { SelfHostAuthForm } from "./components/self-host-auth-form";
 import { useGlobal } from "@/providers/global-provider";
+import { Button, Paper, TextInput, Text } from "@mantine/core";
+import { modals } from "@mantine/modals";
+import { useStore } from "@/store";
 
 export function AuthPage() {
   const { loginUrls } = useGlobal();
+  const { serverUrl, setServerUrl } = useStore();
   const showOAuthSection = flags.isSaaS;
 
   const handleGithubLogin = () => {
@@ -26,87 +24,115 @@ export function AuthPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,var(--accent-soft),transparent_55%),radial-gradient(circle_at_80%_100%,var(--accent-soft),transparent_50%)] opacity-30 dark:opacity-50" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-size-[80px_80px]" />
-        <div className="absolute left-1/2 top-1/2 h-125 w-125 -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
-      </div>
-      <section className="relative z-10 mx-auto w-full max-w-3xl border border-border/60 bg-background/95 backdrop-blur-[2px] dark:bg-background/80">
-        <PlusDecor position="top" />
-        <div className="relative overflow-hidden px-6 py-10 lg:px-8 lg:py-12">
-          <div className="relative">
-            <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              Unified authentication
-            </p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-              Continue to Dashboard
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Choose a provider or expand self-host credentials in the same
-              system flow.
-            </p>
+    <div className="flex min-h-screen items-center justify-center overflow-hidden">
+      <Paper p={IsMobile() ? "sm" : "xl"} className="space-y-4">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+          Continue to Dashboard
+        </h2>
+        <p className="text-sm -mt-2 text-muted-foreground">
+          Choose a provider or expand self-host credentials in the same system
+          flow.
+        </p>
 
-            <div className="mt-7 border border-border/60">
-              {showOAuthSection && (
-                <div className="space-y-3 border-b border-border/60 p-4">
-                  <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                    Managed OAuth
-                  </p>
-                  <Button
-                    onClick={handleGoogleLogin}
-                    variant="outline"
-                    className="h-11 w-full cursor-pointer justify-start gap-2 rounded-md border-border/60 bg-background px-3.5 text-sm font-medium transition hover:bg-muted/30 dark:bg-muted/20 dark:hover:bg-muted/35"
-                    type="button"
-                  >
-                    <FcGoogle className="size-4" />
-                    Continue with Google
-                  </Button>
+        {showOAuthSection && (
+          <div className="space-y-0.5 flex flex-col">
+            <Button
+              leftSection={<FcGoogle className="size-4" />}
+              onClick={handleGoogleLogin}
+              variant="default"
+              size="lg"
+              type="button"
+              className="rounded-b-none!"
+            >
+              Continue with Google
+            </Button>
 
-                  <Button
-                    onClick={handleGithubLogin}
-                    variant="outline"
-                    className="h-11 w-full cursor-pointer justify-start gap-2 rounded-md border-border/60 bg-background px-3.5 text-sm font-medium transition hover:bg-muted/30 dark:bg-muted/20 dark:hover:bg-muted/35"
-                    type="button"
-                  >
-                    <FaGithub className="size-4" />
-                    Continue with GitHub
-                  </Button>
-                </div>
-              )}
-
-              <div className="p-4">
-                <p className="mb-3 text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-                  Self-host override
-                </p>
-                <SelfHostAuthForm />
-              </div>
-            </div>
-
-            <div className="mt-5 space-y-1 text-xs text-muted-foreground">
-              <p>
-                By logging in, you agree to our{" "}
-                <Link
-                  to="/terms"
-                  className="text-foreground underline underline-offset-4"
-                >
-                  Terms
-                </Link>
-                <span> and </span>
-                <Link
-                  to="/privacy"
-                  className="text-foreground underline underline-offset-4"
-                >
-                  Privacy Policy
-                </Link>
-                .
-              </p>
-              <p>For self-host mode, use your admin token and server URL.</p>
-            </div>
+            <Button
+              leftSection={<FaGithub className="size-4" />}
+              onClick={handleGithubLogin}
+              variant="default"
+              size="lg"
+              type="button"
+              className="rounded-t-none!"
+            >
+              Continue with GitHub
+            </Button>
           </div>
+        )}
+        <div className="flex flex-col items-center justify-center fixed bottom-0 left-0 w-full p-4">
+          <Text
+            component="span"
+            className="mt-4 flex items-center justify-center gap-1 text-sm"
+          >
+            Accessing:{" "}
+            <Text component="span" c="cyan" className="cursor-pointer text-sm">
+              {serverUrl.replace(/(^\w+:|^)\/\//, "")}
+            </Text>
+          </Text>
+          <Text
+            component="span"
+            className="mt-4 flex items-center justify-center gap-1 text-sm"
+          >
+            Change Server URL?{" "}
+            <button
+              className="text-(--mantine-color-cyan-text) cursor-pointer hover:underline"
+              onClick={() => {
+                const modelId = modals.open({
+                  title: "Set Server URL",
+                  centered: true,
+                  children: (
+                    <div className="space-y-4">
+                      <p className="text-sm">
+                        Please enter the URL of the server you want to connect
+                        to. This should include the protocol (e.g., http:// or
+                        https://).
+                      </p>
+                      <form
+                        id="server-url-form"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const formData = new FormData(e.currentTarget);
+                          let formattedUrl = formData.get(
+                            "server-url-input",
+                          ) as string;
+                          if (!formattedUrl) return;
+
+                          // Ensure the URL starts with http:// or https://
+                          if (!/^https?:\/\//i.test(formattedUrl)) {
+                            formattedUrl = "http://" + formattedUrl;
+                          }
+
+                          setServerUrl(formattedUrl);
+                          modals.close(modelId);
+                        }}
+                      >
+                        <TextInput
+                          placeholder="Server URL"
+                          type="url"
+                          data-autofocus
+                          id="server-url-input"
+                          name="server-url-input"
+                          required
+                        />
+                        <Button
+                          fullWidth
+                          type="submit"
+                          mt="md"
+                          form="server-url-form"
+                        >
+                          Save
+                        </Button>
+                      </form>
+                    </div>
+                  ),
+                });
+              }}
+            >
+              Update here
+            </button>
+          </Text>
         </div>
-        <PlusDecor />
-      </section>
+      </Paper>
     </div>
   );
 }
