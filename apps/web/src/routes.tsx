@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import DownloadsPage from "./pages/landing/DownloadsPage";
+import { ChartPieIcon, CogIcon, FolderIcon } from "lucide-react";
 
 const AuthPage = lazy(() =>
   import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
@@ -136,4 +137,10 @@ export const publicRoutes = [
 export const authRoutes = [
   { path: "/auth", element: <AuthPage /> },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
+];
+
+export const workspaceLinks = [
+  { path: "/projects", name: "Projects", icon: FolderIcon },
+  { path: "/usage", name: "Usage", icon: ChartPieIcon },
+  { path: "/settings", name: "Settings", icon: CogIcon },
 ];

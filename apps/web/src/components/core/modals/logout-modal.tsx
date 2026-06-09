@@ -1,29 +1,19 @@
 import { userHooks } from "@/hooks/queries/use-user";
 import { useStore } from "@/store";
-import { ShieldAlert } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@trackion/ui/alert-dialog";
-import { useNavigate } from "react-router-dom";
 
-interface LogoutModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+import { useNavigate } from "react-router-dom";
+import { Button, Modal } from "@mantine/core";
+
+interface Props {
+  opened: boolean;
+  close: () => void;
 }
 
-export function LogoutModal({ open, onOpenChange }: LogoutModalProps) {
+export function LogoutModal({ opened, close }: Props) {
   const navigate = useNavigate();
   const { logout } = useStore();
   const logoutMutation = userHooks.useLogout();
+
   const handleLogoutConfirm = async () => {
     try {
       await logoutMutation.mutateAsync({});
@@ -32,35 +22,31 @@ export function LogoutModal({ open, onOpenChange }: LogoutModalProps) {
     }
     logout();
     navigate("/auth");
-    onOpenChange(false);
+    close();
   };
-
   return (
-    <AlertDialog open={open} onOpenChange={(open) => onOpenChange(open)}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogMedia>
-            <HugeiconsIcon
-              icon={ShieldAlert}
-              className="h-6 w-6 text-destructive"
-            />
-          </AlertDialogMedia>
-          <AlertDialogTitle>Confirm logout</AlertDialogTitle>
-          <AlertDialogDescription>
-            You will be signed out from this browser session and redirected to
-            the login page.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleLogoutConfirm}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="Confirm Logout"
+      size="md"
+      centered
+      id="logout-confirmation-modal"
+    >
+      <Modal.Body className="space-y-4">
+        <p>
+          You will be signed out from this browser session and redirected to the
+          login page.
+        </p>
+        <div className="flex gap-2 items-center justify-end">
+          <Button variant="default" onClick={close}>
+            Cancel
+          </Button>
+          <Button color="red" onClick={handleLogoutConfirm}>
             Logout
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </div>
+      </Modal.Body>
+    </Modal>
   );
 }
