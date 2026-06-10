@@ -52,19 +52,20 @@ func (app *Application) mount() http.Handler {
 	r.Mount("/replay", replay.Routes(app.db, *app.config))
 	r.Mount("/v1", runtime.PublicRoutes(app.db, *app.config))
 
-	if app.config.IsSaaS() {
-		auth.InitOAuth(*app.config)
-		r.Get("/auth/login/github", authHandler.GithubLogin)
-		r.Get("/auth/login/google", authHandler.GoogleLogin)
+	// Authentication routes
+	auth.InitOAuth(*app.config)
+	r.Get("/auth/login/github", authHandler.GithubLogin)
+	r.Get("/auth/login/google", authHandler.GoogleLogin)
 
-		r.Get("/auth/callback/github", authHandler.GithubCallback)
-		r.Get("/auth/callback/google", authHandler.GoogleCallback)
+	// FIXME: breaking change, need to update fontend to use this new endpoint for token login
+	r.Get("/auth/login/token", authHandler.TokenLogin)
 
-	}
+	r.Get("/auth/callback/github", authHandler.GithubCallback)
+	r.Get("/auth/callback/google", authHandler.GoogleCallback)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		// before auth means public routes that don't require authentication
-		r.Post("/auth/verify", authHandler.VerifyToken)
+		// r.Post("/auth/verify", authHandler.VerifyToken)
 
 		r.Group(func(r chi.Router) {
 			r.Use(authMw.AuthMiddleware)

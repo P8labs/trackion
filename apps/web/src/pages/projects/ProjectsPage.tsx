@@ -1,14 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PlusIcon, Search, SearchIcon } from "lucide-react";
-
-import { PlusDecor } from "@trackion/ui/decoration";
-import { Input } from "@trackion/ui/input";
-import { Skeleton } from "@trackion/ui/skeleton";
+import { PlusIcon, SearchIcon } from "lucide-react";
+import { Button, TextInput } from "@mantine/core";
 
 import { ErrorBanner } from "@/components/core/error-banner";
 import { projectHooks } from "@/hooks/queries/use-project";
-import { Button, TextInput } from "@mantine/core";
+import { LoadingView } from "@/Loader";
 
 export function ProjectsPage() {
   const navigate = useNavigate();
@@ -33,44 +30,7 @@ export function ProjectsPage() {
   }, [projects, searchTerm]);
 
   if (isLoading) {
-    return (
-      <div className="relative mx-auto w-full max-w-5xl px-4 md:px-6">
-        <div className="pointer-events-none absolute inset-y-0 left-4 border-l border-border/60 md:left-6" />
-        <div className="pointer-events-none absolute inset-y-0 right-4 border-l border-border/60 md:right-6" />
-
-        <div className="relative border-x border-border/60 py-5">
-          <div className="space-y-3 border-b border-border/60 px-4 pb-5 md:px-6">
-            <Skeleton className="h-3 w-28" />
-            <Skeleton className="h-8 w-40" />
-            <Skeleton className="h-4 w-80" />
-          </div>
-
-          <div className="border-b border-border/60 px-4 py-4 md:px-6">
-            <div className="flex gap-6">
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-32" />
-              <Skeleton className="h-10 w-32" />
-            </div>
-          </div>
-
-          <div className="border-b border-border/60 px-4 py-4 md:px-6">
-            <Skeleton className="h-10 w-full max-w-xl" />
-          </div>
-
-          <div>
-            {Array.from({ length: 7 }).map((_, idx) => (
-              <div
-                key={idx}
-                className="border-b border-border/60 px-4 py-4 md:px-6"
-              >
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="mt-2 h-4 w-56" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingView />;
   }
 
   return (
@@ -165,8 +125,6 @@ export function ProjectsPage() {
                     </span>
                   </div>
                 </div>
-
-                <PlusDecor position="bottom" />
               </div>
             );
           })}
