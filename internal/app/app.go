@@ -57,8 +57,14 @@ func (app *Application) mount() http.Handler {
 	r.Get("/auth/login/github", authHandler.GithubLogin)
 	r.Get("/auth/login/google", authHandler.GoogleLogin)
 
-	// FIXME: breaking change, need to update fontend to use this new endpoint for token login
-	r.Get("/auth/login/token", authHandler.TokenLogin)
+	r.Post("/auth/login/email", authHandler.EmailLogin)
+	r.Post("/auth/signup/email", authHandler.EmailSignUp)
+
+	r.Post("/auth/email/verify/request", authHandler.SendEmailVerification)
+	r.Post("/auth/email/verify", authHandler.VerifyEmail)
+
+	r.Post("/auth/password/reset/request", authHandler.SendPasswordResetEmail)
+	r.Post("/auth/password/reset", authHandler.ResetPassword)
 
 	r.Get("/auth/callback/github", authHandler.GithubCallback)
 	r.Get("/auth/callback/google", authHandler.GoogleCallback)

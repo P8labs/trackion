@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/mssola/useragent"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func StrPtr(s string) *string {
@@ -207,4 +208,29 @@ func ExtractBearer(r *http.Request) string {
 	}
 
 	return ""
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func GenerateRandomCode(n int) (string, error) {
+	const letters = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+
+	for i, b := range bytes {
+		bytes[i] = letters[b%byte(len(letters))]
+	}
+
+	return string(bytes), nil
 }

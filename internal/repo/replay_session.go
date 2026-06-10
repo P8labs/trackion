@@ -14,11 +14,13 @@ var ReplaySession = struct {
 	ProjectID  field.Field[uuid.UUID]
 	StartedAt  field.Time
 	LastSeenAt field.Time
+	Status     field.String
 	Project    field.Struct[models.Project]
 }{
 	SessionID:  field.String{}.WithColumn("session_id"),
 	ProjectID:  field.Field[uuid.UUID]{}.WithColumn("project_id"),
 	StartedAt:  field.Time{}.WithColumn("started_at"),
 	LastSeenAt: field.Time{}.WithColumn("last_seen_at"),
+	Status:     field.String{}.WithColumn("status"),
 	Project:    field.Struct[models.Project]{}.WithName("Project"),
 }

@@ -1,4 +1,4 @@
-import { flags, IsMobile } from "@/lib/flags";
+import { IsMobile } from "@/lib/flags";
 
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
@@ -11,7 +11,6 @@ import { useStore } from "@/store";
 export function AuthPage() {
   const { loginUrls } = useGlobal();
   const { serverUrl, setServerUrl } = useStore();
-  const showOAuthSection = flags.isSaaS;
 
   const handleGithubLogin = () => {
     const githubLoginUrl = loginUrls.github;
@@ -34,31 +33,29 @@ export function AuthPage() {
           flow.
         </p>
 
-        {showOAuthSection && (
-          <div className="space-y-0.5 flex flex-col">
-            <Button
-              leftSection={<FcGoogle className="size-4" />}
-              onClick={handleGoogleLogin}
-              variant="default"
-              size="lg"
-              type="button"
-              className="rounded-b-none!"
-            >
-              Continue with Google
-            </Button>
+        <div className="space-y-0.5 flex flex-col">
+          <Button
+            leftSection={<FcGoogle className="size-4" />}
+            onClick={handleGoogleLogin}
+            variant="default"
+            size="lg"
+            type="button"
+            className="rounded-b-none!"
+          >
+            Continue with Google
+          </Button>
 
-            <Button
-              leftSection={<FaGithub className="size-4" />}
-              onClick={handleGithubLogin}
-              variant="default"
-              size="lg"
-              type="button"
-              className="rounded-t-none!"
-            >
-              Continue with GitHub
-            </Button>
-          </div>
-        )}
+          <Button
+            leftSection={<FaGithub className="size-4" />}
+            onClick={handleGithubLogin}
+            variant="default"
+            size="lg"
+            type="button"
+            className="rounded-t-none!"
+          >
+            Continue with GitHub
+          </Button>
+        </div>
         <div className="flex flex-col items-center justify-center fixed bottom-0 left-0 w-full p-4">
           <Text
             component="span"

@@ -1,6 +1,7 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,16 +10,95 @@ import (
 func (User) TableName() string { return "users" }
 
 type User struct {
+	ID    uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Email string    `gorm:"column:email;unique" json:"email"`
+
+	AvatarUrl *string `gorm:"column:avatar_url" json:"avatar_url,omitempty"`
+	Name      *string `gorm:"column:name" json:"name,omitempty"`
+
+	CreatedAt     time.Time  `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt     time.Time  `gorm:"column:updated_at" json:"updated_at"`
+	EmailAttempts int        `gorm:"column:email_attempts" json:"email_attempts"`
+	LastEmailSent *time.Time `gorm:"column:last_email_sent" json:"last_email_sent,omitempty"`
+
+	Subscription Subscription `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"subscription,omitempty"`
+	Sessions     []Session    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"sessions,omitempty"`
+	Projects     []Project    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"projects,omitempty"`
+	Providers    []Provider   `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"providers,omitempty"`
+}
+
+type ProviderType string
+
+const (
+	ProviderGithub = "github"
+	ProviderGoogle = "google"
+	ProviderEmail  = "email"
+)
+
+type Provider struct {
+	ID         uuid.UUID    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	Type       ProviderType `gorm:"column:type" json:"type"`
+	Scope      *string      `gorm:"column:scope" json:"scope,omitempty"`
+	ProviderID *string      `gorm:"column:provider_id" json:"provider_id,omitempty"`
+	UserID     uuid.UUID    `gorm:"column:user_id;unique" json:"user_id"`
+	Hash       string       `gorm:"column:hash" json:"-"`
+	Verified   bool         `gorm:"column:verified" json:"verified"`
+	CreatedAt  time.Time    `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt  time.Time    `gorm:"column:updated_at" json:"updated_at"`
+
+	// user_id one provider constrained to one user, but a user can have multiple providers (e.g. github + google)
+	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+}
+
+const (
+	EmailVerificationReason = "email_verification"
+	PasswordResetReason     = "password_reset"
+	AccountDeletionReason   = "account_deletion"
+)
+
+type VerificationCode struct {
 	ID        uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	AvatarUrl *string   `gorm:"column:avatar_url" json:"avatar_url,omitempty"`
-	Email     string    `gorm:"column:email;unique" json:"email"`
-	Name      *string   `gorm:"column:name" json:"name,omitempty"`
-	GithubID  *string   `gorm:"column:github_id;unique" json:"github_id,omitempty"`
-	GoogleID  *string   `gorm:"column:google_id;unique" json:"google_id,omitempty"`
+	UserID    uuid.UUID `gorm:"column:user_id" json:"user_id"`
+	Reason    string    `gorm:"column:reason" json:"reason"`
+	Code      string    `gorm:"column:code" json:"code"`
+	ExpiresAt time.Time `gorm:"column:expires_at" json:"expires_at"`
 	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
 
-	Subscription Subscription `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-	Sessions     []Session    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
-	Projects     []Project    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
+}
+
+func ParseVerificationReason(r string) (string, error) {
+	switch r {
+	case EmailVerificationReason, PasswordResetReason, AccountDeletionReason:
+		return r, nil
+	default:
+		return "", errors.New("invalid verification reason")
+	}
+}
+
+func IsValidProvider(p string) bool {
+	switch p {
+	case ProviderGithub, ProviderGoogle, ProviderEmail:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p ProviderType) String() string {
+	return string(p)
+}
+
+func ParseProvider(p string) (ProviderType, error) {
+	switch p {
+	case "github":
+		return ProviderGithub, nil
+	case "google":
+		return ProviderGoogle, nil
+	case "email":
+		return ProviderEmail, nil
+	default:
+		return "", errors.New("invalid provider type")
+	}
 }
