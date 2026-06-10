@@ -10,27 +10,69 @@ import (
 )
 
 var User = struct {
-	ID           field.Field[uuid.UUID]
-	AvatarUrl    field.String
-	Email        field.String
-	Name         field.String
-	GithubID     field.String
-	GoogleID     field.String
-	CreatedAt    field.Time
-	UpdatedAt    field.Time
-	Subscription field.Struct[models.Subscription]
-	Sessions     field.Slice[models.Session]
-	Projects     field.Slice[models.Project]
+	ID            field.Field[uuid.UUID]
+	Email         field.String
+	AvatarUrl     field.String
+	Name          field.String
+	CreatedAt     field.Time
+	UpdatedAt     field.Time
+	EmailAttempts field.Number[int]
+	LastEmailSent field.Time
+	Subscription  field.Struct[models.Subscription]
+	Sessions      field.Slice[models.Session]
+	Projects      field.Slice[models.Project]
 }{
-	ID:           field.Field[uuid.UUID]{}.WithColumn("id"),
-	AvatarUrl:    field.String{}.WithColumn("avatar_url"),
-	Email:        field.String{}.WithColumn("email"),
-	Name:         field.String{}.WithColumn("name"),
-	GithubID:     field.String{}.WithColumn("github_id"),
-	GoogleID:     field.String{}.WithColumn("google_id"),
-	CreatedAt:    field.Time{}.WithColumn("created_at"),
-	UpdatedAt:    field.Time{}.WithColumn("updated_at"),
-	Subscription: field.Struct[models.Subscription]{}.WithName("Subscription"),
-	Sessions:     field.Slice[models.Session]{}.WithName("Sessions"),
-	Projects:     field.Slice[models.Project]{}.WithName("Projects"),
+	ID:            field.Field[uuid.UUID]{}.WithColumn("id"),
+	Email:         field.String{}.WithColumn("email"),
+	AvatarUrl:     field.String{}.WithColumn("avatar_url"),
+	Name:          field.String{}.WithColumn("name"),
+	CreatedAt:     field.Time{}.WithColumn("created_at"),
+	UpdatedAt:     field.Time{}.WithColumn("updated_at"),
+	EmailAttempts: field.Number[int]{}.WithColumn("email_attempts"),
+	LastEmailSent: field.Time{}.WithColumn("last_email_sent"),
+	Subscription:  field.Struct[models.Subscription]{}.WithName("Subscription"),
+	Sessions:      field.Slice[models.Session]{}.WithName("Sessions"),
+	Projects:      field.Slice[models.Project]{}.WithName("Projects"),
+}
+
+var Provider = struct {
+	ID         field.Field[uuid.UUID]
+	Type       field.Struct[models.ProviderType]
+	Scope      field.String
+	ProviderID field.String
+	UserID     field.Field[uuid.UUID]
+	Hash       field.String
+	Verified   field.Bool
+	CreatedAt  field.Time
+	UpdatedAt  field.Time
+	User       field.Struct[models.User]
+}{
+	ID:         field.Field[uuid.UUID]{}.WithColumn("id"),
+	Type:       field.Struct[models.ProviderType]{}.WithName("Type"),
+	Scope:      field.String{}.WithColumn("scope"),
+	ProviderID: field.String{}.WithColumn("provider_id"),
+	UserID:     field.Field[uuid.UUID]{}.WithColumn("user_id"),
+	Hash:       field.String{}.WithColumn("hash"),
+	Verified:   field.Bool{}.WithColumn("verified"),
+	CreatedAt:  field.Time{}.WithColumn("created_at"),
+	UpdatedAt:  field.Time{}.WithColumn("updated_at"),
+	User:       field.Struct[models.User]{}.WithName("User"),
+}
+
+var VerificationCode = struct {
+	ID        field.Field[uuid.UUID]
+	UserID    field.Field[uuid.UUID]
+	Code      field.String
+	ExpiresAt field.Time
+	CreatedAt field.Time
+	UpdatedAt field.Time
+	User      field.Struct[models.User]
+}{
+	ID:        field.Field[uuid.UUID]{}.WithColumn("id"),
+	UserID:    field.Field[uuid.UUID]{}.WithColumn("user_id"),
+	Code:      field.String{}.WithColumn("code"),
+	ExpiresAt: field.Time{}.WithColumn("expires_at"),
+	CreatedAt: field.Time{}.WithColumn("created_at"),
+	UpdatedAt: field.Time{}.WithColumn("updated_at"),
+	User:      field.Struct[models.User]{}.WithName("User"),
 }

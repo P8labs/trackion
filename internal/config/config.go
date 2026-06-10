@@ -15,29 +15,36 @@ const (
 )
 
 type Config struct {
-	Mode               Mode
-	Port               string
+	Mode Mode
+	Port string
+
 	DatabaseURL        string
 	GithubClientID     string
 	GithubClientSecret string
 	GoogleClientID     string
 	GoogleClientSecret string
-	AdminToken         string
-	BaseURL            string
-	AuthSecret         string
+
+	ResendAPIKey string
+	BaseURL      string
+	AuthSecret   string
+
 	EventBodySizeLimit int32
 	EventBatchLimit    int32
-	FrontendURL        string
-	AllowedOrigins     []string
+
+	FrontendURL    string
+	AllowedOrigins []string
+
 	EventRetentionDays int
 	ProjectDeleteAfter int
 	CleanupCronSpec    string
 	CleanupTimeoutSec  int
-	BatchProjectRPS    int
-	BatchProjectBurst  int
-	BatchIPRPM         int
-	RateLimitTTLMin    int
-	RateLimitCleanupS  int
+
+	BatchProjectRPS   int
+	BatchProjectBurst int
+	BatchIPRPM        int
+	RateLimitTTLMin   int
+	RateLimitCleanupS int
+
 	GeoLookupEnabled   bool
 	GeoLookupProvider  string
 	GeoLookupTimeoutMS int
@@ -72,7 +79,7 @@ func Load() *Config {
 		GithubClientSecret: GetEnv("GITHUB_CLIENT_SECRET", ""),
 		GoogleClientID:     GetEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: GetEnv("GOOGLE_CLIENT_SECRET", ""),
-		AdminToken:         GetEnv("TRACKION_ADMIN_TOKEN", ""),
+		ResendAPIKey:       GetEnv("RESEND_API_KEY", ""),
 		BaseURL:            GetEnv("BASE_URL", "http://localhost:8000"),
 		AuthSecret:         GetEnv("AUTH_SECRET", "random-noise"),
 		EventBodySizeLimit: 256,
@@ -137,10 +144,6 @@ func Load() *Config {
 
 	if cfg.GeoCleanupSec < 30 {
 		cfg.GeoCleanupSec = 300
-	}
-
-	if mode == ModeSelfHost && cfg.AdminToken == "" {
-		panic("TRACKION_ADMIN_TOKEN required in selfhost mode")
 	}
 
 	return cfg
