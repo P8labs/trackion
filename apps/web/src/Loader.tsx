@@ -1,3 +1,5 @@
+import { Loader as LOADER } from "@mantine/core";
+
 export default function Loader() {
   return (
     <div className="fixed inset-0 z-9999 flex items-center justify-center bg-background">
@@ -23,6 +25,14 @@ export default function Loader() {
           Loading Trackion…
         </p>
       </div>
+    </div>
+  );
+}
+
+export function LoadingView() {
+  return (
+    <div className="flex items-center justify-center h-full">
+      <LOADER type="bars" size="lg" />
     </div>
   );
 }

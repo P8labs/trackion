@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/mssola/useragent"
@@ -193,4 +194,17 @@ func Require(pairs ...string) error {
 		return fmt.Errorf("%s is required", field)
 	}
 	return nil
+}
+
+func ExtractBearer(r *http.Request) string {
+
+	auth := r.Header.Get("Authorization")
+
+	const prefix = "Bearer "
+
+	if len(auth) > len(prefix) && auth[:len(prefix)] == prefix {
+		return auth[len(prefix):]
+	}
+
+	return ""
 }

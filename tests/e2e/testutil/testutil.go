@@ -13,7 +13,6 @@ import (
 	"trackion/internal/app"
 	"trackion/internal/config"
 	db "trackion/internal/db/models"
-	"trackion/internal/features/auth"
 	"trackion/internal/test"
 
 	"github.com/google/uuid"
@@ -53,7 +52,7 @@ func SetupE2EApp(t *testing.T) http.Handler {
 }
 
 func seedSelfHostAdminData(database *gorm.DB) {
-	adminID := uuid.MustParse(auth.SystemUserID)
+	adminID := uuid.MustParse("00000000-0000-0000-0000-000000000001")
 
 	_ = database.Create(&db.User{
 		ID:    adminID,

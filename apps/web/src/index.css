@@ -7,7 +7,7 @@
 
 @source "../../../packages/ui/";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
 
 @layer base {
   body {
