@@ -41,9 +41,9 @@ export function useAppMutation<TVars, TRes>(
 
 export function useMutations() {
   const { api } = useGlobalStore();
-  return useMemo(() => createMutations(api), [api]);
+  return useMemo(() => createMutations(api()), [api]);
 }
 export function useQueries() {
   const { api } = useGlobalStore();
-  return useMemo(() => createQueries(api), [api]);
+  return useMemo(() => createQueries(api()), [api]);
 }
