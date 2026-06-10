@@ -10,7 +10,6 @@ import { Suspense } from "react";
 import { ProjectDashboardLayout } from "@/components/layouts/project-dash";
 
 import { ErrorBoundary } from "@/components/core/error-boundary";
-import { GlobalProvider } from "@/providers/global-provider";
 
 import { ThemeProvider } from "@trackion/ui/theme-toggle";
 import { queryClient } from "@/lib/queryClient";
@@ -27,16 +26,16 @@ import {
 } from "./routes";
 
 import { flags } from "@/lib/flags";
-import { useStore } from "@/store";
+import { useGlobalStore } from "@/store";
 import { AppShell } from "./components/layouts/app-shell";
 
 const protectedRoutePrefixes = ["/projects", "/settings", "/usage"];
 const publicOnlyRoutes = new Set(["/auth"]);
 
 function RouteMiddleware({ children }: { children: React.ReactNode }) {
-  const { authToken, isAuthenticated } = useStore();
+  const { authToken } = useGlobalStore();
   const location = useLocation();
-  const isLoggedIn = isAuthenticated && !!authToken;
+  const isLoggedIn = !!authToken;
 
   const isProtectedRoute = protectedRoutePrefixes.some((prefix) =>
     location.pathname.startsWith(prefix),
@@ -55,57 +54,55 @@ function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <GlobalProvider>
-      <TrackionProvider
-        options={{
+    <TrackionProvider
+      options={{
+        enabled: false,
+        apiKey: flags.trackionToken,
+        serverUrl: flags.trackionUrl,
+        replay: {
           enabled: false,
-          apiKey: flags.trackionToken,
-          serverUrl: flags.trackionUrl,
-          replay: {
-            enabled: false,
-          },
-        }}
-      >
-        <ErrorBoundary>
-          <ThemeProvider defaultTheme="dark">
-            <ModalsProvider>
-              <QueryClientProvider client={queryClient}>
-                <BrowserRouter>
-                  <RouteMiddleware>
-                    <Suspense fallback={<Loader />}>
-                      <Routes>
-                        <Route>
-                          {publicRoutes.map((r) => (
-                            <Route key={r.path} {...r} />
-                          ))}
-                        </Route>
-                        <Route>
-                          {authRoutes.map((r) => (
-                            <Route key={r.path} {...r} />
-                          ))}
-                        </Route>
+        },
+      }}
+    >
+      <ErrorBoundary>
+        <ThemeProvider defaultTheme="dark">
+          <ModalsProvider>
+            <QueryClientProvider client={queryClient}>
+              <BrowserRouter>
+                <RouteMiddleware>
+                  <Suspense fallback={<Loader />}>
+                    <Routes>
+                      <Route>
+                        {publicRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
+                      <Route>
+                        {authRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
 
-                        <Route element={<AppShell links={workspaceLinks} />}>
-                          {workspaceRoutes.map((r) => (
-                            <Route key={r.path} {...r} />
-                          ))}
-                        </Route>
+                      <Route element={<AppShell links={workspaceLinks} />}>
+                        {workspaceRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
 
-                        <Route element={<ProjectDashboardLayout />}>
-                          {projectRoutes.map((r) => (
-                            <Route key={r.path} {...r} />
-                          ))}
-                        </Route>
-                      </Routes>
-                    </Suspense>
-                  </RouteMiddleware>
-                </BrowserRouter>
-              </QueryClientProvider>
-            </ModalsProvider>
-          </ThemeProvider>
-        </ErrorBoundary>
-      </TrackionProvider>
-    </GlobalProvider>
+                      <Route element={<ProjectDashboardLayout />}>
+                        {projectRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </RouteMiddleware>
+              </BrowserRouter>
+            </QueryClientProvider>
+          </ModalsProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
+    </TrackionProvider>
   );
 }
 
