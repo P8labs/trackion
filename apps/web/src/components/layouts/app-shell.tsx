@@ -45,14 +45,14 @@ export function AppShell({
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0",
           "transition-transform",
-          "border-r-2 border-(--mantine-color-gray-3) dark:border-(--mantine-color-dark-4)",
+          "border-r-2 border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4)",
           "bg-(--mantine-color-body)",
         )}
       >
         <nav className="h-full flex flex-col px-2">
           <div className="flex-1 overflow-y-auto">
             <Group
-              className="border-b border-(--mantine-color-gray-3) dark:border-(--mantine-color-dark-4) p-4 h-14 mb-2"
+              className="border-b border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4) p-4 h-14 mb-2"
               justify="space-between"
             >
               <div className="flex items-center space-x-1 text-primary">
@@ -76,7 +76,7 @@ export function AppShell({
             ))}
           </div>
 
-          <div className="border-t border-(--mantine-color-gray-3) dark:border-(--mantine-color-dark-4) p-3 text-md space-y-4">
+          <div className="border-t border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4) p-3 text-md space-y-4">
             <NavLink
               component={"button"}
               label="Log out"
@@ -95,7 +95,7 @@ export function AppShell({
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="h-14 flex items-center justify-between px-4 md:px-6 border-b border-(--mantine-color-gray-3) dark:border-(--mantine-color-dark-4)">
+        <header className="h-14 flex items-center justify-between px-4 md:px-6 border-b border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4)">
           <div className="flex items-center gap-3 min-w-0">
             <Burger
               opened={sidebarOpened}

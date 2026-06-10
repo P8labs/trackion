@@ -33,13 +33,15 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 }
 
 var (
-	ErrFailedCreation = errors.New("Unable to record the event")
+	ErrFailedCreation      = errors.New("Unable to record the event")
+	ErrInvalidProject      = errors.New("Invalid project")
+	ErrProjectNameTooShort = errors.New("Project name must be at least 2 characters")
 )
 
 func (s *Service) CreateProject(ctx context.Context, params CreateProjectParams) (string, error) {
 	name := strings.TrimSpace(params.Name)
 	if len(name) < 2 {
-		return "", errors.New("project name must be at least 2 characters")
+		return "", ErrProjectNameTooShort
 	}
 
 	userId := ctx.Value(auth.UserIdContextKey).(string)

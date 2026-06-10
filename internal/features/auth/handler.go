@@ -162,7 +162,7 @@ func (h *handler) Me(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 
-	token := extractBearer(r)
+	token := core.ExtractBearer(r)
 
 	if token == "" {
 		cookie, err := r.Cookie("trackion_session")
@@ -185,22 +185,16 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(200)
 }
 
-func (h *handler) VerifyToken(w http.ResponseWriter, r *http.Request) {
-	payload, err := res.Parse[verifyTokenRequest](r)
-	if err != nil {
-		res.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+func (h *handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
 
-	token := strings.TrimSpace(payload.Token)
+	token := core.ExtractBearer(r)
 
 	if token == "" {
 		res.Error(w, "unauthorized access token not found", http.StatusUnauthorized)
 		return
 	}
 
-
-	session, err := h.service.VerifyToken(r.Context(), token)
+	session, err := h.service.TokenLogin(r.Context(), token)
 	if err != nil {
 		res.Error(w, "unauthorized failed to get user", http.StatusUnauthorized)
 		return

@@ -213,12 +213,14 @@ func (s *Service) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
-func (s *Service) VerifyToken(ctx context.Context, token string) (string, error) {
-	if !s.cfg.IsSelfHost() {
-		return "", errors.New("Self host mode need to be enable to verify token")
+func (s *Service) TokenLogin(ctx context.Context, token string) (string, error) {
+
+	if s.cfg.AdminToken == "" {
+		return "", errors.New("admin token login is not enabled")
 	}
+
 	if token != s.cfg.AdminToken {
-		return "", errors.New("unauthorized access to verify token")
+		return "", errors.New("invalid token provided")
 	}
 
 	adminEmail := "admin@trackion.local"
