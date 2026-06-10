@@ -7,7 +7,7 @@ import { flags } from "@/lib/flags";
 type GlobalState = {
   serverURL: string;
   authToken: string | null;
-  api: ReturnType<typeof createApi>;
+  api: () => ReturnType<typeof createApi>;
 
   actions: {
     reset: () => void;
@@ -21,13 +21,13 @@ export const useGlobalStore = create<GlobalState>()(
     (set) => ({
       serverURL: SERVER_URL,
       authToken: null,
-      api: (() => {
+      api: () => {
         const client = createApiClient({
           baseUrl: useGlobalStore.getState().serverURL,
           getAuthToken: () => useGlobalStore.getState().authToken,
         });
         return createApi(client);
-      })(),
+      },
       actions: {
         reset: () => set({ authToken: null }),
         setServerUrl: (url) => set({ serverURL: url }),

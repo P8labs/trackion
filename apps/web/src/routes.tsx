@@ -6,6 +6,26 @@ import { ChartPieIcon, CogIcon, FolderIcon } from "lucide-react";
 const AuthPage = lazy(() =>
   import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
 );
+const AuthSignInPage = lazy(() =>
+  import("./pages/auth/AuthSignInPage").then((m) => ({
+    default: m.AuthSignInPage,
+  })),
+);
+const AuthSignUpPage = lazy(() =>
+  import("./pages/auth/AuthSignUpPage").then((m) => ({
+    default: m.AuthSignUpPage,
+  })),
+);
+const AuthEmailVerifyPage = lazy(() =>
+  import("./pages/auth/AuthEmailVerifyPage").then((m) => ({
+    default: m.AuthEmailVerifyPage,
+  })),
+);
+const AuthEmailRecoveryPage = lazy(() =>
+  import("./pages/auth/AuthEmailRecoveryPage").then((m) => ({
+    default: m.AuthEmailRecoveryPage,
+  })),
+);
 const AuthCallbackPage = lazy(() =>
   import("./pages/auth/AuthCallbackPage").then((m) => ({
     default: m.AuthCallbackPage,
@@ -136,6 +156,10 @@ export const publicRoutes = [
 
 export const authRoutes = [
   { path: "/auth", element: <AuthPage /> },
+  { path: "/auth/signin", element: <AuthSignInPage /> },
+  { path: "/auth/signup", element: <AuthSignUpPage /> },
+  { path: "/auth/email/verify", element: <AuthEmailVerifyPage /> },
+  { path: "/auth/email/recovery", element: <AuthEmailRecoveryPage /> },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
 ];
 
