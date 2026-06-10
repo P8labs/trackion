@@ -70,8 +70,6 @@ func (app *Application) mount() http.Handler {
 	r.Get("/auth/callback/google", authHandler.GoogleCallback)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		// before auth means public routes that don't require authentication
-		// r.Post("/auth/verify", authHandler.VerifyToken)
 
 		r.Group(func(r chi.Router) {
 			r.Use(authMw.AuthMiddleware)

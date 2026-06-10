@@ -1,4 +1,3 @@
-import { useStore } from "@/store";
 import {
   useAppMutation,
   useAppQuery,
@@ -14,7 +13,7 @@ export const userHooks = {
 
   useServerHealth() {
     const q = useQueries();
-    return useAppQuery(q.user.serverHealth(useStore((s) => s.serverUrl)));
+    return useAppQuery(q.user.serverHealth());
   },
 
   useUsage() {

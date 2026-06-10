@@ -1,5 +1,5 @@
 import { userHooks } from "@/hooks/queries/use-user";
-import { useStore } from "@/store";
+import { useGlobalStore } from "@/store";
 
 import { useNavigate } from "react-router-dom";
 import { Button, Modal } from "@mantine/core";
@@ -11,16 +11,16 @@ interface Props {
 
 export function LogoutModal({ opened, close }: Props) {
   const navigate = useNavigate();
-  const { logout } = useStore();
   const logoutMutation = userHooks.useLogout();
 
   const handleLogoutConfirm = async () => {
     try {
       await logoutMutation.mutateAsync({});
     } catch (error) {
-      logout();
+      console.error("[SERVER LOGOUT FAILED]", error);
+    } finally {
+      useGlobalStore.getState().actions.reset();
     }
-    logout();
     navigate("/auth");
     close();
   };

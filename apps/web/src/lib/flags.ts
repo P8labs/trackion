@@ -1,8 +1,16 @@
-export const flags = {
+type Flags = {
+  mode: string;
+  isSaaS: boolean;
+  trackionUrl: string;
+  trackionToken: string;
+
+  device: "web" | "mobile" | "desktop";
+  devMode: boolean;
+};
+
+export const flags: Flags = {
   mode: import.meta.env.VITE_TRACKION_MODE || "saas",
   isSaaS: (import.meta.env.VITE_TRACKION_MODE || "saas") === "saas",
-  enableGithubLogin: import.meta.env.VITE_ENABLE_GITHUB_LOGIN === "true",
-  enableGoogleLogin: import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === "true",
   trackionUrl: import.meta.env.VITE_TRACKION_URL || "https://api.trackion.tech",
   trackionToken:
     import.meta.env.VITE_TRACKION_TOKEN ||
@@ -11,8 +19,6 @@ export const flags = {
   device: import.meta.env.VITE_DEVICE || "web",
   devMode: import.meta.env.DEV,
 };
-
-export type Flags = typeof flags;
 
 export function IsWeb(test?: boolean): boolean {
   if (flags.devMode && test) {

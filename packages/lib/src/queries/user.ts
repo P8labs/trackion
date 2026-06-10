@@ -5,14 +5,14 @@ export const userQueryKeys = {
   usage: ["usage"] as const,
   logout: ["logout"] as const,
   planInfo: ["plan-info"] as const,
-  serverHealth: (serverUrl: string) => ["server-health", serverUrl] as const,
+  serverHealth: () => ["server-health"] as const,
   loginWithToken: (token: string) => ["login-with-token", token] as const,
 };
 
 export function createUserQueries(api: ReturnType<typeof createApi>) {
   return {
-    serverHealth: (serverUrl: string) => ({
-      queryKey: userQueryKeys.serverHealth(serverUrl),
+    serverHealth: () => ({
+      queryKey: userQueryKeys.serverHealth(),
       queryFn: api.getServerHealth,
       retry: 1,
       refetchInterval: 30000,

@@ -3,24 +3,14 @@ import { IsMobile } from "@/lib/flags";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 
-import { useGlobal } from "@/providers/global-provider";
 import { Button, Paper, TextInput, Text } from "@mantine/core";
 import { modals } from "@mantine/modals";
-import { useStore } from "@/store";
+import { oauthLogin, useGlobalStore } from "@/store";
+import { useNavigate } from "react-router-dom";
 
 export function AuthPage() {
-  const { loginUrls } = useGlobal();
-  const { serverUrl, setServerUrl } = useStore();
-
-  const handleGithubLogin = () => {
-    const githubLoginUrl = loginUrls.github;
-    window.location.href = githubLoginUrl;
-  };
-
-  const handleGoogleLogin = () => {
-    const googleLoginUrl = loginUrls.google;
-    window.location.href = googleLoginUrl;
-  };
+  const navigate = useNavigate();
+  const { serverURL } = useGlobalStore();
 
   return (
     <div className="flex min-h-screen items-center justify-center overflow-hidden">
@@ -36,7 +26,7 @@ export function AuthPage() {
         <div className="space-y-0.5 flex flex-col">
           <Button
             leftSection={<FcGoogle className="size-4" />}
-            onClick={handleGoogleLogin}
+            onClick={() => navigate(oauthLogin("google"))}
             variant="default"
             size="lg"
             type="button"
@@ -47,7 +37,7 @@ export function AuthPage() {
 
           <Button
             leftSection={<FaGithub className="size-4" />}
-            onClick={handleGithubLogin}
+            onClick={() => navigate(oauthLogin("github"))}
             variant="default"
             size="lg"
             type="button"
@@ -63,7 +53,7 @@ export function AuthPage() {
           >
             Accessing:{" "}
             <Text component="span" c="cyan" className="cursor-pointer text-sm">
-              {serverUrl.replace(/(^\w+:|^)\/\//, "")}
+              {serverURL.replace(/(^\w+:|^)\/\//, "")}
             </Text>
           </Text>
           <Text
@@ -99,7 +89,9 @@ export function AuthPage() {
                             formattedUrl = "http://" + formattedUrl;
                           }
 
-                          setServerUrl(formattedUrl);
+                          useGlobalStore
+                            .getState()
+                            .actions.setServerUrl(formattedUrl);
                           modals.close(modelId);
                         }}
                       >
