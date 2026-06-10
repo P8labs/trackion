@@ -7,6 +7,7 @@ import (
 	"strings"
 	"trackion/internal/config"
 	"trackion/internal/core"
+	db "trackion/internal/db/models"
 	"trackion/internal/res"
 
 	"github.com/markbates/goth/gothic"
@@ -62,12 +63,10 @@ func (h *handler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
 func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider string) {
 
 	state := r.URL.Query().Get("state")
-
 	client, err := core.ParseAuthStateCode(state, h.cfg.AuthSecret)
 	if err != nil {
 		errUrl := fmt.Sprintf("%s/auth/callback?error=invalid_state", h.cfg.FrontendURL)
 		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
-		// res.Error(w, "invalid oauth state", 401)
 		return
 	}
 
@@ -80,7 +79,6 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 		log.Printf("OAuth callback error: %v", err)
 		errUrl := fmt.Sprintf("%s/auth/callback?error=oauth_failed", h.cfg.FrontendURL)
 		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
-		// res.Error(w, "oauth failed", 401)
 		return
 	}
 
@@ -93,11 +91,10 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	if err := core.Require("providerId", providerId, "email", email); err != nil {
 		errUrl := fmt.Sprintf("%s/auth/callback?error=missing_fields", h.cfg.FrontendURL)
 		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
-		// res.Error(w, err.Error(), 400)
 		return
 	}
 
-	userID, err := h.service.UpsertOAuthUser(
+	userID, err := h.service.SignInWithOAuth(
 		ctx,
 		provider,
 		providerId,
@@ -109,7 +106,6 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	if err != nil {
 		errUrl := fmt.Sprintf("%s/auth/callback?error=user_creation_failed", h.cfg.FrontendURL)
 		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
-		// res.Error(w, "user creation failed", 500)
 		return
 	}
 
@@ -117,12 +113,10 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	if err != nil {
 		errUrl := fmt.Sprintf("%s/auth/callback?error=session_creation_failed", h.cfg.FrontendURL)
 		http.Redirect(w, r, errUrl, http.StatusTemporaryRedirect)
-		// res.Error(w, "session creation failed", 500)
 		return
 	}
 
-	if client == "desktop" {
-		// Added because I want to build a desktop app also. But let's see when
+	if client == "desktop" || client == "mobile" {
 		redirect := fmt.Sprintf(
 			"trackion://auth?token=%s&auth=%s",
 			sessionToken,
@@ -141,6 +135,158 @@ func (h *handler) oauthCallback(w http.ResponseWriter, r *http.Request, provider
 	)
 
 	http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+}
+
+func (h *handler) EmailLogin(w http.ResponseWriter, r *http.Request) {
+	payload, err := res.Parse[EmailAuthRequest](r)
+
+	if err != nil {
+		res.Error(w, "invalid request body", 400)
+		return
+	}
+
+	if err := core.Require("email", payload.Email, "password", payload.Password); err != nil {
+		res.Error(w, "email and password are required", 400)
+		return
+	}
+
+	userID, err := h.service.SignInWithEmail(r.Context(), payload.Email, payload.Password)
+	if err != nil {
+		res.Error(w, "invalid email or password", 401)
+		return
+	}
+
+	sessionToken, err := h.service.CreateSession(r.Context(), userID)
+	if err != nil {
+		res.Error(w, "session creation failed", 500)
+		return
+	}
+
+	res.Success(w, TokenResponse{
+		Token: sessionToken,
+	}, "Login successful")
+}
+
+func (h *handler) EmailSignUp(w http.ResponseWriter, r *http.Request) {
+
+	payload, err := res.Parse[EmailAuthRequest](r)
+
+	if err != nil {
+		res.Error(w, "invalid request body", 400)
+		return
+	}
+
+	if err := core.Require("email", payload.Email, "password", payload.Password); err != nil {
+		res.Error(w, "email and password are required", 400)
+		return
+	}
+
+	userID, err := h.service.SignUpWithEmail(r.Context(), payload.Email, payload.Password)
+	if err != nil {
+		res.Error(w, err.Error(), 400)
+		return
+	}
+
+	sessionToken, err := h.service.CreateSession(r.Context(), userID)
+	if err != nil {
+		res.Error(w, "session creation failed", 500)
+		return
+	}
+
+	res.Success(w, TokenResponse{
+		Token: sessionToken,
+	}, "Signup successful")
+}
+
+func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+
+	payload, err := res.Parse[VerifyEmailRequest](r)
+
+	if err != nil {
+		res.Error(w, "invalid request body", 400)
+		return
+	}
+
+	email := strings.ToLower(strings.TrimSpace(payload.Email))
+	code := strings.TrimSpace(payload.Code)
+
+	if err := core.Require("email", email, "code", code); err != nil {
+		res.Error(w, "email and code are required", 400)
+		return
+	}
+
+	_, err = h.service.VerifyEmailCode(r.Context(), email, strings.ToUpper(code))
+	if err != nil {
+		res.Error(w, "invalid or expired verification code", 400)
+		return
+	}
+
+	res.Success(w, res.M{}, "Email verified and logged in")
+}
+
+func (h *handler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
+
+	email := r.URL.Query().Get("email")
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	if email == "" {
+		res.Error(w, "email is required", 400)
+		return
+	}
+
+	err := h.service.SendVerificationEmail(r.Context(), email, db.EmailVerificationReason)
+	if err != nil {
+		res.Error(w, "failed to resend verification code", 500)
+		return
+	}
+
+	res.Success(w, res.M{}, "Verification code resent if email exists")
+}
+
+func (h *handler) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
+
+	email := r.URL.Query().Get("email")
+	email = strings.ToLower(strings.TrimSpace(email))
+
+	if email == "" {
+		res.Error(w, "email is required", 400)
+		return
+	}
+
+	err := h.service.SendVerificationEmail(r.Context(), email, db.PasswordResetReason)
+	if err != nil {
+		res.Error(w, "failed to send password reset email", 500)
+		return
+	}
+
+	res.Success(w, res.M{}, "Password reset email sent if email exists")
+}
+
+func (h *handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+
+	payload, err := res.Parse[ResetPasswordRequest](r)
+
+	if err != nil {
+		res.Error(w, "invalid request body", 400)
+		return
+	}
+
+	email := strings.ToLower(strings.TrimSpace(payload.Email))
+	code := strings.TrimSpace(payload.Code)
+	newPassword := payload.NewPassword
+
+	if err := core.Require("email", email, "code", code, "new_password", newPassword); err != nil {
+		res.Error(w, "email, code and new password are required", 400)
+		return
+	}
+
+	err = h.service.PasswordReset(r.Context(), email, strings.ToUpper(code), newPassword)
+	if err != nil {
+		res.Error(w, "invalid or expired verification code", 400)
+		return
+	}
+
+	res.Success(w, res.M{}, "Password reset successful")
 }
 
 func (h *handler) Me(w http.ResponseWriter, r *http.Request) {
@@ -183,24 +329,4 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(200)
-}
-
-func (h *handler) TokenLogin(w http.ResponseWriter, r *http.Request) {
-
-	token := core.ExtractBearer(r)
-
-	if token == "" {
-		res.Error(w, "unauthorized access token not found", http.StatusUnauthorized)
-		return
-	}
-
-	session, err := h.service.TokenLogin(r.Context(), token)
-	if err != nil {
-		res.Error(w, "unauthorized failed to get user", http.StatusUnauthorized)
-		return
-	}
-
-	res.Success(w, verifyTokenResponse{
-		Token: session,
-	}, "Token verified")
 }
