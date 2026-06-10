@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import { createMutations, createQueries } from "@trackion/lib/queries";
-import { useGlobal } from "@/providers/global-provider";
 
-import { useStore } from "@/store";
+import { useGlobalStore } from "@/store";
 import {
   useMutation,
   useQuery,
@@ -17,7 +16,7 @@ export function useAppQuery<TData>(
   },
   options?: Omit<UseQueryOptions<TData>, "queryKey" | "queryFn">,
 ) {
-  const isAuthenticated = useStore((s) => s.isAuthenticated);
+  const isAuthenticated = useGlobalStore((s) => s.authToken) !== null;
 
   return useQuery({
     ...query,
@@ -41,10 +40,10 @@ export function useAppMutation<TVars, TRes>(
 }
 
 export function useMutations() {
-  const { api } = useGlobal();
+  const { api } = useGlobalStore();
   return useMemo(() => createMutations(api), [api]);
 }
 export function useQueries() {
-  const { api } = useGlobal();
+  const { api } = useGlobalStore();
   return useMemo(() => createQueries(api), [api]);
 }

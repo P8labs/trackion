@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useStore } from "@/store";
-import { useGlobal } from "@/providers/global-provider";
+import { useGlobalStore } from "@/store";
 import { Button, Code, Text } from "@mantine/core";
 import { Loader } from "@mantine/core";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, serverUrl, setAuth } = useStore();
-  const { login } = useGlobal();
+  const { authToken } = useGlobalStore();
 
   const hasHandledCallback = useRef(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -23,7 +21,7 @@ export function AuthCallbackPage() {
 
     hasHandledCallback.current = true;
 
-    if (isAuthenticated) {
+    if (authToken) {
       setStatus("success");
       navigate("/projects", { replace: true });
       return;
@@ -31,7 +29,7 @@ export function AuthCallbackPage() {
 
     const params = new URLSearchParams(window.location.search);
     const authParam = params.get("auth");
-    const authToken = params.get("token");
+    const token = params.get("token");
     const errorParam = params.get("error");
 
     if (errorParam) {
@@ -40,11 +38,9 @@ export function AuthCallbackPage() {
       return;
     }
 
-    if (authToken && authToken.trim()) {
-      setAuth(authToken.trim(), serverUrl);
-      login(authToken.trim());
+    if (token && token.trim()) {
+      useGlobalStore.getState().actions.setAuthToken(token.trim());
       setStatus("success");
-      window.history.replaceState({}, document.title, window.location.pathname);
       navigate("/projects", { replace: true });
       return;
     }
@@ -52,7 +48,7 @@ export function AuthCallbackPage() {
     const reason = authParam && authParam !== "null" ? authParam : "unknown";
     setStatus("error");
     setError(`callback failed (${reason}): Session token not found`);
-  }, [isAuthenticated, navigate, serverUrl, setAuth]);
+  }, [navigate]);
 
   return (
     <div className="flex min-h-screen items-center justify-center overflow-hidden w-full">

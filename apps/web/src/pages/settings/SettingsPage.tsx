@@ -1,4 +1,3 @@
-import { useStore } from "@/store";
 import { Avatar, AvatarFallback, AvatarImage } from "@trackion/ui/avatar";
 import moment from "moment";
 import { WEB_VERSION } from "@/lib/constants";
@@ -6,8 +5,7 @@ import { PlusDecor, PLine } from "@trackion/ui/decoration";
 import { userHooks } from "@/hooks/queries/use-user";
 
 export function SettingsPage() {
-  const { user: storedUser } = useStore();
-  const { data: profile } = userHooks.useUser();
+  const { data: currentUser } = userHooks.useUser();
 
   const {
     data: health,
@@ -15,7 +13,6 @@ export function SettingsPage() {
     isError: healthError,
   } = userHooks.useServerHealth();
 
-  const currentUser = profile ?? storedUser;
   const userInitials = (currentUser?.name || currentUser?.email || "TR")
     .split(" ")
     .slice(0, 2)

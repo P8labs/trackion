@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@trackion/ui/button";
 import { Badge } from "@trackion/ui/badge";
-import { useStore } from "@/store";
 import { CodeBox } from "@trackion/ui/code-box";
 import { ProjectFeatureToggle } from "@/components/core/project/feature-toggle";
 
@@ -14,10 +13,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { ErrorBanner } from "@/components/core/error-banner";
 import { LoadingBanner } from "@/components/core/loading-banner";
+import { useGlobalStore } from "@/store";
 
 export function ProjectDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
-  const { serverUrl } = useStore();
+  const { serverURL } = useGlobalStore();
 
   const [copied, setCopied] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -40,7 +40,7 @@ export function ProjectDetailPage() {
 
   const scriptSnippet = `<!-- Trackion Analytics -->
 <script
-  src="${serverUrl}/t.js"
+  src="${serverURL}/t.js"
   data-api-key="${project.api_key}"
 ></script>`;
 

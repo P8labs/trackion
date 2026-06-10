@@ -1,45 +1,46 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { SERVER_URL } from "@/lib/constants";
-import type { User } from "@/types";
+import { createApi, createApiClient } from "@trackion/lib/api";
+import { flags } from "@/lib/flags";
 
-type State = {
-  serverUrl: string;
+type GlobalState = {
+  serverURL: string;
   authToken: string | null;
-  user: User | null;
-  isAuthenticated: boolean;
+  api: ReturnType<typeof createApi>;
 
-  setAuth: (token: string, serverUrl: string, user?: User) => void;
-  setServerUrl: (serverUrl: string) => void;
-  logout: () => void;
+  actions: {
+    reset: () => void;
+    setServerUrl: (serverUrl: string) => void;
+    setAuthToken: (token: string) => void;
+  };
 };
 
-export const useStore = create<State>()(
+export const useGlobalStore = create<GlobalState>()(
   persist(
     (set) => ({
-      serverUrl: SERVER_URL,
+      serverURL: SERVER_URL,
       authToken: null,
-      user: null,
-      currentProject: null,
-      isAuthenticated: false,
-
-      setAuth: (token, serverUrl, user) =>
-        set({
-          authToken: token,
-          serverUrl,
-          user,
-          isAuthenticated: true,
-        }),
-
-      setServerUrl: (serverUrl) => set({ serverUrl }),
-      logout: () =>
-        set({
-          authToken: null,
-          user: null,
-          isAuthenticated: false,
-          serverUrl: SERVER_URL,
-        }),
+      api: (() => {
+        const client = createApiClient({
+          baseUrl: useGlobalStore.getState().serverURL,
+          getAuthToken: () => useGlobalStore.getState().authToken,
+        });
+        return createApi(client);
+      })(),
+      actions: {
+        reset: () => set({ authToken: null }),
+        setServerUrl: (url) => set({ serverURL: url }),
+        setAuthToken: (token) => set({ authToken: token }),
+      },
     }),
-    { name: "trackion-state-v2" },
+    { name: "trackion.global-state", version: 1 },
   ),
 );
+
+export const oauthLogin = (provider: "google" | "github") => {
+  const { serverURL } = useGlobalStore.getState();
+  const baseUrl = serverURL.replace(/\/+$/, "");
+  const loginUrl = `${baseUrl}/auth/login/${provider}?client=${flags.device}`;
+  return loginUrl;
+};
