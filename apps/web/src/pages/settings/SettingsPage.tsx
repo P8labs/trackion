@@ -10,10 +10,15 @@ import {
   SimpleGrid,
   Badge,
   Anchor,
+  Indicator,
+  Tooltip,
 } from "@mantine/core";
 import { useGlobalStore } from "@/store";
 import DeviceInfo from "./components/DeviceInfo";
 import Updater from "./components/Updater";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub } from "react-icons/fa";
+import { MdEmail } from "react-icons/md";
 
 export function SettingsPage() {
   const currentUser = useGlobalStore((state) => state.user);
@@ -30,6 +35,29 @@ export function SettingsPage() {
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
 
+  const renderProviderIcon = (type: string) => {
+    switch (type) {
+      case "google":
+        return <FcGoogle size={18} />;
+      case "github":
+        return <FaGithub size={18} />;
+      case "email":
+        return <MdEmail size={18} />;
+      default:
+        return (
+          <Text size="xs" fw={700}>
+            {type[0].toUpperCase()}
+          </Text>
+        );
+    }
+  };
+
+  const providers = currentUser?.providers
+    ? Array.isArray(currentUser.providers)
+      ? currentUser.providers
+      : [currentUser.providers]
+    : [];
+
   return (
     <section>
       <Paper className="overflow-hidden">
@@ -39,29 +67,60 @@ export function SettingsPage() {
           </Text>
 
           {currentUser ? (
-            <Group wrap="nowrap" gap="lg">
-              <Avatar
-                src={currentUser.avatar_url}
-                size="xl"
-                radius="md"
-                color="blue"
-              >
-                {userInitials || "TR"}
-              </Avatar>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <Group wrap="nowrap" gap="lg">
+                <Avatar
+                  src={currentUser.avatar_url}
+                  size="xl"
+                  radius="md"
+                  color="blue"
+                >
+                  {userInitials || "TR"}
+                </Avatar>
 
-              <div>
-                <Text fw={600} size="lg">
-                  {currentUser.name || "Trackion User"}
-                </Text>
-                <Text c="dimmed" size="sm">
-                  {currentUser.email || "No email"}
-                </Text>
+                <div>
+                  <Text fw={600} size="lg">
+                    {currentUser.name || "Trackion User"}
+                  </Text>
+                  <Text c="dimmed" size="sm">
+                    {currentUser.email || "No email"}
+                  </Text>
 
-                <Text size="xs" c="dimmed" mt="sm">
-                  Joined {moment(currentUser.created_at).fromNow()}
-                </Text>
-              </div>
-            </Group>
+                  <Text size="xs" c="dimmed" mt="sm">
+                    Joined {moment(currentUser.created_at).fromNow()}
+                  </Text>
+                </div>
+              </Group>
+
+              {providers.length > 0 && (
+                <div className="flex sm:flex-col items-center sm:items-end gap-2">
+                  <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                    Connected
+                  </Text>
+                  <Group gap="xs">
+                    {providers.map((provider, idx) => (
+                      <Tooltip
+                        key={idx}
+                        label={`${provider.type} (${provider.verified ? "Verified" : "Pending"})`}
+                        withArrow
+                      >
+                        <Indicator
+                          color={provider.verified ? "green" : "yellow"}
+                          position="bottom-end"
+                          size={10}
+                          offset={3}
+                          withBorder
+                        >
+                          <Avatar radius="xl" size="md">
+                            {renderProviderIcon(provider.type)}
+                          </Avatar>
+                        </Indicator>
+                      </Tooltip>
+                    ))}
+                  </Group>
+                </div>
+              )}
+            </div>
           ) : (
             <Text size="sm" c="dimmed">
               No profile available for this mode.

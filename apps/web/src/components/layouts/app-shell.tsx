@@ -136,9 +136,9 @@ export function AppShell({
 
                 <Menu.Item
                   leftSection={<ChartPieIcon className="mr-2 h-4 w-4" />}
-                  onClick={() => navigate("/usage")}
+                  onClick={() => navigate("/subscriptions")}
                 >
-                  Usage
+                  Subscriptions
                 </Menu.Item>
 
                 <Divider />

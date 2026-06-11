@@ -445,6 +445,16 @@ func (s *Service) GetUser(ctx context.Context, userID string) (UserResponse, err
 		isActiveSubscription = true
 	}
 
+	providers := make([]UserProvider, len(user.Providers))
+	for i, p := range user.Providers {
+		providers[i] = UserProvider{
+			Type:      p.Type,
+			Verified:  p.Verified,
+			CreatedAt: p.CreatedAt.String(),
+			UpdatedAt: p.UpdatedAt.String(),
+		}
+	}
+
 	return UserResponse{
 		ID:                   user.ID.String(),
 		Email:                user.Email,
@@ -456,6 +466,7 @@ func (s *Service) GetUser(ctx context.Context, userID string) (UserResponse, err
 		IsActiveSubscription: isActiveSubscription,
 		SubscriptionPlan:     user.Subscription.Plan,
 		EndsAt:               user.Subscription.CurrentPeriodEnd.String(),
+		Providers:            providers,
 	}, nil
 }
 
