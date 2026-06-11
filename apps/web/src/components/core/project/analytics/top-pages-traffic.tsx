@@ -1,6 +1,9 @@
-import { Clock, Users, Eye } from "lucide-react";
-import { formatTimeSpent } from "@/lib/utils";
+import { Center, Divider, Group, Skeleton, Stack, Text } from "@mantine/core";
+
+import { Clock3, Eye, Users } from "lucide-react";
+
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import { formatTimeSpent } from "@/lib/utils";
 
 interface TopPagesProps {
   projectId: string;
@@ -10,76 +13,107 @@ export function TopPages({ projectId }: TopPagesProps) {
   const { data, isLoading, error } = analyticsHooks.useTopPages(projectId);
 
   return (
-    <section className="h-90 flex flex-col">
-      <div className="border-b border-border/60 px-4 py-3">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+    <Stack gap={0}>
+      <div className="px-5 md:px-6 py-5">
+        <Text fw={600} size="sm">
           Top Pages
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground">
+        </Text>
+
+        <Text size="sm" c="dimmed">
           Most popular pages on your site
-        </p>
+        </Text>
       </div>
 
       {isLoading ? (
-        <div className="divide-y divide-border/40 overflow-y-auto flex-1">
-          {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              <div className="h-3 w-40 animate-pulse rounded bg-muted/50" />
-              <div className="h-3 w-24 animate-pulse rounded bg-muted/50" />
+        <Stack gap={0}>
+          {Array.from({
+            length: 6,
+          }).map((_, index) => (
+            <div key={index}>
+              <div className="px-5 md:px-6 py-3">
+                <Group justify="space-between">
+                  <Skeleton h={14} w={180} />
+
+                  <Skeleton h={14} w={120} />
+                </Group>
+              </div>
+
+              {index !== 5 && <Divider />}
             </div>
           ))}
-        </div>
+        </Stack>
       ) : error ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          Failed to load top pages data
-        </div>
-      ) : !data || data.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          No page data available
-        </div>
+        <EmptyState label="Failed to load top pages data" />
+      ) : !data?.length ? (
+        <EmptyState label="No page data available" />
       ) : (
-        <div className="divide-y divide-border/40 overflow-y-auto flex-1">
+        <Stack gap={0}>
           {data.map((page, index) => (
-            <div
-              key={index}
-              className="grid grid-cols-12 items-center gap-3 px-4 py-2.5 transition hover:bg-muted/20"
-            >
-              <div className="col-span-6 min-w-0">
-                <p
-                  className="truncate text-sm font-medium text-foreground"
-                  title={page.path}
-                >
-                  {page.path || "/"}
-                </p>
+            <div key={page.path || index}>
+              <div className="px-5 md:px-6 py-3">
+                <Group justify="space-between" align="center" wrap="nowrap">
+                  <div
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                    }}
+                  >
+                    <Text size="sm" fw={500} truncate title={page.path}>
+                      {page.path || "/"}
+                    </Text>
+                  </div>
+
+                  <Group gap="lg">
+                    <Metric icon={<Eye size={14} />} value={page.total_views} />
+
+                    <Metric
+                      icon={<Users size={14} />}
+                      value={page.unique_visitors}
+                    />
+
+                    <Metric
+                      icon={<Clock3 size={14} />}
+                      value={formatTimeSpent(page.avg_time_seconds)}
+                    />
+                  </Group>
+                </Group>
               </div>
 
-              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                <Eye className="h-3 w-3" />
-                <span className="font-mono text-foreground">
-                  {page.total_views.toLocaleString()}
-                </span>
-              </div>
-
-              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                <span className="font-mono text-foreground">
-                  {page.unique_visitors.toLocaleString()}
-                </span>
-              </div>
-
-              <div className="col-span-2 flex items-center justify-end gap-1 text-xs text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                <span className="font-mono text-foreground">
-                  {formatTimeSpent(page.avg_time_seconds)}
-                </span>
-              </div>
+              {index !== data.length - 1 && <Divider />}
             </div>
           ))}
-        </div>
+        </Stack>
       )}
-    </section>
+    </Stack>
+  );
+}
+
+function Metric({
+  icon,
+  value,
+}: {
+  icon: React.ReactNode;
+  value: string | number;
+}) {
+  return (
+    <Group gap={4} wrap="nowrap">
+      <Text c="dimmed" size="xs">
+        {icon}
+      </Text>
+
+      <Text size="sm" fw={600}>
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </Text>
+    </Group>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <Center py="xl">
+      <Text size="sm" c="dimmed">
+        {label}
+      </Text>
+    </Center>
   );
 }

@@ -1,6 +1,6 @@
 import { LoadingBanner } from "@/components/core/loading-banner";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
-import { cn } from "@trackion/ui/lib";
+import { Center, Divider, Group, Stack, Text } from "@mantine/core";
 
 interface TopCountriesProps {
   projectId: string;
@@ -26,104 +26,76 @@ function getCountryFlag(
 export function TopCountries({ projectId }: TopCountriesProps) {
   const { data, isLoading, error } = analyticsHooks.useTopCountries(projectId);
 
-  if (isLoading) {
-    return (
-      <section className="h-90 flex flex-col">
-        <div className="border-b border-border/60 px-4 py-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-            Top Countries
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Visitor origin by country
-          </p>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <LoadingBanner />
-        </div>
-      </section>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <section className="h-90 flex flex-col">
-        <div className="border-b border-border/60 px-4 py-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-            Top Countries
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Visitor origin by country
-          </p>
-        </div>
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          No country data available
-        </div>
-      </section>
-    );
-  }
-
-  const topCountries = data.slice(0, 8);
-
-  if (topCountries.length === 0) {
-    return (
-      <section className="h-90 flex flex-col">
-        <div className="border-b border-border/60 px-4 py-3">
-          <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
-            Top Countries
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Visitor origin by country
-          </p>
-        </div>
-        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-          No visitor data yet
-        </div>
-      </section>
-    );
-  }
+  const countries = data?.slice(0, 8) ?? [];
 
   return (
-    <section className="h-90 flex flex-col">
-      <div className="border-b border-border/60 px-4 py-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2 text-foreground">
+    <Stack gap={0}>
+      <div className="px-5 md:px-6 py-5">
+        <Text fw={600} size="sm">
           Top Countries
-        </h3>
-        <p className="mt-1 text-xs text-muted-foreground">
+        </Text>
+
+        <Text size="sm" c="dimmed">
           Visitor origin by country
-        </p>
+        </Text>
       </div>
 
-      <div className="divide-y divide-border/40 overflow-y-auto flex-1">
-        {topCountries.map((country) => {
-          const flag = getCountryFlag(
-            country.name,
-            country.emoji,
-            country.country_code,
-          );
+      {isLoading ? (
+        <Center py="xl">
+          <LoadingBanner />
+        </Center>
+      ) : error ? (
+        <EmptyState label="No country data available" />
+      ) : countries.length === 0 ? (
+        <EmptyState label="No visitor data yet" />
+      ) : (
+        <Stack gap={0}>
+          {countries.map((country, index) => {
+            const flag = getCountryFlag(
+              country.name,
+              country.emoji,
+              country.country_code,
+            );
 
-          return (
-            <div
-              key={country.name}
-              className="flex items-center justify-between px-4 py-2.5 transition hover:bg-muted/20"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className={cn("text-base text-center", flag == "?" && "mx-1")}
-                >
-                  {flag}
-                </span>
-                <span className="truncate text-sm font-medium text-foreground">
-                  {country.name}
-                </span>
+            return (
+              <div key={country.name}>
+                <Group justify="space-between" className="px-5 md:px-6 py-3">
+                  <Group gap="sm" wrap="nowrap">
+                    <Text
+                      size="lg"
+                      style={{
+                        lineHeight: 1,
+                      }}
+                    >
+                      {flag}
+                    </Text>
+
+                    <Text size="sm" truncate>
+                      {country.name}
+                    </Text>
+                  </Group>
+
+                  <Text fw={600} size="sm">
+                    {country.count.toLocaleString()}
+                  </Text>
+                </Group>
+
+                {index !== countries.length - 1 && <Divider />}
               </div>
+            );
+          })}
+        </Stack>
+      )}
+    </Stack>
+  );
+}
 
-              <span className="font-mono text-sm text-muted-foreground">
-                {country.count}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+function EmptyState({ label }: { label: string }) {
+  return (
+    <Center py="xl">
+      <Text size="sm" c="dimmed">
+        {label}
+      </Text>
+    </Center>
   );
 }
