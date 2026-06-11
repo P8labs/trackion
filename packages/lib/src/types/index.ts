@@ -84,6 +84,12 @@ export interface User {
   subscription_plan?: string;
   created_at: string;
   updated_at: string;
+  providers: {
+    type: "google" | "github" | "email";
+    verified: boolean;
+    created_at: string;
+    updated_at: string;
+  }[];
 }
 
 export interface Subscription {
