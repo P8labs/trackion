@@ -431,12 +431,13 @@ func (s *Service) GetUser(ctx context.Context, userID string) (UserResponse, err
 		return UserResponse{}, err
 	}
 
-	isEmailVerified := false
+	isEmailVerified := true
 	for _, p := range user.Providers {
-		if p.Type == db.ProviderEmail && p.Verified {
-			isEmailVerified = true
+		if p.Type == db.ProviderEmail && !p.Verified {
+			isEmailVerified = false
 			break
 		}
+
 	}
 
 	isActiveSubscription := false

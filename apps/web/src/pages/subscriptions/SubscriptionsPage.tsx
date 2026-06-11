@@ -14,6 +14,7 @@ import {
   Center,
   Loader,
   Anchor,
+  Code,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { CheckIcon, XIcon } from "lucide-react";
@@ -216,7 +217,7 @@ export function SubscriptionsPage() {
         </Button>
 
         <Text size="sm" c="dimmed">
-          Wrong account?{" "}
+          Logged into <Code>{useGlobalStore.getState().user?.email}</Code>.{" "}
           <Anchor
             component="button"
             disabled={isPending}
