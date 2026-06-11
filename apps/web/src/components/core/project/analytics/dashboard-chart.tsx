@@ -1,56 +1,32 @@
 import { useMemo, useState } from "react";
-import { Calendar01Icon, FilterIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@trackion/ui/select";
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@trackion/ui/chart";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { LoadingBanner } from "@/components/core/loading-banner";
+import { Center, Group, Select, SimpleGrid, Stack, Text } from "@mantine/core";
+
 import { ErrorBanner } from "@/components/core/error-banner";
+import { LoadingBanner } from "@/components/core/loading-banner";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import { BarChart } from "@mantine/charts";
+import moment from "moment";
+import { CalendarIcon, FilterIcon } from "lucide-react";
 
 interface ChartDataProps {
   projectId: string;
 }
 
 const TIME_RANGES = [
-  { value: "30m", label: "Last 30 minutes" },
-  { value: "1h", label: "Last hour" },
-  { value: "24h", label: "Last 24 hours" },
-  { value: "7d", label: "Last 7 days" },
-  { value: "30d", label: "Last 30 days" },
+  { value: "30m", label: "30m" },
+  { value: "1h", label: "1h" },
+  { value: "24h", label: "24h" },
+  { value: "7d", label: "7d" },
+  { value: "30d", label: "30d" },
 ];
 
 const EVENT_FILTERS = [
-  { value: "all", label: "All events" },
+  { value: "all", label: "All" },
   { value: "page.view", label: "Views" },
   { value: "page.time_spent", label: "Time" },
   { value: "page.click", label: "Clicks" },
 ];
-
-const chartConfig = {
-  desktop: {
-    label: "Desktop",
-    color: "var(--chart-1)",
-  },
-  mobile: {
-    label: "Mobile",
-    color: "var(--chart-2)",
-  },
-} satisfies ChartConfig;
 
 export function DashboardChart({ projectId }: ChartDataProps) {
   const [timeRange, setTimeRange] = useState("24h");
@@ -63,8 +39,12 @@ export function DashboardChart({ projectId }: ChartDataProps) {
   );
 
   const chartSummary = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { total: 0, peak: 0, latest: 0 };
+    if (!data?.length) {
+      return {
+        total: 0,
+        peak: 0,
+        latest: 0,
+      };
     }
 
     let total = 0;
@@ -72,173 +52,141 @@ export function DashboardChart({ projectId }: ChartDataProps) {
 
     for (const row of data) {
       const rowTotal = row.desktop + row.mobile;
+
       total += rowTotal;
       peak = Math.max(peak, rowTotal);
     }
 
     const latest = data[data.length - 1].desktop + data[data.length - 1].mobile;
-    return { total, peak, latest };
+
+    return {
+      total,
+      peak,
+      latest,
+    };
   }, [data]);
 
   return (
-    <section className="border-b border-border/60">
-      <div className="px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+    <Stack gap={0}>
+      <Group
+        justify="space-between"
+        align="flex-end"
+        gap="md"
+        className="px-5 md:px-6 py-5"
+      >
         <div>
-          <p className="text-sm font-medium">Events</p>
-          <p className="text-xs text-muted-foreground">
+          <Text fw={600} size="sm">
+            Events
+          </Text>
+
+          <Text size="sm" c="dimmed">
             Device distribution over time
-          </p>
+          </Text>
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Select
+            size="xs"
+            w={110}
+            value={timeRange}
+            onChange={(value) => setTimeRange(value || "24h")}
+            data={TIME_RANGES}
+            leftSection={<CalendarIcon size={14} />}
+            allowDeselect={false}
+          />
+          <Select
+            size="xs"
+            w={110}
+            value={eventFilter || "all"}
+            onChange={(value) => setEventFilter(value || "all")}
+            data={EVENT_FILTERS}
+            leftSection={<FilterIcon size={14} />}
+            allowDeselect={false}
+          />
+        </div>
+      </Group>
 
-        <Select value={timeRange} onValueChange={(v) => setTimeRange(v || "")}>
-          <SelectTrigger className="h-8 w-36 text-xs">
-            <HugeiconsIcon icon={Calendar01Icon} className="h-4 w-4" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {TIME_RANGES.map((range) => (
-              <SelectItem key={range.value} value={range.value}>
-                {range.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <div className="px-5 md:px-6 pb-5">
+        <SimpleGrid cols={3}>
+          <Metric label="Total" value={chartSummary.total.toLocaleString()} />
+          <Metric label="Peak" value={chartSummary.peak.toLocaleString()} />
+          <Metric label="Latest" value={chartSummary.latest.toLocaleString()} />
+        </SimpleGrid>
       </div>
 
-      <div className="px-4 md:px-6 pb-4 flex flex-wrap items-center gap-2 text-xs">
-        <span className="inline-flex items-center gap-1 text-muted-foreground mr-1">
-          <HugeiconsIcon icon={FilterIcon} className="h-3.5 w-3.5" />
-          Group
-        </span>
-
-        {EVENT_FILTERS.map((filter) => {
-          const selected = (eventFilter || "all") === filter.value;
-
-          return (
-            <button
-              key={filter.value}
-              onClick={() =>
-                setEventFilter(filter.value === "all" ? "" : filter.value)
-              }
-              className={`
-                px-2 py-1 rounded border text-[11px] transition
-                ${
-                  selected
-                    ? "border-primary text-foreground bg-muted/30"
-                    : "border-border/60 text-muted-foreground hover:bg-muted/20"
-                }
-              `}
-            >
-              {filter.label}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="relative grid grid-cols-3 border-t border-border/60 text-xs">
-        <Stat label="Total" value={chartSummary.total} />
-        <Stat label="Peak" value={chartSummary.peak} />
-        <Stat label="Latest" value={chartSummary.latest} />
-      </div>
-
-      <div className="px-4 md:px-6 py-6 relative">
+      <div className="px-5 md:px-6 pb-6">
         {isLoading ? (
-          <div className="h-72 flex items-center justify-center">
+          <Center h={260}>
             <LoadingBanner />
-          </div>
+          </Center>
         ) : error ? (
           <ErrorBanner error={error} label="Failed to load chart data" />
-        ) : !data ? (
-          <div className="h-72 flex items-center justify-center text-muted-foreground">
-            No data available
-          </div>
+        ) : !data?.length ? (
+          <Center h={260}>
+            <Text c="dimmed" size="sm">
+              No data available
+            </Text>
+          </Center>
         ) : (
-          <ChartContainer config={chartConfig} className="h-72 w-full">
-            <BarChart data={data} barGap={2} barCategoryGap="20%">
-              <CartesianGrid vertical={false} />
+          <BarChart
+            h={300}
+            data={data}
+            dataKey="period"
+            series={[
+              {
+                name: "desktop",
+                color: "violet.6",
+                stackId: "traffic",
+                label: "Desktop",
+              },
+              {
+                name: "mobile",
+                color: "blue.6",
+                stackId: "traffic",
+                label: "Mobile",
+              },
+            ]}
+            xAxisProps={{
+              tickFormatter: (value) => {
+                const date = moment(value);
 
-              <XAxis
-                dataKey="period"
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tickFormatter={(value) => {
-                  const d = new Date(value);
-
-                  if (timeRange === "30m" || timeRange === "1h") {
-                    return d.toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                  }
-
-                  if (timeRange === "24h") {
-                    return d.toLocaleTimeString([], {
-                      hour: "2-digit",
-                    });
-                  }
-
-                  if (timeRange === "7d" || timeRange === "30d") {
-                    return d.toLocaleDateString([], {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }
-
-                  return d.toLocaleDateString([], {
-                    month: "short",
-                    day: "numeric",
-                  });
-                }}
-              />
-
-              <YAxis tickLine={false} axisLine={false} />
-
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    indicator="dot"
-                    labelFormatter={(value) => {
-                      const d = new Date(value);
-
-                      if (timeRange === "30m" || timeRange === "1h") {
-                        return d.toLocaleTimeString();
-                      }
-
-                      return d.toLocaleString();
-                    }}
-                  />
+                if (timeRange === "30m" || timeRange === "1h") {
+                  return date.format("h:mm A");
                 }
-              />
 
-              <Bar
-                dataKey="mobile"
-                fill="var(--color-mobile)"
-                stackId="a"
-                radius={[2, 2, 0, 0]}
-              />
+                if (timeRange === "24h") {
+                  return date.format("h A");
+                }
 
-              <Bar
-                dataKey="desktop"
-                fill="var(--color-desktop)"
-                stackId="a"
-                radius={[2, 2, 0, 0]}
-              />
+                return date.format("MMM D");
+              },
+            }}
+            tooltipProps={{
+              labelFormatter: (value) => {
+                const date = moment(value);
 
-              <ChartLegend content={<ChartLegendContent />} />
-            </BarChart>
-          </ChartContainer>
+                if (timeRange === "30m" || timeRange === "1h") {
+                  return date.format("h:mm A");
+                }
+
+                return date.format("MMM D, YYYY h:mm A");
+              },
+            }}
+            tickLine="y"
+          />
         )}
       </div>
-    </section>
+    </Stack>
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-4 py-3 border-r border-b border-border/60 last:border-r-0 relative">
-      <p className="text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium mt-1">{value}</p>
-    </div>
+    <Stack gap={2}>
+      <Text size="xs" c="dimmed">
+        {label}
+      </Text>
+
+      <Text fw={600}>{value}</Text>
+    </Stack>
   );
 }

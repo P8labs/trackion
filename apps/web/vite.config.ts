@@ -53,10 +53,6 @@ export default defineConfig({
             return;
           }
 
-          if (id.includes("recharts")) {
-            return "charts";
-          }
-
           if (id.includes("@tanstack/react-query")) {
             return "react-query";
           }

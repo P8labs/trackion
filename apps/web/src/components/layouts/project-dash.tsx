@@ -1,144 +1,223 @@
-import { useState } from "react";
-import { Outlet, useParams } from "react-router-dom";
-
-import { Topbar } from "@/components/layouts/topbar";
-import { cn } from "@trackion/ui/lib";
 import {
-  Activity04Icon,
-  ChartRoseIcon,
-  CustomizeIcon,
-  DashboardSquare03Icon,
-  LiveStreaming02Icon,
-  Settings02Icon,
-  VideoReplayIcon,
-  WifiError02Icon,
-} from "@hugeicons/core-free-icons";
-import { NavItem } from "./nav-item";
+  Link,
+  Outlet,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
+
+import { cn } from "@trackion/ui/lib";
+
+import { useDisclosure } from "@mantine/hooks";
+import { userHooks } from "@/hooks/queries/use-user";
+import {
+  Avatar,
+  Burger,
+  Code,
+  Divider,
+  Group,
+  Menu,
+  NavLink,
+} from "@mantine/core";
+import {
+  BugIcon,
+  ChartPieIcon,
+  CogIcon,
+  Columns3CogIcon,
+  LayoutDashboardIcon,
+  LogOutIcon,
+  RadioIcon,
+  SettingsIcon,
+  TrendingUpIcon,
+  TvMinimalIcon,
+} from "lucide-react";
+import { LogoutModal } from "../core/modals/logout-modal";
+import { Breadcrumb } from "./breadcrumbs";
+import { ThemeToggle } from "./theme-toggle";
+import { useGlobalStore } from "@/store";
 
 export function ProjectDashboardLayout() {
   const { id: projectId = "" } = useParams<{ id: string }>();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [sidebarOpened, { toggle: sideBarToggle }] = useDisclosure(false);
+  const [opened, { close, open }] = useDisclosure(false);
+  const { data: serverHealth } = userHooks.useServerHealth();
+  const user = useGlobalStore((state) => state.user);
 
-  const Links = {
-    analytics: [
-      {
-        name: "Overview",
-        path: `/projects/${projectId}/overview`,
-        icon: DashboardSquare03Icon,
-      },
-      {
-        name: "Events",
-        path: `/projects/${projectId}/events`,
-        icon: Activity04Icon,
-      },
-      {
-        name: "Breakdown",
-        path: `/projects/${projectId}/breakdown`,
-        icon: ChartRoseIcon,
-      },
-      {
-        name: "Realtime",
-        path: `/projects/${projectId}/realtime`,
-        icon: LiveStreaming02Icon,
-      },
-    ],
-    integrations: [
-      {
-        name: "Errors",
-        path: `/projects/${projectId}/errors`,
-        icon: WifiError02Icon,
-      },
-      {
-        name: "Session Replay",
-        path: `/projects/${projectId}/replays`,
-        icon: VideoReplayIcon,
-      },
-      {
-        name: "Remote Config",
-        path: `/projects/${projectId}/remote-config`,
-        icon: CustomizeIcon,
-      },
-    ],
-    project: [
-      {
-        name: "Project Settings",
-        path: `/projects/${projectId}/settings`,
-        icon: Settings02Icon,
-      },
-    ],
-  };
+  const serverVersion = serverHealth?.server_version
+    ? `v${serverHealth.server_version}`
+    : "???";
+
+  const profileName = user?.name || "User";
+  const profileEmail = user?.email || "email";
+
+  const links = [
+    {
+      name: "Overview",
+      path: `/projects/${projectId}/overview`,
+      icon: LayoutDashboardIcon,
+    },
+    {
+      name: "Events",
+      path: `/projects/${projectId}/events`,
+      icon: TrendingUpIcon,
+    },
+    {
+      name: "Breakdown",
+      path: `/projects/${projectId}/breakdown`,
+      icon: ChartPieIcon,
+    },
+    {
+      name: "Realtime",
+      path: `/projects/${projectId}/realtime`,
+      icon: RadioIcon,
+    },
+    {
+      name: "Errors",
+      path: `/projects/${projectId}/errors`,
+      icon: BugIcon,
+    },
+    {
+      name: "Session Replay",
+      path: `/projects/${projectId}/replays`,
+      icon: TvMinimalIcon,
+    },
+    {
+      name: "Remote Config",
+      path: `/projects/${projectId}/remote-config`,
+      icon: Columns3CogIcon,
+    },
+    {
+      name: "Project Settings",
+      path: `/projects/${projectId}/settings`,
+      icon: CogIcon,
+    },
+  ];
 
   return (
-    <div className="h-screen flex bg-background text-foreground">
+    <div className="h-screen flex">
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-60 w-60",
-          "lg:bg-border/10 bg-background border-r border-border/60",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          "fixed lg:static inset-y-0 left-0 z-60 w-64",
+          sidebarOpened
+            ? "translate-x-0"
+            : "-translate-x-full lg:translate-x-0",
           "transition-transform",
+          "border-r-2 border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4)",
+          "bg-(--mantine-color-body)",
         )}
       >
-        <div className="h-full flex flex-col">
-          <div className="h-14 flex items-center gap-2 px-4 py-4 border-b border-border/60 cursor-pointer">
-            <img src="/trackion_t.png" className="w-5 h-5" />
-            <span className="text-sm font-medium">Trackion</span>
+        <nav className="h-full flex flex-col px-2">
+          <div className="flex-1 overflow-y-auto">
+            <Group
+              className="border-b border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4) p-4 h-14 mb-2"
+              justify="space-between"
+            >
+              <div className="flex items-center space-x-1 text-primary">
+                <img src="/trackion_t.png" className="w-5 h-5" />
+                <span className="text-sm font-bold tracking-wide text-muted-foreground">
+                  Trackion
+                </span>
+              </div>
+              <Code fw={700}>{serverVersion}</Code>
+            </Group>
+
+            {links.map((Item) => (
+              <NavLink
+                component={Link}
+                key={Item.path}
+                label={Item.name}
+                to={Item.path}
+                onClick={() => sidebarOpened && sideBarToggle()}
+                active={location.pathname == Item.path}
+                leftSection={<Item.icon className="w-5 h-5" />}
+              />
+            ))}
           </div>
 
-          <nav className="mt-2 px-1 space-y-1 flex-1">
-            <div className="space-y-1">
-              <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
-                Analytics
-              </p>
-              {Links.analytics.map((item) => (
-                <NavItem
-                  key={item.path}
-                  name={item.name}
-                  path={item.path}
-                  icon={item.icon}
-                />
-              ))}
-            </div>
-
-            <div className="space-y-1 pt-2">
-              <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
-                Integrations
-              </p>
-              {Links.integrations.map((item) => (
-                <NavItem
-                  key={item.path}
-                  name={item.name}
-                  path={item.path}
-                  icon={item.icon}
-                />
-              ))}
-            </div>
-
-            <div className="space-y-1 pt-2">
-              <p className="px-2 text-[11px] uppercase tracking-[0.12em] text-sidebar-foreground/55">
-                Project
-              </p>
-              {Links.project.map((item) => (
-                <NavItem
-                  key={item.path}
-                  name={item.name}
-                  path={item.path}
-                  icon={item.icon}
-                />
-              ))}
-            </div>
-          </nav>
-        </div>
+          <div className="border-t border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4) p-3 text-md space-y-4">
+            <NavLink
+              component={"button"}
+              label="Log out"
+              leftSection={<LogOutIcon className="w-5 h-5" />}
+              onClick={open}
+            />
+            <LogoutModal opened={opened} close={close} />
+          </div>
+        </nav>
       </aside>
-
-      {sidebarOpen && (
+      {sidebarOpened && (
         <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={sideBarToggle}
         />
       )}
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <Topbar setSidebarOpen={setSidebarOpen} sidebarOpen={sidebarOpen} />
+        <header className="h-14 flex items-center justify-between px-4 md:px-6 border-b border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4)">
+          <div className="flex items-center gap-3 min-w-0">
+            <Burger
+              opened={sidebarOpened}
+              onClick={sideBarToggle}
+              aria-label="Toggle navigation"
+              className="lg:hidden transition"
+            />
+
+            <Breadcrumb />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Menu>
+              <Menu.Target>
+                <Avatar
+                  src={user?.avatar_url || ""}
+                  size="sm"
+                  name={profileName}
+                  className="cursor-pointer"
+                />
+              </Menu.Target>
+
+              <Menu.Dropdown className="w-52!">
+                <Menu.Label className="px-3 py-2">
+                  <p className="text-sm font-medium truncate">{profileName}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {profileEmail}
+                  </p>
+                </Menu.Label>
+                <Divider />
+                <Menu.Item
+                  leftSection={<SettingsIcon className="mr-2 h-4 w-4" />}
+                  onClick={() => navigate("/settings")}
+                >
+                  Settings
+                </Menu.Item>
+
+                <Menu.Item
+                  leftSection={<ChartPieIcon className="mr-2 h-4 w-4" />}
+                  onClick={() => navigate("/subscriptions")}
+                >
+                  Subscriptions
+                </Menu.Item>
+
+                <Divider />
+
+                <Menu.Item
+                  leftSection={<LogOutIcon className="mr-2 h-4 w-4" />}
+                  className="text-destructive focus:text-destructive"
+                  onClick={open}
+                  c="red"
+                >
+                  Logout
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </div>
+
+          <LogoutModal close={close} opened={opened} />
+        </header>
+
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

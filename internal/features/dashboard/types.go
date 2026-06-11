@@ -162,7 +162,9 @@ type TrafficHeatmapStats struct {
 }
 
 type TrafficHeatmapData struct {
-	DayHour  [][]int64           `json:"day_hour"`
-	MonthDay [][]int64           `json:"month_day"`
-	Stats    TrafficHeatmapStats `json:"stats"`
+	Calendar  map[string]int64    `json:"calendar"`
+	DayHour   [][]int64           `json:"dayHour"`
+	Stats     TrafficHeatmapStats `json:"stats"`
+	StartDate string              `json:"start_date"`
+	EndDate   string              `json:"end_date"`
 }

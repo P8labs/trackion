@@ -78,6 +78,10 @@ func (s *Service) GetAreaChartData(ctx context.Context, projectId string, timeRa
 
 	startTime, granularity := parseTimeRange(timeRange)
 
+	if eventFilter == "all" {
+		eventFilter = ""
+	}
+
 	type areaRow struct {
 		Period  time.Time
 		Desktop int64
@@ -197,14 +201,17 @@ func (s *Service) GetCountryMapData(ctx context.Context, projectId string) (*Cou
 	}, nil
 }
 
-func (s *Service) GetTrafficHeatmap(ctx context.Context, projectId string) (*TrafficHeatmapData, error) {
+func (s *Service) GetTrafficHeatmap(
+	ctx context.Context,
+	projectId string,
+) (*TrafficHeatmapData, error) {
 	projectUUID := uuid.MustParse(projectId)
 
+	// Day × Hour heatmap (7 × 24)
+
 	dayHour := make([][]int64, 7)
-	monthDay := make([][]int64, 7)
 	for i := range 7 {
 		dayHour[i] = make([]int64, 24)
-		monthDay[i] = make([]int64, 12)
 	}
 
 	var dayHourRows []struct {
@@ -231,47 +238,47 @@ func (s *Service) GetTrafficHeatmap(ctx context.Context, projectId string) (*Tra
 	}
 
 	for _, row := range dayHourRows {
-		if row.Day < 0 || row.Day > 6 || row.Hour < 0 || row.Hour > 23 {
+		if row.Day < 0 || row.Day > 6 {
 			continue
 		}
+
+		if row.Hour < 0 || row.Hour > 23 {
+			continue
+		}
+
 		dayHour[row.Day][row.Hour] = row.Count
 	}
 
-	var monthDayRows []struct {
-		Day   int
-		Month int
+	// Calendar heatmap (daily counts)
+
+	var calendarRows []struct {
+		Date  string
 		Count int64
 	}
 
 	err = s.db.WithContext(ctx).
 		Table("events").
 		Select(`
-			EXTRACT(DOW FROM created_at)::int AS day,
-			EXTRACT(MONTH FROM created_at)::int AS month,
+			TO_CHAR(created_at::date, 'YYYY-MM-DD') AS date,
 			COUNT(*) AS count
 		`).
 		Where("project_id = ?", projectUUID).
-		Where("created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '11 months'").
-		Group("day, month").
-		Order("day ASC, month ASC").
-		Scan(&monthDayRows).Error
+		Where("created_at >= NOW() - INTERVAL '365 days'").
+		Group("created_at::date").
+		Order("created_at::date ASC").
+		Scan(&calendarRows).Error
 
 	if err != nil {
-		return nil, fmt.Errorf("failed to build month/day heatmap: %w", err)
+		return nil, fmt.Errorf("failed to build calendar heatmap: %w", err)
 	}
 
-	for _, row := range monthDayRows {
-		if row.Day < 0 || row.Day > 6 {
-			continue
-		}
+	calendar := make(map[string]int64, len(calendarRows))
 
-		monthIndex := row.Month - 1
-		if monthIndex < 0 || monthIndex > 11 {
-			continue
-		}
-
-		monthDay[row.Day][monthIndex] = row.Count
+	for _, row := range calendarRows {
+		calendar[row.Date] = row.Count
 	}
+
+	// Stats
 
 	var statRow struct {
 		TodayCount    int64
@@ -285,11 +292,13 @@ func (s *Service) GetTrafficHeatmap(ctx context.Context, projectId string) (*Tra
 			COUNT(*) FILTER (
 				WHERE created_at >= DATE_TRUNC('day', NOW())
 			) AS today_count,
+
 			COUNT(*) FILTER (
 				WHERE created_at >= NOW() - INTERVAL '7 days'
 			) AS last_week_count,
+
 			COUNT(*) FILTER (
-				WHERE created_at >= DATE_TRUNC('month', NOW()) - INTERVAL '11 months'
+				WHERE created_at >= NOW() - INTERVAL '365 days'
 			) AS last_year_count
 		`).
 		Where("project_id = ?", projectUUID).
@@ -300,8 +309,10 @@ func (s *Service) GetTrafficHeatmap(ctx context.Context, projectId string) (*Tra
 	}
 
 	return &TrafficHeatmapData{
-		DayHour:  dayHour,
-		MonthDay: monthDay,
+		Calendar:  calendar,
+		DayHour:   dayHour,
+		StartDate: calendarRows[0].Date,
+		EndDate:   calendarRows[len(calendarRows)-1].Date,
 		Stats: TrafficHeatmapStats{
 			Today:      statRow.TodayCount,
 			WeeklyAvg:  statRow.LastWeekCount / 7,

@@ -195,8 +195,10 @@ export interface CountryMapData {
 }
 
 export interface TrafficHeatmapData {
+  calendar: Record<string, number>;
   day_hour: number[][];
-  month_day: number[][];
+  start_date: string;
+  end_date: string;
   stats: {
     today: number;
     weekly_avg: number;
