@@ -4,7 +4,6 @@ import { Button, Paper, Text, TextInput } from "@mantine/core";
 import { modals } from "@mantine/modals";
 import { FaGithub } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
-import { useNavigate } from "react-router-dom";
 import type { ReactNode } from "react";
 
 type AuthCardProps = {
@@ -123,12 +122,13 @@ export function AuthFooter() {
 }
 
 export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
-  const navigate = useNavigate();
-
+  const redirect = (url: string) => {
+    window.location.href = url;
+  };
   const buttons = (
     <>
       <Button
-        onClick={() => navigate(oauthLogin("google"))}
+        onClick={() => redirect(oauthLogin("google"))}
         variant="default"
         size="lg"
         type="button"
@@ -140,7 +140,7 @@ export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
       </Button>
 
       <Button
-        onClick={() => navigate(oauthLogin("github"))}
+        onClick={() => redirect(oauthLogin("github"))}
         variant="default"
         size="lg"
         type="button"

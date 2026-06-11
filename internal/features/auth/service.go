@@ -149,21 +149,32 @@ func (s *Service) SendVerificationEmail(ctx context.Context, reason, email strin
 		return err
 	}
 
-	code, err := core.GenerateRandomCode(6)
-	if err != nil {
-		return err
-	}
+	code := ""
 
-	verification := db.VerificationCode{
-		UserID:    provider.UserID,
-		Code:      strings.ToUpper(code),
-		ExpiresAt: time.Now().Add(15 * time.Minute),
-		Reason:    reason,
-	}
+	for attempts := 0; attempts < 3; attempts++ {
+		token, err := core.GenerateRandomCode(6)
 
-	err = gorm.G[db.VerificationCode](s.db).Create(ctx, &verification)
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+
+		verification := db.VerificationCode{
+			UserID:    provider.UserID,
+			Token:     strings.ToUpper(token),
+			ExpiresAt: time.Now().Add(15 * time.Minute),
+			Reason:    reason,
+		}
+		err = gorm.G[db.VerificationCode](s.db).Create(ctx, &verification)
+		if err != nil {
+			if errors.Is(err, gorm.ErrForeignKeyViolated) {
+				continue
+			}
+			return err
+		}
+
+		code = strings.ToUpper(token)
+		break
+
 	}
 
 	err = s.mail.SendEmailVerification(email, reason, code)
@@ -174,40 +185,31 @@ func (s *Service) SendVerificationEmail(ctx context.Context, reason, email strin
 
 }
 
-func (s *Service) PasswordReset(ctx context.Context, email, code, newPassword string) error {
-	email = strings.ToLower(strings.TrimSpace(email))
+func (s *Service) PasswordReset(ctx context.Context, code, newPassword string) error {
 	code = strings.TrimSpace(code)
 
-	if err := core.Require("email", email, "code", code, "new_password", newPassword); err != nil {
+	if err := core.Require("code", code, "new_password", newPassword); err != nil {
 		return err
 	}
 
-	provider, err := gorm.G[db.Provider](s.db).Preload("users", func(db gorm.PreloadBuilder) error {
-		db.Where(repo.User.Email.Eq(email))
-		return nil
-	}).Where("type = ?", db.ProviderEmail).First(ctx)
+	v, err := gorm.G[db.VerificationCode](s.db).
+		Where(repo.VerificationCode.Token.Eq(strings.ToUpper(code))).
+		Where(repo.VerificationCode.ExpiresAt.Gte(time.Now())).
+		First(ctx)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid email or code")
+			return errors.New("invalid or expired verification code")
 		}
 		return err
 	}
 
-	if provider.UserID == uuid.Nil {
+	provider, err := gorm.G[db.Provider](s.db).
+		Where(repo.Provider.UserID.Eq(v.UserID)).
+		Where(repo.Provider.Type.Eq(db.ProviderEmail)).
+		First(ctx)
+	if err != nil {
 		return errors.New("associated user not found")
-	}
-
-	if provider.User.Email != email {
-		return errors.New("email mismatch")
-	}
-
-	v, err := gorm.G[db.VerificationCode](s.db).Where(repo.VerificationCode.UserID.Eq(provider.UserID)).Where(repo.VerificationCode.Code.Eq(code)).Where(repo.VerificationCode.ExpiresAt.Gte(time.Now())).First(ctx)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return errors.New("invalid email or code")
-		}
-		return err
 	}
 
 	if v.Reason != db.PasswordResetReason {
@@ -222,54 +224,50 @@ func (s *Service) PasswordReset(ctx context.Context, email, code, newPassword st
 	provider.Hash = hashedPassword
 	provider.Verified = true
 
-	if _, err := gorm.G[db.Provider](s.db).Where(repo.Provider.ID.Eq(provider.ID)).Updates(ctx, provider); err != nil {
+	if _, err := gorm.G[db.Provider](s.db).
+		Where(repo.Provider.ID.Eq(provider.ID)).
+		Updates(ctx, provider); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Service) VerifyEmailCode(ctx context.Context, email, code string) (string, error) {
-	email = strings.ToLower(strings.TrimSpace(email))
+func (s *Service) VerifyEmailCode(ctx context.Context, code string) (string, error) {
 
-	if err := core.Require("email", email, "code", code); err != nil {
+	if err := core.Require("code", code); err != nil {
 		return "", err
 	}
 
-	provider, err := gorm.G[db.Provider](s.db).Preload("users", func(db gorm.PreloadBuilder) error {
-		db.Where(repo.User.Email.Eq(email))
-		return nil
-	}).Where("type = ?", db.ProviderEmail).First(ctx)
+	v, err := gorm.G[db.VerificationCode](s.db).
+		Where(repo.VerificationCode.Token.Eq(strings.ToUpper(code))).
+		Where(repo.VerificationCode.Reason.Eq(db.EmailVerificationReason)).
+		Where(repo.VerificationCode.ExpiresAt.Gte(time.Now())).
+		First(ctx)
 
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", errors.New("invalid email or code")
+			return "", errors.New("invalid or expired verification code")
 		}
 		return "", err
 	}
 
-	if provider.UserID == uuid.Nil {
-		return "", errors.New("associated user not found")
-	}
+	provider, err := gorm.G[db.Provider](s.db).
+		Where(repo.Provider.UserID.Eq(v.UserID)).
+		Where(repo.Provider.Type.Eq(db.ProviderEmail)).
+		First(ctx)
 
-	if provider.User.Email != email {
-		return "", errors.New("email mismatch")
-	}
-
-	v, err := gorm.G[db.VerificationCode](s.db).Where(repo.VerificationCode.UserID.Eq(provider.UserID)).Where(repo.VerificationCode.Code.Eq(code)).Where(repo.VerificationCode.ExpiresAt.Gte(time.Now())).First(ctx)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return "", errors.New("invalid email or code")
+			return "", errors.New("associated user not found")
 		}
 		return "", err
-	}
-
-	if v.Reason != db.EmailVerificationReason {
-		return "", errors.New("invalid verification code")
 	}
 
 	provider.Verified = true
-	if _, err := gorm.G[db.Provider](s.db).Where(repo.Provider.ID.Eq(provider.ID)).Updates(ctx, provider); err != nil {
+	if _, err := gorm.G[db.Provider](s.db).
+		Where(repo.Provider.ID.Eq(provider.ID)).
+		Updates(ctx, provider); err != nil {
 		return "", err
 	}
 

@@ -1,4 +1,4 @@
-export interface SelfhostTokenResponse {
+export interface TokenResponse {
   token: string;
 }
 
@@ -63,6 +63,15 @@ export interface User {
   name?: string;
   avatar_url?: string;
   created_at?: string;
+  providers?: Provider[];
+}
+
+export interface Provider {
+  id: string;
+  type: string;
+  verified: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthState {

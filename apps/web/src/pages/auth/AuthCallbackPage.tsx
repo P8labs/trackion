@@ -6,7 +6,8 @@ import { Loader } from "@mantine/core";
 
 export function AuthCallbackPage() {
   const navigate = useNavigate();
-  const { authToken } = useGlobalStore();
+  const authToken = useGlobalStore((state) => state.authToken);
+  const setAuthToken = useGlobalStore((state) => state.actions.setAuthToken);
 
   const hasHandledCallback = useRef(false);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -20,34 +21,57 @@ export function AuthCallbackPage() {
     }
 
     hasHandledCallback.current = true;
-
-    if (authToken) {
-      setStatus("success");
-      navigate("/projects", { replace: true });
-      return;
-    }
-
     const params = new URLSearchParams(window.location.search);
     const authParam = params.get("auth");
     const token = params.get("token");
     const errorParam = params.get("error");
 
-    if (errorParam) {
-      setStatus("error");
-      setError(errorParam);
-      return;
-    }
+    const resolveCallback = async () => {
+      if (errorParam) {
+        setStatus("error");
+        setError(errorParam);
+        return;
+      }
 
-    if (token && token.trim()) {
-      useGlobalStore.getState().actions.setAuthToken(token.trim());
-      setStatus("success");
-      navigate("/projects", { replace: true });
-      return;
-    }
+      const effectiveToken = token?.trim() || authToken;
 
-    const reason = authParam && authParam !== "null" ? authParam : "unknown";
-    setStatus("error");
-    setError(`callback failed (${reason}): Session token not found`);
+      if (!effectiveToken) {
+        const reason =
+          authParam && authParam !== "null" ? authParam : "unknown";
+        setStatus("error");
+        setError(`callback failed (${reason}): Session token not found`);
+        return;
+      }
+
+      if (token && token.trim()) {
+        setAuthToken(token.trim());
+      }
+
+      try {
+        const user = await useGlobalStore.getState().api().getCurrentUser();
+        const isVerified = Boolean(
+          user.providers?.some((provider) => provider.verified),
+        );
+
+        if (isVerified) {
+          setStatus("success");
+          navigate("/projects", { replace: true });
+          return;
+        }
+
+        setStatus("success");
+        navigate("/auth/email/verify", { replace: true });
+      } catch (err) {
+        setStatus("error");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "callback failed: unable to fetch the current user, token might be invalid",
+        );
+      }
+    };
+
+    void resolveCallback();
   }, [navigate]);
 
   return (
