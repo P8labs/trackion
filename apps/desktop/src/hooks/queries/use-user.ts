@@ -1,4 +1,3 @@
-import { useStore } from "@/store";
 import {
   useAppMutation,
   useAppQuery,
@@ -14,17 +13,12 @@ export const userHooks = {
 
   useServerHealth() {
     const q = useQueries();
-    return useAppQuery(q.user.serverHealth(useStore((s) => s.serverUrl)));
+    return useAppQuery(q.user.serverHealth());
   },
 
   useUsage() {
     const q = useQueries();
     return useAppQuery(q.user.usage());
-  },
-
-  useLoginWithToken() {
-    const m = useMutations();
-    return useAppMutation(m.user.loginWithToken());
   },
 
   useLogout() {
