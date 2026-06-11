@@ -1,10 +1,24 @@
-import { projectHooks } from "@/hooks/queries/use-project";
+import { useState } from "react";
+import {
+  ActionIcon,
+  Button,
+  Group,
+  NumberInput,
+  Paper,
+  Pill,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { Pencil, Trash2 } from "lucide-react";
+
 import { useQueryClient } from "@tanstack/react-query";
+
+import { projectHooks } from "@/hooks/queries/use-project";
+
 import { projectQueryKeys } from "@trackion/lib/queries";
 import type { RuntimeFlag } from "@trackion/lib/types";
-import { Button } from "@trackion/ui/button";
-import { Separator } from "@trackion/ui/separator";
-import { useState } from "react";
 
 interface Props {
   projectId: string;
@@ -12,20 +26,25 @@ interface Props {
 }
 
 export default function RemoteConfigFlagsEditor({ flags, projectId }: Props) {
-  const deleteFlagMutation = projectHooks.useDeleteRuntimeFlag(projectId);
-  const upsertFlagMutation = projectHooks.useUpsertRuntimeFlag(projectId);
   const qc = useQueryClient();
+
+  const deleteFlagMutation = projectHooks.useDeleteRuntimeFlag(projectId);
+
+  const upsertFlagMutation = projectHooks.useUpsertRuntimeFlag(projectId);
 
   const [flagKey, setFlagKey] = useState("");
   const [flagEnabled, setFlagEnabled] = useState(true);
   const [flagRollout, setFlagRollout] = useState(100);
 
-  async function handleDeleteFlag(flagKey: string) {
-    await deleteFlagMutation.mutateAsync(flagKey);
-
+  async function refresh() {
     await qc.invalidateQueries({
       queryKey: projectQueryKeys.projectRuntime(projectId),
     });
+  }
+
+  async function handleDeleteFlag(key: string) {
+    await deleteFlagMutation.mutateAsync(key);
+    await refresh();
   }
 
   async function handleSaveFlag() {
@@ -35,138 +54,116 @@ export default function RemoteConfigFlagsEditor({ flags, projectId }: Props) {
       rollout_percentage: flagRollout,
     });
 
-    await qc.invalidateQueries({
-      queryKey: projectQueryKeys.projectRuntime(projectId),
-    });
+    setFlagKey("");
+    setFlagEnabled(true);
+    setFlagRollout(100);
+
+    await refresh();
   }
 
   return (
-    <div className="flex flex-col border-r border-border/60">
-      <div className="px-4 md:px-6 py-3 border-b border-border/60">
-        <p className="text-sm font-medium">Feature Flags</p>
-        <p className="text-xs text-muted-foreground">
-          Boolean flags with rollout
-        </p>
+    <Stack gap="lg">
+      <div>
+        <Text fw={600} size="sm">
+          Feature Flags
+        </Text>
+
+        <Text size="sm" c="dimmed">
+          Boolean flags with rollout percentages.
+        </Text>
       </div>
-      <div className="px-4 md:px-6 py-3">
-        <div className=" flex items-center h-9 border border-border/60 bg-background overflow-hidden focus-within:border-primary/60 transition">
-          <input
+
+      <Paper withBorder p="md">
+        <Stack>
+          <TextInput
+            label="Flag Key"
+            placeholder="new_dashboard"
             value={flagKey}
-            onChange={(e) => setFlagKey(e.target.value)}
-            placeholder="flag_key"
-            className="flex-1 px-6 text-xs font-mono bg-transparent outline-none border-0"
-          />
-          <Separator orientation="vertical" />
-
-          <button
-            type="button"
-            onClick={() => setFlagEnabled((v) => !v)}
-            className="flex items-center gap-2 px-3 text-xs text-muted-foreground hover:text-foreground transition"
-          >
-            <span
-              className={`
-                  relative w-7 h-4 rounded-full transition
-                  ${flagEnabled ? "bg-primary" : "bg-muted"}
-                `}
-            >
-              <span
-                className={`
-                    absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-background transition
-                    ${flagEnabled ? "translate-x-3" : ""}
-                  `}
-              />
-            </span>
-          </button>
-
-          <Separator orientation="vertical" />
-
-          <input
-            type="text"
-            inputMode="numeric"
-            value={flagRollout}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "");
-              const num = Math.min(100, Number(val || 0));
-              setFlagRollout(num);
-            }}
-            className="
-                  w-12 px-2  text-xs text-right
-                  bg-transparent outline-none border-0
-                "
+            onChange={(e) => setFlagKey(e.currentTarget.value)}
           />
 
-          <span className="px-2 text-xs text-muted-foreground">%</span>
+          <Group grow align="flex-end">
+            <NumberInput
+              label="Rollout"
+              suffix="%"
+              min={0}
+              max={100}
+              value={flagRollout}
+              onChange={(value) => setFlagRollout(Number(value) || 0)}
+            />
 
-          <Separator orientation="vertical" />
+            <Switch
+              label="Enabled"
+              checked={flagEnabled}
+              onChange={(e) => setFlagEnabled(e.currentTarget.checked)}
+            />
+          </Group>
 
           <Button
             onClick={handleSaveFlag}
-            disabled={!flagKey.trim() || upsertFlagMutation.isPending}
-            className="
-                  px-3 text-xs h-full
-                  disabled:opacity-50
-                  transition
-                  rounded-none
-                "
+            loading={upsertFlagMutation.isPending}
+            disabled={!flagKey.trim()}
           >
-            {upsertFlagMutation.isPending ? "Saving…" : "Save"}
+            Save Flag
           </Button>
-        </div>
+        </Stack>
+      </Paper>
 
-        <div>
-          {flags.map((item) => {
-            return (
-              <div
-                key={item.key}
-                className="group px-4 md:px-6 py-2.5 hover:bg-muted/20 transition border"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <span className="font-mono text-xs truncate">
-                      {item.key}
-                    </span>
+      <div>
+        {flags.length === 0 ? (
+          <Paper withBorder p="md">
+            <Text size="sm" c="dimmed">
+              No feature flags configured.
+            </Text>
+          </Paper>
+        ) : (
+          flags.map((flag) => (
+            <Paper
+              className="cursor-pointer first:rounded-b-none! last:rounded-t-none! only:rounded-lg! transition-colors"
+              key={flag.key}
+              withBorder
+              p="sm"
+            >
+              <Group justify="space-between">
+                <div>
+                  <Group gap="xs">
+                    <Text ff="monospace" fw={500} size="sm">
+                      {flag.key}
+                    </Text>
 
-                    <span className="text-[11px] text-muted-foreground">
-                      {item.rollout_percentage}%
-                    </span>
-
-                    <span
-                      className={`text-[11px] ${
-                        item.enabled
-                          ? "text-emerald-500"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {item.enabled ? "on" : "off"}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-3 opacity-0 group-hover:opacity-100 transition">
-                    <button
-                      onClick={() => {
-                        setFlagKey(item.key);
-                        setFlagEnabled(item.enabled);
-                        setFlagRollout(item.rollout_percentage);
-                      }}
-                      className="text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      edit
-                    </button>
-
-                    <button
-                      onClick={() => handleDeleteFlag(item.key)}
-                      disabled={deleteFlagMutation.isPending}
-                      className="text-xs text-destructive"
-                    >
-                      delete
-                    </button>
-                  </div>
+                    <Pill variant="contrast">{flag.rollout_percentage}%</Pill>
+                  </Group>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+
+                <Group gap={4}>
+                  <Pill c={flag.enabled ? "green" : "red"}>
+                    {flag.enabled ? "Enabled" : "Disabled"}
+                  </Pill>
+                  <ActionIcon
+                    variant="subtle"
+                    onClick={() => {
+                      setFlagKey(flag.key);
+                      setFlagEnabled(flag.enabled);
+                      setFlagRollout(flag.rollout_percentage);
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </ActionIcon>
+
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    loading={deleteFlagMutation.isPending}
+                    onClick={() => handleDeleteFlag(flag.key)}
+                  >
+                    <Trash2 size={14} />
+                  </ActionIcon>
+                </Group>
+              </Group>
+            </Paper>
+          ))
+        )}
       </div>
-    </div>
+    </Stack>
   );
 }
