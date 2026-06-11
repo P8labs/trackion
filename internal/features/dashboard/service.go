@@ -200,15 +200,16 @@ func (s *Service) GetCountryMapData(ctx context.Context, projectId string) (*Cou
 		ByName:    byName,
 	}, nil
 }
-
 func (s *Service) GetTrafficHeatmap(
 	ctx context.Context,
 	projectId string,
 ) (*TrafficHeatmapData, error) {
-	projectUUID := uuid.MustParse(projectId)
+	projectUUID, err := uuid.Parse(projectId)
+	if err != nil {
+		return nil, fmt.Errorf("invalid project ID: %w", err)
+	}
 
 	// Day × Hour heatmap (7 × 24)
-
 	dayHour := make([][]int64, 7)
 	for i := range 7 {
 		dayHour[i] = make([]int64, 24)
@@ -220,7 +221,7 @@ func (s *Service) GetTrafficHeatmap(
 		Count int64
 	}
 
-	err := s.db.WithContext(ctx).
+	err = s.db.WithContext(ctx).
 		Table("events").
 		Select(`
 			EXTRACT(DOW FROM created_at)::int AS day,
@@ -250,7 +251,6 @@ func (s *Service) GetTrafficHeatmap(
 	}
 
 	// Calendar heatmap (daily counts)
-
 	var calendarRows []struct {
 		Date  string
 		Count int64
@@ -279,7 +279,6 @@ func (s *Service) GetTrafficHeatmap(
 	}
 
 	// Stats
-
 	var statRow struct {
 		TodayCount    int64
 		LastWeekCount int64
@@ -308,11 +307,19 @@ func (s *Service) GetTrafficHeatmap(
 		return nil, fmt.Errorf("failed to get heatmap stats: %w", err)
 	}
 
+	startDate := time.Now().AddDate(0, 0, -365).Format("2006-01-02")
+	endDate := time.Now().Format("2006-01-02")
+
+	if len(calendarRows) > 0 {
+		startDate = calendarRows[0].Date
+		endDate = calendarRows[len(calendarRows)-1].Date
+	}
+
 	return &TrafficHeatmapData{
 		Calendar:  calendar,
 		DayHour:   dayHour,
-		StartDate: calendarRows[0].Date,
-		EndDate:   calendarRows[len(calendarRows)-1].Date,
+		StartDate: startDate,
+		EndDate:   endDate,
 		Stats: TrafficHeatmapStats{
 			Today:      statRow.TodayCount,
 			WeeklyAvg:  statRow.LastWeekCount / 7,

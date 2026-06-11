@@ -118,7 +118,7 @@ export function ProjectsPage() {
                     key={project.id}
                     withBorder
                     p="xs"
-                    className="cursor-pointer first:rounded-b-none! last:rounded-t-none! hover:bg-(--mantine-color-gray-1)! dark:hover:bg-(--mantine-color-dark-4)! transition-colors"
+                    className="cursor-pointer first:rounded-b-none! last:rounded-t-none! only:rounded-lg! hover:bg-(--mantine-color-gray-1)! dark:hover:bg-(--mantine-color-dark-4)! transition-colors"
                     onClick={() => navigate(`/projects/${project.id}/overview`)}
                   >
                     <Group justify="space-between" align="flex-start">
