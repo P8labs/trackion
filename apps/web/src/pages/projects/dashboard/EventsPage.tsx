@@ -1,27 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { Button } from "@trackion/ui/button";
-import { Input } from "@trackion/ui/input";
-import { Badge } from "@trackion/ui/badge";
 import { EventDetailsModal } from "@/components/core/project/modals/event-detail-modal";
 import { AdvancedEventFilter } from "@/components/core/project/events/events-filter";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Search02Icon,
-  Activity01Icon,
-  Clock02Icon,
-  MousePointerClick,
-  TimerIcon,
-  ChevronLeft,
-  ChevronRight,
-} from "@hugeicons/core-free-icons";
+
 import moment from "moment";
-import { BaseHeader } from "@/components/core/project/analytics/base-header";
 import { LoadingBanner } from "@/components/core/loading-banner";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
-import { analyticsQueryKeys } from "@trackion/lib/queries";
 import type { RecentEventData } from "@trackion/lib/types";
 import { ErrorBanner } from "@/components/core/error-banner";
+
+import { Search, Activity, Clock3 } from "lucide-react";
+
+import {
+  Badge,
+  Group,
+  Paper,
+  Pagination,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
+import { cn } from "@trackion/ui/lib";
 
 export function EventsPage() {
   const { id: projectId = "" } = useParams<{ id: string }>();
@@ -158,67 +158,40 @@ export function EventsPage() {
 
   return (
     <section className="max-w-7xl mx-auto relative">
-      <div className="px-4 md:px-6 py-6 border-b border-border/60 relative">
-        <div className="flex flex-col gap-4">
-          <BaseHeader
-            label="Events"
-            projectId={projectId}
-            description="View and analyze tracked events in real-time"
-            refreshKeys={[
-              [analyticsQueryKeys.recentEvents(projectId, page, pageSize)],
-            ]}
-          />
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="rounded-lg border border-border/60 bg-muted/15 p-3">
-              <div className="text-xs font-medium text-muted-foreground">
-                Total Events
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {paginatedData?.total || 0}
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/15 p-3">
-              <div className="text-xs font-medium text-muted-foreground">
-                Showing
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {filteredEvents.length}
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/15 p-3">
-              <div className="text-xs font-medium text-muted-foreground">
-                Event Types
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {eventGroups.length - 1}
-              </div>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/15 p-3">
-              <div className="text-xs font-medium text-muted-foreground">
-                Page
-              </div>
-              <div className="text-lg font-semibold text-foreground">
-                {page} / {paginatedData?.total_pages || 1}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <SimpleGrid cols={{ base: 2, md: 4 }} className="px-4 md:px-6 py-4">
+        <Stat label="Total Events" value={paginatedData?.total || 0} />
+        <Stat
+          label="Unique Event Types"
+          value={eventGroups.length - 1} // exclude "all"
+        />
+        <Stat
+          label="Most Common Event"
+          value={
+            eventGroups.length > 1
+              ? `${eventGroups[1].label} (${eventGroups[1].count})`
+              : "N/A"
+          }
+        />
+        <Stat
+          label="Time Range"
+          value={
+            paginatedData?.events.length
+              ? `${moment(paginatedData.events[0].created_at).fromNow()} - ${moment(
+                  paginatedData.events[paginatedData.events.length - 1]
+                    .created_at,
+                ).fromNow(false)}`
+              : "N/A"
+          }
+        />
+      </SimpleGrid>
 
       <div className="px-4 md:px-6 py-6 space-y-4">
-        <div className="relative">
-          <HugeiconsIcon
-            icon={Search02Icon}
-            className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground"
-          />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search events, pages, sessions..."
-            className="pl-10 h-10 border-border/60 bg-muted/15"
-          />
-        </div>
+        <TextInput
+          value={search}
+          onChange={(e) => setSearch(e.currentTarget.value)}
+          placeholder="Search events, pages, sessions..."
+          leftSection={<Search size={16} />}
+        />
 
         <AdvancedEventFilter
           eventTypes={eventGroups}
@@ -230,137 +203,113 @@ export function EventsPage() {
           onSessionFilterChange={setSessionFilter}
           onReset={handleReset}
         />
-
-        <div className="space-y-3">
+        <div className={"first:rounded-t-none! last:rounded-b-none!"}>
           {isLoading ? (
             <LoadingBanner />
           ) : error ? (
             <ErrorBanner error={error} />
           ) : filteredEvents.length === 0 ? (
-            <div className="flex h-96 items-center justify-center rounded-xl border border-dashed border-border/60 bg-muted/15">
+            <Stack align="center" py="xl">
+              <Activity size={32} className="opacity-50" />
               <div className="text-center">
-                <HugeiconsIcon
-                  icon={Activity01Icon}
-                  className="h-8 w-8 mx-auto text-muted-foreground mb-3"
-                />
-                <p className="text-sm font-medium text-foreground mb-1">
-                  No events found
-                </p>
-                <p className="text-xs text-muted-foreground">
+                <Text fw={500}>No events found</Text>
+                <Text size="sm" c="dimmed">
                   {search || dateRange.from || sessionFilter
                     ? "Try adjusting your filters"
                     : "Events will appear here as they are tracked"}
-                </p>
+                </Text>
               </div>
-            </div>
+            </Stack>
           ) : (
-            <div className="grid gap-3">
-              {filteredEvents.map((event) => (
-                <div
-                  key={event.id}
-                  ref={(el) => {
-                    eventRefs.current[event.id] = el;
-                  }}
-                  onClick={() => {
-                    setSelectedEvent(event);
-                    setDetailsOpen(true);
-                  }}
-                  className={`group cursor-pointer rounded-lg border bg-muted/15 p-4 transition-all hover:bg-muted/25 hover:border-border/80 hover:shadow-sm ${
-                    highlightedEventId === event.id
-                      ? "border-sky-500/60 ring-1 ring-sky-500/40"
-                      : "border-border/60"
-                  }`}
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Badge
-                          className={`shrink-0 gap-1.5 ${getEventColor(event.event_name)}`}
-                        >
-                          <HugeiconsIcon
-                            icon={getEventIcon(event.event_name)}
-                            className="h-3 w-3"
-                          />
-                          <span className="font-mono text-xs">
-                            {event.event_name}
-                          </span>
-                        </Badge>
-                        <div className="flex-1 min-w-0">
-                          <div className="font-mono text-sm text-foreground truncate">
-                            {event.page_path || "/"}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-muted-foreground text-xs shrink-0">
-                        <HugeiconsIcon
-                          icon={Clock02Icon}
-                          className="h-3.5 w-3.5"
-                        />
-                        <span>{moment(event.created_at).fromNow()}</span>
-                      </div>
-                    </div>
+            filteredEvents.map((event, i) => (
+              <Paper
+                key={event.id}
+                withBorder
+                ref={(el) => {
+                  eventRefs.current[event.id] = el;
+                }}
+                onClick={() => {
+                  setSelectedEvent(event);
+                  setDetailsOpen(true);
+                }}
+                className={cn(
+                  "cursor-pointer px-5 md:px-6 py-4 transition-colors rounded-none! hover:bg-(--mantine-color-gray-1)! dark:hover:bg-(--mantine-color-dark-4)!",
+                  i === 0 && "rounded-t-lg!",
+                  i === filteredEvents.length - 1 && "rounded-b-lg!",
+                  highlightedEventId === event.id &&
+                    "bg-(--mantine-color-gray-1)! dark:bg-(--mantine-color-dark-4)! border-2! border-(--mantine-color-blue-3)!",
+                )}
+              >
+                <Stack gap="xs">
+                  <Group justify="space-between" align="flex-start">
+                    <Group gap="sm" wrap="nowrap">
+                      <Badge
+                        variant="dot"
+                        color={getEventColor(event.event_name)}
+                      >
+                        {event.event_name}
+                      </Badge>
 
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      {event.referrer && event.referrer !== "Direct" && (
-                        <span className="px-2 py-1 rounded bg-background/50 border border-border/40 text-muted-foreground">
-                          {event.referrer}
-                        </span>
-                      )}
+                      <Text ff="monospace" size="sm" truncate>
+                        {event.page_path || "/"}
+                      </Text>
+                    </Group>
 
-                      {event.session_id && (
-                        <span className="px-2 py-1 rounded bg-background/50 border border-border/40 text-muted-foreground font-mono">
-                          {event.session_id.slice(0, 12)}...
-                        </span>
-                      )}
+                    <Group gap={4}>
+                      <Clock3 size={12} />
 
-                      {event.utm_source && (
-                        <span className="px-2 py-1 rounded bg-background/50 border border-border/40 text-muted-foreground">
-                          utm: {event.utm_source}
-                        </span>
-                      )}
+                      <Text size="xs" c="dimmed">
+                        {moment(event.created_at).fromNow()}
+                      </Text>
+                    </Group>
+                  </Group>
 
-                      {Object.keys(parseProperties(event.properties)).length >
-                        0 && (
-                        <span className="px-2 py-1 rounded bg-background/50 border border-border/40 text-muted-foreground">
-                          + properties
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  <Group gap="xs">
+                    {event.referrer && event.referrer !== "Direct" && (
+                      <Badge variant="dot" size="sm">
+                        {event.referrer}
+                      </Badge>
+                    )}
+
+                    {event.session_id && (
+                      <Badge variant="default" size="sm">
+                        {event.session_id.slice(0, 12)}...
+                      </Badge>
+                    )}
+
+                    {event.utm_source && (
+                      <Badge variant="default" size="sm">
+                        utm: {event.utm_source}
+                      </Badge>
+                    )}
+
+                    {Object.keys(parseProperties(event.properties)).length >
+                      0 && (
+                      <Badge variant="default" size="sm">
+                        Properties
+                      </Badge>
+                    )}
+                  </Group>
+                </Stack>
+              </Paper>
+            ))
           )}
         </div>
 
-        {filteredEvents.length > 0 && (
-          <div className="flex items-center justify-between gap-3">
-            <Button
-              variant="outline"
-              onClick={() => setPage(Math.max(1, page - 1))}
-              disabled={page <= 1 || isLoading}
-              className="h-9 gap-2 border-border/60"
-            >
-              <HugeiconsIcon icon={ChevronLeft} className="h-4 w-4" />
-              Previous
-            </Button>
+        {filteredEvents.length > 0 && (paginatedData?.total_pages || 1) > 1 && (
+          <Group justify="space-between">
+            <Text size="sm" c="dimmed">
+              {paginatedData?.total?.toLocaleString()} events
+            </Text>
 
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="px-3 py-1 rounded border border-border/60 bg-muted/15">
-                Page {page} of {paginatedData?.total_pages || 1}
-              </span>
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={() => setPage(page + 1)}
-              disabled={page >= (paginatedData?.total_pages || 1) || isLoading}
-              className="h-9 gap-2 border-border/60"
-            >
-              Next
-              <HugeiconsIcon icon={ChevronRight} className="h-4 w-4" />
-            </Button>
-          </div>
+            <Pagination
+              value={page}
+              onChange={setPage}
+              total={paginatedData?.total_pages || 1}
+              disabled={isLoading}
+              size="sm"
+            />
+          </Group>
         )}
 
         <EventDetailsModal
@@ -387,26 +336,30 @@ const parseProperties = (properties: unknown): Record<string, unknown> => {
   return {};
 };
 
-const getEventColor = (eventName: string) => {
+function getEventColor(eventName: string) {
   switch (eventName) {
     case "page.view":
-      return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
-    case "page.click":
-      return "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30";
-    case "page.time_spent":
-      return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30";
-    default:
-      return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30";
-  }
-};
+      return "green";
 
-const getEventIcon = (eventName: string) => {
-  switch (eventName) {
     case "page.click":
-      return MousePointerClick;
+      return "red";
+
     case "page.time_spent":
-      return TimerIcon;
+      return "yellow";
+
     default:
-      return Activity01Icon;
+      return "blue";
   }
-};
+}
+
+function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <Stack gap={2}>
+      <Text size="xs" c="dimmed">
+        {label}
+      </Text>
+
+      <Text fw={600}>{value}</Text>
+    </Stack>
+  );
+}
