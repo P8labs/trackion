@@ -1,27 +1,37 @@
-import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { Button } from "@trackion/ui/button";
-import { Badge } from "@trackion/ui/badge";
-import { CodeBox } from "@trackion/ui/code-box";
-import { ProjectFeatureToggle } from "@/components/core/project/feature-toggle";
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Divider,
+  Grid,
+  Group,
+  Paper,
+  Stack,
+  Switch,
+  Text,
+} from "@mantine/core";
+import { Trash2 } from "lucide-react";
+
+import { projectHooks } from "@/hooks/queries/use-project";
+import { useGlobalStore } from "@/store";
+
+import { LoadingBanner } from "@/components/core/loading-banner";
+import { ErrorBanner } from "@/components/core/error-banner";
 
 import { EditProjectDetailsModal } from "@/components/core/project/modals/edit-project-details-modal";
 import { DeleteProjectModal } from "@/components/core/project/modals/delete-project-modal";
-
-import { projectHooks } from "@/hooks/queries/use-project";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete02Icon } from "@hugeicons/core-free-icons";
-import { ErrorBanner } from "@/components/core/error-banner";
-import { LoadingBanner } from "@/components/core/loading-banner";
-import { useGlobalStore } from "@/store";
+import { useDisclosure } from "@mantine/hooks";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 export function ProjectDetailPage() {
   const { id = "" } = useParams<{ id: string }>();
   const { serverURL } = useGlobalStore();
 
-  const [copied, setCopied] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteOpen, { close: closeDeleteOpen, open: openDeleteOpen }] =
+    useDisclosure(false);
+  const [editOpen, { close: closeEditOpen, open: openEditOpen }] =
+    useDisclosure(false);
 
   const { data: project, isLoading, error } = projectHooks.useProject(id);
 
@@ -29,7 +39,7 @@ export function ProjectDetailPage() {
     return <LoadingBanner />;
   }
 
-  if (error || !project) {
+  if (!project || error) {
     return (
       <ErrorBanner
         error={error}
@@ -44,144 +54,173 @@ export function ProjectDetailPage() {
   data-api-key="${project.api_key}"
 ></script>`;
 
-  const copyApiKey = async () => {
-    await navigator.clipboard.writeText(project.api_key);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
-    <div className="max-w-7xl mx-auto">
-      <section className="px-4 py-3 md:px-6 border-b border-border/60 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
-            Project
-          </p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-            {project.name}
-          </h1>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Settings and integration details
-          </p>
-        </div>
+    <>
+      <Paper>
+        <div className="px-5 md:px-6 py-5">
+          <Group justify="space-between" align="flex-start">
+            <div>
+              <Text fw={600} size="xl" mt={4}>
+                {project.name}
+              </Text>
 
-        <div className="flex items-center">
-          <Button
-            onClick={() => setEditOpen(true)}
-            className="h-8 px-3 text-xs"
-          >
-            Edit
-          </Button>
-          <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-            <HugeiconsIcon icon={Delete02Icon} size={16} />
-          </Button>
-        </div>
-      </section>
-
-      <section className="px-4 py-2.5 md:px-6 border-b border-border/60">
-        <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-          Domains
-        </p>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          {(project.domains || []).length > 0 ? (
-            (project.domains || []).map((domain) => (
-              <Badge key={domain} variant="outline" className="text-xs">
-                {domain}
-              </Badge>
-            ))
-          ) : (
-            <span className="text-sm text-muted-foreground">
-              No domains configured
-            </span>
-          )}
-        </div>
-      </section>
-
-      <section className="grid border-b border-border/60">
-        <div className="border-r border-border/60">
-          <div className="px-4 py-2.5 md:px-6 border-b border-border/60">
-            <h2 className="text-sm font-semibold text-foreground">
-              Script Integration
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Add this snippet to your site head
-            </p>
-          </div>
-          <div className="px-4 py-2.5 md:px-6">
-            <CodeBox code={scriptSnippet} language="html" />
-          </div>
-        </div>
-
-        <div>
-          <div className="px-4 py-2.5 md:px-6 border-b border-border/60">
-            <h2 className="text-sm font-semibold text-foreground">API Key</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Use this key in your client integration
-            </p>
-          </div>
-          <div className="px-4 py-2.5 md:px-6">
-            <div className="flex items-center gap-2">
-              <code className="flex-1 border border-border/60 bg-muted/20 px-3 py-2 font-mono text-sm text-foreground overflow-x-auto">
-                {project.api_key}
-              </code>
-              <Button
-                variant="outline"
-                className="h-8 px-3 text-xs"
-                onClick={copyApiKey}
-              >
-                {copied ? "Copied" : "Copy"}
-              </Button>
+              <Text size="sm" c="dimmed">
+                Settings and integration details
+              </Text>
             </div>
-          </div>
-        </div>
-      </section>
 
-      <section className="px-4 py-2.5 md:px-6 border-b border-border/60">
-        <h2 className="text-sm font-semibold text-foreground">
-          Feature Settings
-        </h2>
-        <p className="mt-1 text-xs text-muted-foreground">
-          Current tracking behavior for this project
-        </p>
-        <div className="mt-4 grid gap-0 border border-border/60 sm:grid-cols-2">
-          <ProjectFeatureToggle
-            title="Auto Pageview"
-            description="Capture page views automatically on route changes."
-            checked={project.settings.auto_pageview}
-            disabled={true}
-          />
-          <ProjectFeatureToggle
-            title="Time Spent"
-            description="Measure engaged time on each page."
-            checked={project.settings.time_spent}
-            disabled={true}
-          />
-          <ProjectFeatureToggle
-            title="Campaign"
-            description="Track UTM source, medium, and campaign values."
-            checked={project.settings.campaign}
-            disabled={true}
-          />
-          <ProjectFeatureToggle
-            title="Click Tracking"
-            description="Track CTA clicks and interaction hotspots."
-            checked={project.settings.clicks}
-            disabled={true}
-          />
+            <Group gap="xs">
+              <Button variant="default" onClick={() => openEditOpen()}>
+                Edit
+              </Button>
+
+              <ActionIcon
+                color="red"
+                variant="light"
+                size="lg"
+                onClick={() => openDeleteOpen()}
+              >
+                <Trash2 size={20} />
+              </ActionIcon>
+            </Group>
+          </Group>
         </div>
-      </section>
+
+        <Divider />
+        <div className="px-5 md:px-6 py-5">
+          <Text fw={600} size="sm">
+            Your API Key and Integration Snippet
+          </Text>
+
+          <Text size="sm" c="dimmed" mb="md">
+            Use the following API key and script snippet to integrate Trackion
+            into your application.
+          </Text>
+
+          <Stack gap="sm">
+            <CodeHighlight code={project.api_key} language="html" />
+            <CodeHighlight code={scriptSnippet} language="html" radius="md" />
+          </Stack>
+        </div>
+
+        <Divider />
+
+        <div className="px-5 md:px-6 py-5">
+          <Text fw={600} size="sm">
+            Project Configuration
+          </Text>
+
+          <Text size="sm" c="dimmed" mb="lg">
+            Domains and tracking features configured for this project.
+          </Text>
+
+          <Stack gap="xl">
+            <div>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb="sm">
+                Domains
+              </Text>
+
+              {(project.domains || []).length > 0 ? (
+                <Group gap="xs">
+                  {project.domains.map((domain) => (
+                    <Badge
+                      key={domain}
+                      variant="light"
+                      radius="sm"
+                      className="normal-case!"
+                    >
+                      {domain}
+                    </Badge>
+                  ))}
+                </Group>
+              ) : (
+                <Text size="sm" c="dimmed">
+                  No domains configured
+                </Text>
+              )}
+            </div>
+
+            <div>
+              <Text size="xs" fw={700} c="dimmed" tt="uppercase" mb="sm">
+                Tracking Features
+              </Text>
+
+              <Grid>
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <FeatureItem
+                    title="Auto Pageview"
+                    description="Capture page views automatically on route changes."
+                    checked={project.settings.auto_pageview}
+                  />
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <FeatureItem
+                    title="Time Spent"
+                    description="Measure engaged time on each page."
+                    checked={project.settings.time_spent}
+                  />
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <FeatureItem
+                    title="Campaign Tracking"
+                    description="Track UTM source, medium and campaign values."
+                    checked={project.settings.campaign}
+                  />
+                </Grid.Col>
+
+                <Grid.Col span={{ base: 12, md: 6 }}>
+                  <FeatureItem
+                    title="Click Tracking"
+                    description="Track CTA clicks and interaction hotspots."
+                    checked={project.settings.clicks}
+                  />
+                </Grid.Col>
+              </Grid>
+            </div>
+          </Stack>
+        </div>
+      </Paper>
 
       <EditProjectDetailsModal
-        open={editOpen}
-        onOpenChange={setEditOpen}
+        opened={editOpen}
+        close={closeEditOpen}
         project={project}
       />
+
       <DeleteProjectModal
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
+        close={closeDeleteOpen}
+        opened={deleteOpen}
         projectName={project.name}
         projectId={project.id}
       />
-    </div>
+    </>
+  );
+}
+
+function FeatureItem({
+  title,
+  description,
+  checked,
+}: {
+  title: string;
+  description: string;
+  checked: boolean;
+}) {
+  return (
+    <Group justify="space-between" align="flex-start" wrap="nowrap">
+      <div>
+        <Text size="sm" fw={500}>
+          {title}
+        </Text>
+
+        <Text size="sm" c="dimmed">
+          {description}
+        </Text>
+      </div>
+
+      <Switch checked={checked} />
+    </Group>
   );
 }

@@ -1,29 +1,18 @@
 import { projectHooks } from "@/hooks/queries/use-project";
-import { ShieldAlert } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@trackion/ui/alert-dialog";
+import { Button, Code, Modal } from "@mantine/core";
+
 import { useNavigate } from "react-router-dom";
 
 interface DeleteProjectModalProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  opened: boolean;
+  close: () => void;
   projectName: string;
   projectId: string;
 }
 
 export function DeleteProjectModal({
-  open,
-  onOpenChange,
+  close,
+  opened,
   projectName,
   projectId,
 }: DeleteProjectModalProps) {
@@ -35,7 +24,7 @@ export function DeleteProjectModal({
       {},
       {
         onSuccess: () => {
-          onOpenChange(false);
+          close();
           navigate("/projects");
         },
       },
@@ -43,37 +32,28 @@ export function DeleteProjectModal({
   };
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogMedia>
-            <HugeiconsIcon
-              icon={ShieldAlert}
-              className="h-6 w-6 text-destructive"
-            />
-          </AlertDialogMedia>
-          <AlertDialogTitle>Confirm project deletion</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete the project "{projectName}"? This
-            action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel
-            disabled={deleteProjectMutation.isPending}
-            onClick={() => onOpenChange(false)}
-          >
+    <Modal
+      opened={opened}
+      onClose={close}
+      title="Confirm Project Deletion"
+      size="md"
+      centered
+      id="project-deletion-modal"
+    >
+      <Modal.Body className="space-y-4">
+        <p>
+          Are you sure you want to delete the project <Code>{projectName}</Code>
+          ? This action cannot be undone.
+        </p>
+        <div className="flex gap-2 items-center justify-end">
+          <Button variant="default" onClick={close}>
             Cancel
-          </AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleDeleteProject}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            disabled={deleteProjectMutation.isPending}
-          >
+          </Button>
+          <Button color="red" onClick={handleDeleteProject}>
             Delete Project
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </div>
+      </Modal.Body>
+    </Modal>
   );
 }
