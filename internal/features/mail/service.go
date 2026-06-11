@@ -18,7 +18,7 @@ func NewService(cfg config.Config) *Service {
 	}
 }
 
-func (s *Service) SendEmailVerification(toEmail, mailType, code string) error {
+func (s *Service) SendEmailVerification(toEmail string, mailType db.EmailReason, code string) error {
 
 	if s.cfg.ResendAPIKey == "" {
 		log.Printf("[EMAIL SKIPPED]: Resend API key not configured, cannot send email to %s", toEmail)

@@ -21,6 +21,16 @@ export const userHooks = {
     return useAppQuery(q.user.usage());
   },
 
+  useSubscriptionPlans() {
+    const q = useQueries();
+    return useAppQuery(q.user.subscriptionPlans());
+  },
+
+  useSubscribeToPlan() {
+    const m = useMutations();
+    return useAppMutation(m.user.setupSubscription());
+  },
+
   useLoginWithEmail() {
     const m = useMutations();
     return useAppMutation(m.user.loginWithEmail());

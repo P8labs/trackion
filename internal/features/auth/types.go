@@ -14,7 +14,7 @@ type VerifyEmailRequest struct {
 }
 
 type ResetPasswordRequest struct {
-	Code        string `json:"code"`
+	Code        string `json:"token"`
 	NewPassword string `json:"new_password"`
 }
 
@@ -26,6 +26,9 @@ type UserResponse struct {
 
 	IsEmailVerified      bool `json:"is_email_verified"`
 	IsActiveSubscription bool `json:"is_active_subscription"`
+
+	SubscriptionPlan string `json:"subscription_plan"`
+	EndsAt           string `json:"subscription_ends_at"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`

@@ -9,7 +9,7 @@
       "monthly_events": 10000,
       "max_projects": 3,
       "max_config_keys": 10,
-      "error_retention": "3 days",
+      "error_retention": 3,
       "supports_rollout": false
     },
     "features": [
