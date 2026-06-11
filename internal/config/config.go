@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
@@ -10,8 +11,13 @@ import (
 type Mode string
 
 const (
-	ModeSaaS     Mode = "saas"
+	BETA      Mode = "beta"
+	UNLIMITED Mode = "unlimited"
+	PAID      Mode = "paid"
+
+	// todo: remove selfhost mode in favor of just using the plan types, but for now we can keep it for clarity
 	ModeSelfHost Mode = "selfhost"
+	ModeSaaS     Mode = "saas"
 )
 
 type Config struct {
@@ -58,7 +64,12 @@ func Load() *Config {
 		log.Printf("No .env file loaded (%v), falling back to system environment", err)
 	}
 
-	mode := Mode(GetEnv("TRACKION_MODE", "saas"))
+	mode, err := parseMode(GetEnv("TRACKION_MODE", "unlimited"))
+
+	if err != nil {
+		log.Fatalf("Invalid mode: %v", err)
+	}
+
 	cors := GetEnv("CORS_ORIGINS", "*")
 
 	raw := strings.Split(cors, ",")
@@ -72,19 +83,25 @@ func Load() *Config {
 	}
 
 	cfg := &Config{
-		Mode:               mode,
-		Port:               GetEnv("PORT", "8000"),
-		DatabaseURL:        MustEnv("DATABASE_URL"),
+		Mode:        mode,
+		Port:        GetEnv("PORT", "8000"),
+		DatabaseURL: MustEnv("DATABASE_URL"),
+
 		GithubClientID:     GetEnv("GITHUB_CLIENT_ID", ""),
 		GithubClientSecret: GetEnv("GITHUB_CLIENT_SECRET", ""),
+
 		GoogleClientID:     GetEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: GetEnv("GOOGLE_CLIENT_SECRET", ""),
-		ResendAPIKey:       GetEnv("RESEND_API_KEY", ""),
-		BaseURL:            GetEnv("BASE_URL", "http://localhost:8000"),
-		AuthSecret:         GetEnv("AUTH_SECRET", "random-noise"),
+
+		ResendAPIKey: GetEnv("RESEND_API_KEY", ""),
+
+		BaseURL:     GetEnv("BASE_URL", "http://localhost:8000"),
+		FrontendURL: GetEnv("FRONTEND_URL", "http://localhost:5173"),
+
+		AuthSecret: GetEnv("AUTH_SECRET", "random-noise"),
+
 		EventBodySizeLimit: 256,
 		EventBatchLimit:    100,
-		FrontendURL:        GetEnv("FRONTEND_URL", "http://localhost:5173"),
 		AllowedOrigins:     allowedCors,
 		EventRetentionDays: GetEnvInt("EVENT_RETENTION_DAYS", 30),
 		ProjectDeleteAfter: GetEnvInt("PROJECT_DELETE_AFTER_DAYS", 7),
@@ -155,4 +172,21 @@ func (c *Config) IsSelfHost() bool {
 
 func (c *Config) IsSaaS() bool {
 	return c.Mode == ModeSaaS
+}
+
+func parseMode(s string) (Mode, error) {
+	switch strings.ToLower(s) {
+	case "beta":
+		return BETA, nil
+	case "unlimited":
+		return UNLIMITED, nil
+	case "paid":
+		return PAID, nil
+	case "selfhost", "self-host", "self_host":
+		return ModeSelfHost, nil
+	case "saas", "saaS":
+		return ModeSaaS, nil
+	default:
+		return "", fmt.Errorf("invalid mode: %s", s)
+	}
 }

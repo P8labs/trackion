@@ -10,11 +10,13 @@ import (
 func Routes(db *gorm.DB, cfg config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
-	service := NewService(db)
+	service := NewService(db, &cfg)
 	handler := NewHandler(service)
 
+	r.Get("/plans", handler.ListPlans)
+	r.Post("/setup/{plan}", handler.SetupSubscription)
+
 	r.Get("/usage", handler.GetUsage)
-	// r.Get("/plan", handler.GetPlan) // for now no need
 
 	return r
 }

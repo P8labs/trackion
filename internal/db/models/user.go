@@ -21,7 +21,7 @@ type User struct {
 	EmailAttempts int        `gorm:"column:email_attempts" json:"email_attempts"`
 	LastEmailSent *time.Time `gorm:"column:last_email_sent" json:"last_email_sent,omitempty"`
 
-	Subscription Subscription `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"subscription,omitempty"`
+	Subscription Subscription `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"subscription"`
 	Sessions     []Session    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"sessions,omitempty"`
 	Projects     []Project    `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"projects,omitempty"`
 	Providers    []Provider   `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"providers,omitempty"`

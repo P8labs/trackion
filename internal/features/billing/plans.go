@@ -1,28 +1,13 @@
 package billing
 
 import (
+	"time"
 	db "trackion/internal/db/models"
 )
 
-type PlanType string
-
-const (
-	PlanTypeFree     PlanType = "free"
-	PlanTypePro      PlanType = "pro"
-	PlanTypeSelfhost PlanType = "selfhost"
-)
-
-type PlanLimits struct {
-	MonthlyEvents   int  `json:"monthly_events"`
-	MaxProjects     int  `json:"max_projects"`
-	MaxConfigKeys   int  `json:"max_config_keys"`  // per project
-	ErrorRetention  int  `json:"error_retention"`  // in days
-	SupportsRollout bool `json:"supports_rollout"` // feature flag rollout %
-}
-
 func GetPlanLimits(plan PlanType) PlanLimits {
 	switch plan {
-	case PlanTypeFree:
+	case FreePlan:
 		return PlanLimits{
 			MonthlyEvents:   10000,
 			MaxProjects:     3,
@@ -30,24 +15,24 @@ func GetPlanLimits(plan PlanType) PlanLimits {
 			ErrorRetention:  3, // 3 days
 			SupportsRollout: false,
 		}
-	case PlanTypePro:
+	case ProPlan:
 		return PlanLimits{
 			MonthlyEvents:   200000,
 			MaxProjects:     5,
-			MaxConfigKeys:   -1, // unlimited
+			MaxConfigKeys:   -1,
 			ErrorRetention:  14, // 14 days
 			SupportsRollout: true,
 		}
-	case PlanTypeSelfhost:
+	case UnlimitedPlan:
 		return PlanLimits{
 			MonthlyEvents:   -1,
 			MaxProjects:     -1,
 			MaxConfigKeys:   -1, // unlimited
-			ErrorRetention:  90, // 14 days
+			ErrorRetention:  90,
 			SupportsRollout: true,
 		}
 	default:
-		return GetPlanLimits(PlanTypeFree)
+		return GetPlanLimits(FreePlan)
 	}
 }
 
@@ -56,9 +41,10 @@ func (l PlanLimits) IsUnlimitedConfigKeys() bool {
 }
 
 type PlanInfo struct {
-	Plan   PlanType   `json:"plan"`
-	Status string     `json:"status"`
-	Limits PlanLimits `json:"limits"`
+	Plan             PlanType   `json:"plan"`
+	Status           string     `json:"status"`
+	Limits           PlanLimits `json:"limits"`
+	CurrentPeriodEnd time.Time  `json:"current_period_end"`
 }
 
 func NewPlanInfoFromSubscription(subscription db.Subscription) PlanInfo {
@@ -77,9 +63,38 @@ func NewPlanInfoFromSubscription(subscription db.Subscription) PlanInfo {
 
 func NewPlanInfo(plan string, status string) PlanInfo {
 	planType := PlanType(plan)
+
+	endTime := time.Now().AddDate(0, 1, 0)
+
+	if planType == FreePlan {
+		endTime = time.Now().AddDate(0, 1, 0)
+	}
+
+	if planType == ProPlan {
+		endTime = time.Now().AddDate(0, 1, 0)
+	}
+
+	if planType == UnlimitedPlan {
+		endTime = time.Now().AddDate(100, 0, 0)
+	}
+
 	return PlanInfo{
-		Plan:   planType,
-		Status: status,
-		Limits: GetPlanLimits(planType),
+		Plan:             planType,
+		Status:           status,
+		CurrentPeriodEnd: endTime,
+		Limits:           GetPlanLimits(planType),
+	}
+}
+
+func ParsePlan(plan string) (PlanType, error) {
+	switch plan {
+	case "free":
+		return FreePlan, nil
+	case "pro":
+		return ProPlan, nil
+	case "unlimited":
+		return UnlimitedPlan, nil
+	default:
+		return FreePlan, ErrPlanNotFound
 	}
 }

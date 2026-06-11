@@ -30,7 +30,7 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 		db:          db,
 		cfg:         cfg,
 		geoResolver: geoip.New(cfg),
-		billing:     billing.NewService(db),
+		billing:     billing.NewService(db, &cfg),
 	}
 }
 

@@ -8,6 +8,12 @@ const AuthSignInPage = lazy(() =>
     default: m.AuthSignInPage,
   })),
 );
+
+const SubscriptionsPage = lazy(() =>
+  import("./pages/subscriptions/SubscriptionsPage").then((m) => ({
+    default: m.SubscriptionsPage,
+  })),
+);
 const AuthSignUpPage = lazy(() =>
   import("./pages/auth/AuthSignUpPage").then((m) => ({
     default: m.AuthSignUpPage,
@@ -158,6 +164,7 @@ export const authRoutes = [
   { path: "/auth/email/verify", element: <AuthEmailVerifyPage /> },
   { path: "/auth/email/recovery", element: <AuthEmailRecoveryPage /> },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
+  { path: "/subscriptions", element: <SubscriptionsPage /> },
 ];
 
 export const workspaceLinks = [

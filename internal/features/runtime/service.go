@@ -33,7 +33,7 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 	return Service{
 		db:      db,
 		cache:   newRuntimeCache(30 * time.Second),
-		billing: billing.NewService(db),
+		billing: billing.NewService(db, &cfg),
 		config:  cfg,
 	}
 }
