@@ -81,11 +81,7 @@ const RemoteConfigPage = lazy(() =>
     default: m.RemoteConfigPage,
   })),
 );
-const CreateProjectPage = lazy(() =>
-  import("./pages/projects/CreateProjectPage").then((m) => ({
-    default: m.CreateProjectPage,
-  })),
-);
+
 const SettingsPage = lazy(() =>
   import("./pages/settings/SettingsPage").then((m) => ({
     default: m.SettingsPage,
@@ -130,7 +126,6 @@ const NotFoundPage = lazy(() =>
 
 export const workspaceRoutes = [
   { path: "/projects", element: <ProjectsPage /> },
-  { path: "/projects/new", element: <CreateProjectPage /> },
   { path: "/settings", element: <SettingsPage /> },
   { path: "/subscriptions", element: <SubscriptionsPage /> },
 ];
