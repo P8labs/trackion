@@ -26,7 +26,7 @@ import {
   Columns3CogIcon,
   LayoutDashboardIcon,
   LogOutIcon,
-  RadioIcon,
+  // RadioIcon,
   SettingsIcon,
   TrendingUpIcon,
   TvMinimalIcon,
@@ -59,7 +59,7 @@ export function ProjectDashboardLayout() {
       icon: LayoutDashboardIcon,
     },
     {
-      name: "Events",
+      name: "Realtime Events",
       path: `/projects/${projectId}/events`,
       icon: TrendingUpIcon,
     },
@@ -68,11 +68,11 @@ export function ProjectDashboardLayout() {
       path: `/projects/${projectId}/breakdown`,
       icon: ChartPieIcon,
     },
-    {
-      name: "Realtime",
-      path: `/projects/${projectId}/realtime`,
-      icon: RadioIcon,
-    },
+    // {
+    //   name: "Realtime",
+    //   path: `/projects/${projectId}/realtime`,
+    //   icon: RadioIcon,
+    // },
     {
       name: "Errors",
       path: `/projects/${projectId}/errors`,

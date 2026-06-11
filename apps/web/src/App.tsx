@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Suspense } from "react";
 import { ProjectDashboardLayout } from "@/components/layouts/project-dash";
@@ -15,11 +15,27 @@ import {
   workspaceLinks,
 } from "./routes";
 import { Notifications } from "@mantine/notifications";
+import {
+  CodeHighlightAdapterProvider,
+  createShikiAdapter,
+} from "@mantine/code-highlight";
 
 import { flags } from "@/lib/flags";
 import { AppShell } from "./components/layouts/app-shell";
 import { RouteMiddleware } from "./middleware";
 import { LoadingView } from "./Loader";
+
+const { createHighlighter } = await import("shiki");
+async function loadShiki() {
+  const shiki = await createHighlighter({
+    langs: ["tsx", "scss", "html", "js", "json"],
+    themes: [],
+  });
+
+  return shiki;
+}
+
+const shikiAdapter = createShikiAdapter(loadShiki);
 
 function App() {
   return (
@@ -35,39 +51,47 @@ function App() {
         }}
       >
         <ErrorBoundary>
-          <ModalsProvider>
-            <Notifications position="top-left" />
-            <BrowserRouter>
-              <RouteMiddleware>
-                <Suspense fallback={<LoadingView />}>
-                  <Routes>
-                    <Route>
-                      {publicRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
-                    <Route>
-                      {authRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
+          <CodeHighlightAdapterProvider adapter={shikiAdapter}>
+            <ModalsProvider>
+              <Notifications position="top-left" />
+              <BrowserRouter>
+                <RouteMiddleware>
+                  <Suspense fallback={<LoadingView />}>
+                    <Routes>
+                      <Route>
+                        {publicRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
+                      <Route>
+                        {authRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
 
-                    <Route element={<AppShell links={workspaceLinks} />}>
-                      {workspaceRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
+                      <Route element={<AppShell links={workspaceLinks} />}>
+                        {workspaceRoutes.map((r) => (
+                          <Route key={r.path} {...r} />
+                        ))}
+                      </Route>
 
-                    <Route element={<ProjectDashboardLayout />}>
-                      {projectRoutes.map((r) => (
-                        <Route key={r.path} {...r} />
-                      ))}
-                    </Route>
-                  </Routes>
-                </Suspense>
-              </RouteMiddleware>
-            </BrowserRouter>
-          </ModalsProvider>
+                      <Route element={<ProjectDashboardLayout />}>
+                        <Route path="/projects/:id">
+                          <Route
+                            index
+                            element={<Navigate to="overview" replace />}
+                          />
+                          {projectRoutes.map((r) => (
+                            <Route key={r.path} {...r} />
+                          ))}
+                        </Route>
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </RouteMiddleware>
+              </BrowserRouter>
+            </ModalsProvider>
+          </CodeHighlightAdapterProvider>
         </ErrorBoundary>
       </TrackionProvider>
     </QueryClientProvider>

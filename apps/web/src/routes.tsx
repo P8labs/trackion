@@ -56,11 +56,7 @@ const BreakdownPage = lazy(() =>
     default: m.BreakdownPage,
   })),
 );
-const RealtimePage = lazy(() =>
-  import("./pages/projects/dashboard/RealtimePage").then((m) => ({
-    default: m.RealtimePage,
-  })),
-);
+
 const SessionReplayPage = lazy(() =>
   import("./pages/projects/replay/SessionReplayPage").then((m) => ({
     default: m.SessionReplayPage,
@@ -131,19 +127,18 @@ export const workspaceRoutes = [
 ];
 
 export const projectRoutes = [
+  { path: "overview", element: <OverviewPage /> },
+  { path: "events", element: <EventsPage /> },
+  { path: "breakdown", element: <BreakdownPage /> },
   {
-    path: "/projects/:id",
-    element: <Navigate to="overview" replace />,
+    path: "realtime",
+    element: <Navigate to="../events" />,
   },
-  { path: "/projects/:id/overview", element: <OverviewPage /> },
-  { path: "/projects/:id/events", element: <EventsPage /> },
-  { path: "/projects/:id/breakdown", element: <BreakdownPage /> },
-  { path: "/projects/:id/realtime", element: <RealtimePage /> },
-  { path: "/projects/:id/replays", element: <SessionReplayPage /> },
-  { path: "/projects/:id/settings", element: <ProjectDetailPage /> },
-  { path: "/projects/:id/remote-config", element: <RemoteConfigPage /> },
-  { path: "/projects/:id/errors", element: <ErrorListPage /> },
-  { path: "/projects/:id/errors/:fingerprint", element: <ErrorDetailPage /> },
+  { path: "replays", element: <SessionReplayPage /> },
+  { path: "settings", element: <ProjectDetailPage /> },
+  { path: "remote-config", element: <RemoteConfigPage /> },
+  { path: "errors", element: <ErrorListPage /> },
+  { path: "errors/:fingerprint", element: <ErrorDetailPage /> },
 ];
 
 export const publicRoutes = [
