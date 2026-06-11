@@ -22,6 +22,11 @@ export function createUserQueries(api: ReturnType<typeof createApi>) {
       queryFn: api.getCurrentUser,
     }),
 
+    subscriptionPlans: () => ({
+      queryKey: userQueryKeys.planInfo,
+      queryFn: api.fetchSubscriptionPlans,
+    }),
+
     usage: () => ({
       queryKey: userQueryKeys.usage,
       queryFn: api.getUsage,
@@ -68,8 +73,8 @@ export function createUserMutations(api: ReturnType<typeof createApi>) {
       }) => api.resetPassword(token, newPassword),
     }),
 
-    setupDefaultSubscription: () => ({
-      mutationFn: () => api.setupDefaultSubscription(),
+    setupSubscription: () => ({
+      mutationFn: (plan: string) => api.setupSubscription(plan),
     }),
 
     logout: () => ({

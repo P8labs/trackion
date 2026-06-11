@@ -27,7 +27,7 @@ export function AuthSignInPage() {
     }
 
     try {
-      const token = await mutateAsync(values, {
+      const { token } = await mutateAsync(values, {
         onError(error) {
           console.error("Login error:", error);
           notifications.show({
@@ -39,10 +39,8 @@ export function AuthSignInPage() {
                 : "An unexpected error occurred during login.",
           });
         },
-        onSuccess() {
-          navigate("/auth/callback?token=" + token);
-        },
       });
+      navigate("/auth/callback?token=" + token);
     } catch (error) {
       console.error("Error signing in:", error);
     }

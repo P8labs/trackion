@@ -38,12 +38,10 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
       api.apiCall<TokenResponse>("POST", "/auth/signup/email", {
         body: JSON.stringify({ email, password }),
       }),
-    logout: () => api.apiCall<void>("POST", "/api/v1/auth/logout"),
+    logout: () => api.apiCall<void>("POST", "/auth/logout"),
 
     requestPasswordReset: (email: string) =>
-      api.apiCall<void>("POST", "/auth/password/reset/request", {
-        body: JSON.stringify({ email }),
-      }),
+      api.apiCall<void>("POST", `/auth/password/reset/request?email=${email}`),
 
     resetPassword: (token: string, newPassword: string) =>
       api.apiCall<void>("POST", "/auth/password/reset", {
@@ -64,7 +62,7 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
     fetchSubscriptionPlans: () =>
       api.apiCall<{ plans: Plan[] }>("GET", "/api/v1/subscriptions/plans"),
 
-    getCurrentUser: () => api.apiCall<User>("GET", "/api/v1/auth/me"),
+    getCurrentUser: () => api.apiCall<User>("GET", "/auth/me"),
 
     getUsage: () =>
       api.apiCall<UsagePlan>("GET", "/api/v1/subscriptions/usage"),

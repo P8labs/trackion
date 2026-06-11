@@ -44,14 +44,15 @@ type Provider struct {
 	CreatedAt  time.Time `gorm:"column:created_at" json:"created_at"`
 	UpdatedAt  time.Time `gorm:"column:updated_at" json:"updated_at"`
 
-	// user_id one provider constrained to one user, but a user can have multiple providers (e.g. github + google)
 	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 }
 
+type EmailReason string
+
 const (
-	EmailVerificationReason = "email_verification"
-	PasswordResetReason     = "password_reset"
-	AccountDeletionReason   = "account_deletion"
+	EmailVerificationReason EmailReason = "email_verification"
+	PasswordResetReason     EmailReason = "password_reset"
+	AccountDeletionReason   EmailReason = "account_deletion"
 )
 
 type VerificationCode struct {
@@ -68,7 +69,7 @@ type VerificationCode struct {
 
 func ParseVerificationReason(r string) (string, error) {
 	switch r {
-	case EmailVerificationReason, PasswordResetReason, AccountDeletionReason:
+	case string(EmailVerificationReason), string(PasswordResetReason), string(AccountDeletionReason):
 		return r, nil
 	default:
 		return "", errors.New("invalid verification reason")

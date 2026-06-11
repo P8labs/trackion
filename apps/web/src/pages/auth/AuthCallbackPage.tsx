@@ -48,10 +48,11 @@ export function AuthCallbackPage() {
       }
 
       try {
-        const user = await useGlobalStore.getState().api().getCurrentUser();
-        const isVerified = Boolean(
-          user.providers?.some((provider) => provider.verified),
-        );
+        const user = await useGlobalStore
+          .getState()
+          .actions.getApi()
+          .getCurrentUser();
+        const isVerified = user.is_email_verified;
 
         if (isVerified) {
           setStatus("success");

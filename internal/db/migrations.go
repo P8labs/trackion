@@ -21,6 +21,8 @@ func RunMigrations(db *gorm.DB, logger *slog.Logger) error {
 		&types.ReplayChunk{},
 		&types.Flag{},
 		&types.Config{},
+		&types.Provider{},
+		&types.VerificationCode{},
 	)
 
 	logger.Info("running custom migrations")

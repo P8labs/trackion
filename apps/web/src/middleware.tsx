@@ -1,7 +1,8 @@
+import { useEffect, useState } from "react";
 import { useLocation, Navigate } from "react-router-dom";
 import { useGlobalStore } from "./store";
+import { Loader } from "@mantine/core";
 
-// Define these paths to match your actual application setup
 const VERIFY_EMAIL_PATH = "/auth/email/verify";
 const SUBSCRIPTION_PATH = "/subscriptions";
 const DASHBOARD_PATH = "/projects";
@@ -16,7 +17,40 @@ const publicOnlyRoutePrefixes = ["/auth"];
 
 export function RouteMiddleware({ children }: { children: React.ReactNode }) {
   const location = useLocation();
+
+  // 1. Add a loading state to block rendering while checking auth
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // 2. Extract necessary state and actions individually to prevent infinite re-renders
   const user = useGlobalStore((state) => state.user);
+  const authToken = useGlobalStore((state) => state.authToken);
+  const fetchCurrentUser = useGlobalStore(
+    (state) => state.actions.fetchCurrentUser,
+  );
+
+  // 3. Run the auth check on mount or when the token changes
+  useEffect(() => {
+    const initAuth = async () => {
+      // Only attempt to fetch if we have an authentication token
+      if (authToken) {
+        // Your store handles the caching/staling logic automatically
+        // If the user is fresh, this returns immediately. If stale, it fetches.
+        await fetchCurrentUser();
+      }
+      // Release the UI block once the check is done
+      setIsCheckingAuth(false);
+    };
+
+    initAuth();
+  }, [authToken, fetchCurrentUser]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader type="bars" size="lg" />
+      </div>
+    );
+  }
 
   const isLoggedIn = !!user;
 
@@ -44,24 +78,26 @@ export function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
   // --------------------------------------------------------
   // Authenticated Priority Flow
-  // to match the exact property names in your User type.
   // --------------------------------------------------------
+
+  // if subscribed but trying to access subscription page, redirect to dashboard
+  if (user.is_active_subscription && isSubscriptionRoute) {
+    return <Navigate to={DASHBOARD_PATH} replace />;
+  }
 
   // Priority 1: Email Verification
   if (!user.is_email_verified) {
     if (!isVerifyEmailRoute) {
       return <Navigate to={VERIFY_EMAIL_PATH} replace />;
     }
-    // Allow them to render the verification page
     return <>{children}</>;
   }
 
   // Priority 2: Active Subscription
-  if (!user.has_active_subscription) {
+  if (!user.is_active_subscription) {
     if (!isSubscriptionRoute) {
       return <Navigate to={SUBSCRIPTION_PATH} replace />;
     }
-    // Allow them to render the subscription page
     return <>{children}</>;
   }
 
