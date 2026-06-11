@@ -1,86 +1,92 @@
 import {
-  AnalyticsUpIcon,
-  Clock01Icon,
-  EyeIcon,
-  UserGroupIcon,
-} from "@hugeicons/core-free-icons";
-import { formatTimeSpent } from "@/lib/utils";
-import { HugeiconsIcon } from "@hugeicons/react";
+  Divider,
+  Group,
+  SimpleGrid,
+  Skeleton,
+  Stack,
+  Text,
+} from "@mantine/core";
+
 import { ErrorBanner } from "@/components/core/error-banner";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import { formatTimeSpent } from "@/lib/utils";
+import {
+  ClockFadingIcon,
+  EyeIcon,
+  TrendingUpIcon,
+  UserPlusIcon,
+} from "lucide-react";
 
 interface DashboardStatsProps {
   projectId: string;
 }
+
 export function DashboardStats({ projectId }: DashboardStatsProps) {
   const { data, isLoading, error } =
     analyticsHooks.useDashboardStats(projectId);
 
-  const counts = [
+  const stats = [
     {
       title: "Events",
-      value: data?.total_events.toLocaleString() || "0",
-      icon: AnalyticsUpIcon,
+      value: data?.total_events.toLocaleString() ?? "0",
+      icon: TrendingUpIcon,
     },
     {
       title: "Views",
-      value: data?.views.toLocaleString() || "0",
+      value: data?.views.toLocaleString() ?? "0",
       icon: EyeIcon,
     },
     {
-      title: "Unique",
-      value: data?.unique_views.toLocaleString() || "0",
-      icon: UserGroupIcon,
+      title: "Unique Visitors",
+      value: data?.unique_views.toLocaleString() ?? "0",
+      icon: UserPlusIcon,
     },
     {
-      title: "Avg Time",
-      value: formatTimeSpent(data?.avg_time_spent_seconds || 0),
-      icon: Clock01Icon,
+      title: "Average Time",
+      value: formatTimeSpent(data?.avg_time_spent_seconds ?? 0),
+      icon: ClockFadingIcon,
     },
   ];
 
   return (
-    <div className="border-b border-border/60 relative">
+    <Stack gap={0}>
       {!isLoading && error && (
         <ErrorBanner
-          label="Some error occurred, unable to load stats"
+          label="Unable to load analytics statistics"
           error={error}
         />
       )}
-      <div className="grid grid-cols-2 md:grid-cols-4">
-        {isLoading &&
-          [...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="px-4 py-4 border-r last:border-r-0 border-border/60"
-            >
-              <div className="h-5 w-16 bg-muted animate-pulse mb-2 rounded" />
-              <div className="h-3 w-12 bg-muted animate-pulse rounded" />
+
+      <div className="px-5 md:px-6 py-5">
+        <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="lg">
+          {stats.map((stat) => (
+            <div key={stat.title}>
+              {isLoading ? (
+                <Stack gap={6}>
+                  <Skeleton height={12} width="60%" />
+                  <Skeleton height={24} width="80%" />
+                </Stack>
+              ) : (
+                <Stack gap={4}>
+                  <Group gap={6}>
+                    <stat.icon size={14} />
+
+                    <Text size="xs" fw={600} c="dimmed">
+                      {stat.title}
+                    </Text>
+                  </Group>
+
+                  <Text fw={600} size="xl">
+                    {stat.value}
+                  </Text>
+                </Stack>
+              )}
             </div>
           ))}
-
-        {!isLoading &&
-          !error &&
-          counts.map((stat) => {
-            return (
-              <div
-                key={stat.title}
-                className="px-4 py-4 border-r border-border/60 flex items-center justify-between relative first:border-l last:border-r"
-              >
-                <div>
-                  <p className="text-xs text-muted-foreground">{stat.title}</p>
-                  <p className="text-lg font-medium mt-1">{stat.value}</p>
-                </div>
-
-                <HugeiconsIcon
-                  icon={stat.icon}
-                  className="h-4 w-4 text-muted-foreground"
-                  strokeWidth={2}
-                />
-              </div>
-            );
-          })}
+        </SimpleGrid>
       </div>
-    </div>
+
+      <Divider />
+    </Stack>
   );
 }

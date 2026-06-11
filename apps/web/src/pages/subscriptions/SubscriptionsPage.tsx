@@ -1,10 +1,5 @@
 import { useMemo } from "react";
-import {
-  AccountSetting01Icon,
-  AutoConversationsIcon,
-  Folder01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
+
 import moment from "moment";
 import { userHooks } from "@/hooks/queries/use-user";
 import { ErrorBanner } from "@/components/core/error-banner";
@@ -18,8 +13,8 @@ import {
   Divider,
   Badge,
 } from "@mantine/core";
+import { Columns3CogIcon, FolderIcon, TrendingUpIcon } from "lucide-react";
 
-// Helper function to format time remaining into "X years Y months Z days"
 const formatTimeLeft = (endDate: Date | string) => {
   const now = moment();
   const end = moment(new Date(endDate));
@@ -131,7 +126,7 @@ export function SubscriptionsPage() {
         <div className="p-5 md:p-6">
           <Group justify="space-between" mb="xs">
             <Group gap="sm" c="dimmed">
-              <HugeiconsIcon icon={AutoConversationsIcon} size={18} />
+              <TrendingUpIcon size={18} />
               <Text size="sm" fw={500}>
                 Events
               </Text>
@@ -172,7 +167,7 @@ export function SubscriptionsPage() {
         <div className="p-5 md:p-6">
           <Group justify="space-between" mb="xs">
             <Group gap="sm" c="dimmed">
-              <HugeiconsIcon icon={Folder01Icon} size={18} />
+              <FolderIcon size={18} />
               <Text size="sm" fw={500}>
                 Projects
               </Text>
@@ -211,7 +206,7 @@ export function SubscriptionsPage() {
         <div className="p-5 md:p-6">
           <Group justify="space-between" mb="xs">
             <Group gap="sm" c="dimmed">
-              <HugeiconsIcon icon={AccountSetting01Icon} size={18} />
+              <Columns3CogIcon size={18} />
               <Text size="sm" fw={500}>
                 Remote Config Keys
               </Text>

@@ -1,22 +1,28 @@
 import { Suspense } from "react";
 import { useParams } from "react-router-dom";
-import { DashboardStats } from "@/components/core/project/analytics/dashboard-stats";
+
+import { Divider, Paper, Skeleton } from "@mantine/core";
+
+import { LoadingView } from "@/Loader";
+import { ErrorBanner } from "@/components/core/error-banner";
+
+import { BaseHeader } from "@/components/core/project/analytics/base-header";
 import { DashboardChart } from "@/components/core/project/analytics/dashboard-chart";
+import { DashboardStats } from "@/components/core/project/analytics/dashboard-stats";
 import { GeoTraffic } from "@/components/core/project/analytics/geo-traffic";
+import { TrafficHeatmap } from "@/components/core/project/analytics/traffic-heatmap";
 
 import { projectHooks } from "@/hooks/queries/use-project";
-import { ErrorBanner } from "@/components/core/error-banner";
-import { BaseHeader } from "@/components/core/project/analytics/base-header";
-import { LoadingBanner } from "@/components/core/loading-banner";
+
 import { analyticsQueryKeys } from "@trackion/lib/queries";
-import { TrafficHeatmap } from "@/components/core/project/analytics/traffic-heatmap";
 
 export function OverviewPage() {
   const { id = "" } = useParams<{ id: string }>();
+
   const { data: activeProject, isLoading, error } = projectHooks.useProject(id);
 
   if (isLoading) {
-    return <LoadingBanner />;
+    return <LoadingView />;
   }
 
   if (!activeProject || error) {
@@ -29,11 +35,10 @@ export function OverviewPage() {
   }
 
   return (
-    <section className="max-w-7xl mx-auto relative">
+    <Paper>
       <BaseHeader
-        chipLabel="Overview"
         label={activeProject.name}
-        description={"Real-time analytics and insights"}
+        description="Real-time analytics and insights"
         projectId={activeProject.id}
         refreshKeys={[
           [analyticsQueryKeys.stats(activeProject.id)],
@@ -42,28 +47,34 @@ export function OverviewPage() {
         ]}
       />
 
-      <div className="relative">
-        <Suspense fallback={<OverviewCardFallback heightClass="h-32" />}>
-          <DashboardStats projectId={activeProject.id} />
-        </Suspense>
-        <Suspense fallback={<OverviewCardFallback heightClass="h-80" />}>
-          <DashboardChart projectId={activeProject.id} />
-        </Suspense>
-        <Suspense fallback={<OverviewCardFallback heightClass="h-[28rem]" />}>
-          <section className="grid xl:grid-cols-[2fr_1fr] border-y border-border/60">
-            <GeoTraffic projectId={activeProject.id} />
-            <TrafficHeatmap projectId={activeProject.id} />
-          </section>
-        </Suspense>
-      </div>
-    </section>
+      <Divider />
+
+      <Suspense fallback={<OverviewFallback height={80} />}>
+        <DashboardStats projectId={activeProject.id} />
+      </Suspense>
+
+      <Divider />
+
+      <Suspense fallback={<OverviewFallback height={320} />}>
+        <DashboardChart projectId={activeProject.id} />
+      </Suspense>
+
+      <Divider />
+
+      <Suspense fallback={<OverviewFallback height={420} />}>
+        <TrafficHeatmap projectId={activeProject.id} />
+      </Suspense>
+      <Suspense fallback={<OverviewFallback height={420} />}>
+        <GeoTraffic projectId={activeProject.id} />
+      </Suspense>
+    </Paper>
   );
 }
 
-function OverviewCardFallback({ heightClass }: { heightClass: string }) {
+function OverviewFallback({ height }: { height: number }) {
   return (
-    <div className="w-full border bg-card p-4 mb-6">
-      <div className={`w-full animate-pulse bg-muted/25 ${heightClass}`} />
+    <div className="px-5 md:px-6 py-5">
+      <Skeleton height={height} />
     </div>
   );
 }

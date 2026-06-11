@@ -33,7 +33,7 @@ export class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="min-h-screen w-full flex items-center justify-center select-text">
           <Paper>
             <h2 className="text-xl font-semibold tracking-tight">
               Something went wrong

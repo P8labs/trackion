@@ -54,7 +54,6 @@
         "installerIcon": "icons/icon.ico",
         "compression": "lzma",
         "displayLanguageSelector": false,
-        "minimumWebview2Version": "110.0.1531.0",
         "languages": ["English"]
       },
       "wix": {
