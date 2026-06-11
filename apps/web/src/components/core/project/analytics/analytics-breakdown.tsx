@@ -17,9 +17,20 @@ import {
   FaTag,
   FaTabletAlt,
 } from "react-icons/fa";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@trackion/ui/tabs";
 import { LoadingBanner } from "@/components/core/loading-banner";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
+import {
+  Center,
+  Divider,
+  Grid,
+  Group,
+  Stack,
+  Tabs,
+  TabsList,
+  TabsPanel,
+  TabsTab,
+  Text,
+} from "@mantine/core";
 
 interface AnalyticsBreakdownProps {
   projectId: string;
@@ -32,6 +43,228 @@ const DEVICE_COLORS = [
   "var(--chart-4)",
   "var(--chart-5)",
 ];
+
+function TrafficSourcesList({
+  data,
+  iconType = "traffic",
+}: {
+  data: Array<{
+    name: string;
+    count: number;
+  }>;
+  iconType?:
+    | "traffic"
+    | "device"
+    | "browser"
+    | "referrer"
+    | "utm_source"
+    | "utm_medium";
+}) {
+  const total = data.reduce((sum, item) => sum + item.count, 0);
+
+  function getIcon(name: string) {
+    switch (iconType) {
+      case "device":
+        return getDeviceIcon(name);
+
+      case "browser":
+        return getBrowserIcon(name);
+
+      case "referrer":
+        return getReferrerIcon(name);
+
+      case "utm_source":
+        return getUtmSourceIcon(name);
+
+      case "utm_medium":
+        return getUtmMediumIcon(name);
+
+      default:
+        return null;
+    }
+  }
+
+  return (
+    <Stack gap={0}>
+      {data.slice(0, 6).map((source, index) => {
+        const percentage = total > 0 ? (source.count / total) * 100 : 0;
+
+        const icon = getIcon(source.name);
+
+        return (
+          <div key={source.name}>
+            <Group justify="space-between" className="px-5 md:px-6 py-3">
+              <Group gap="sm" wrap="nowrap">
+                {icon ?? (
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 999,
+                      background: DEVICE_COLORS[index % DEVICE_COLORS.length],
+                    }}
+                  />
+                )}
+
+                <Text size="sm" truncate>
+                  {source.name}
+                </Text>
+              </Group>
+
+              <div
+                style={{
+                  textAlign: "right",
+                }}
+              >
+                <Text fw={600} size="sm">
+                  {source.count.toLocaleString()}
+                </Text>
+
+                <Text size="xs" c="dimmed">
+                  {percentage.toFixed(1)}%
+                </Text>
+              </div>
+            </Group>
+
+            {index !== Math.min(data.length, 6) - 1 && <Divider />}
+          </div>
+        );
+      })}
+    </Stack>
+  );
+}
+
+interface AnalyticsBreakdownProps {
+  projectId: string;
+}
+
+export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
+  const { data: deviceData, isLoading: deviceLoading } =
+    analyticsHooks.useDeviceAnalytics(projectId);
+
+  const { data: trafficData, isLoading: trafficLoading } =
+    analyticsHooks.useTrafficSources(projectId);
+
+  return (
+    <Grid>
+      <Grid.Col span={{ base: 12, lg: 6 }}>
+        <Tabs defaultValue="devices">
+          <div className="px-5 md:px-6 py-5">
+            <Text fw={600} size="sm">
+              Device Analytics
+            </Text>
+
+            <Text size="sm" c="dimmed">
+              Breakdown by device and browser
+            </Text>
+
+            <TabsList>
+              <TabsTab value="devices">Devices</TabsTab>
+
+              <TabsTab value="browsers">Browsers</TabsTab>
+            </TabsList>
+          </div>
+
+          <TabsPanel value="devices">
+            {deviceLoading ? (
+              <LoadingBanner />
+            ) : deviceData?.devices?.length ? (
+              <TrafficSourcesList data={deviceData.devices} iconType="device" />
+            ) : (
+              <EmptyState label="No device data available" />
+            )}
+          </TabsPanel>
+
+          <TabsPanel value="browsers">
+            {deviceLoading ? (
+              <LoadingBanner />
+            ) : deviceData?.browsers?.length ? (
+              <TrafficSourcesList
+                data={deviceData.browsers}
+                iconType="browser"
+              />
+            ) : (
+              <EmptyState label="No browser data available" />
+            )}
+          </TabsPanel>
+        </Tabs>
+      </Grid.Col>
+
+      <Grid.Col span={{ base: 12, lg: 6 }}>
+        <Tabs defaultValue="referrers">
+          <div className="px-5 md:px-6 py-5">
+            <Text fw={600} size="sm">
+              Traffic Sources
+            </Text>
+
+            <Text size="sm" c="dimmed">
+              Where your visitors come from
+            </Text>
+
+            <TabsList>
+              <TabsTab value="referrers">Referrers</TabsTab>
+
+              <TabsTab value="utm_sources">UTM Source</TabsTab>
+
+              <TabsTab value="utm_mediums">UTM Medium</TabsTab>
+            </TabsList>
+          </div>
+
+          <TabsPanel value="referrers">
+            {trafficLoading ? (
+              <LoadingBanner />
+            ) : trafficData?.referrers?.length ? (
+              <TrafficSourcesList
+                data={trafficData.referrers}
+                iconType="referrer"
+              />
+            ) : (
+              <EmptyState label="No referrer data available" />
+            )}
+          </TabsPanel>
+
+          <TabsPanel value="utm_sources">
+            {trafficLoading ? (
+              <LoadingBanner />
+            ) : trafficData?.utm_sources?.length ? (
+              <TrafficSourcesList
+                data={trafficData.utm_sources}
+                iconType="utm_source"
+              />
+            ) : (
+              <EmptyState label="No UTM source data available" />
+            )}
+          </TabsPanel>
+
+          <TabsPanel value="utm_mediums">
+            {trafficLoading ? (
+              <LoadingBanner />
+            ) : trafficData?.utm_mediums?.length ? (
+              <TrafficSourcesList
+                data={trafficData.utm_mediums}
+                iconType="utm_medium"
+              />
+            ) : (
+              <EmptyState label="No UTM medium data available" />
+            )}
+          </TabsPanel>
+        </Tabs>
+      </Grid.Col>
+    </Grid>
+  );
+}
+
+function EmptyState({ label }: { label: string }) {
+  return (
+    <Center py="xl">
+      <Stack gap={4} align="center">
+        <Text size="sm" c="dimmed">
+          {label}
+        </Text>
+      </Stack>
+    </Center>
+  );
+}
 
 function getDeviceIcon(deviceName: string) {
   const normalized = deviceName.toLowerCase();
@@ -154,224 +387,4 @@ function getUtmMediumIcon(mediumName: string) {
     return <FaSearch className="h-4 w-4 text-muted-foreground" />;
   }
   return <FaTag className="h-4 w-4 text-muted-foreground" />;
-}
-
-function TrafficSourcesList({
-  data,
-  iconType = "traffic",
-}: {
-  data: Array<{ name: string; count: number }>;
-  iconType?:
-    | "traffic"
-    | "device"
-    | "browser"
-    | "referrer"
-    | "utm_source"
-    | "utm_medium";
-}) {
-  const total = data.reduce((sum, item) => sum + item.count, 0);
-
-  function getIcon(name: string) {
-    if (iconType === "device") {
-      return getDeviceIcon(name);
-    } else if (iconType === "browser") {
-      return getBrowserIcon(name);
-    } else if (iconType === "referrer") {
-      return getReferrerIcon(name);
-    } else if (iconType === "utm_source") {
-      return getUtmSourceIcon(name);
-    } else if (iconType === "utm_medium") {
-      return getUtmMediumIcon(name);
-    }
-    return null;
-  }
-
-  return (
-    <div className="divide-y divide-border/40 h-64">
-      {data.slice(0, 6).map((source, index) => {
-        const percentage = total > 0 ? (source.count / total) * 100 : 0;
-        const icon = getIcon(source.name);
-
-        return (
-          <div
-            key={source.name}
-            className="flex items-center justify-between px-3 py-2 transition hover:bg-muted/20"
-          >
-            <div className="flex min-w-0 items-center gap-2">
-              {icon ? (
-                icon
-              ) : (
-                <div
-                  className="w-3 h-3 rounded-full"
-                  style={{
-                    backgroundColor:
-                      DEVICE_COLORS[index % DEVICE_COLORS.length],
-                  }}
-                />
-              )}
-              <span className="truncate text-sm font-medium text-foreground">
-                {source.name}
-              </span>
-            </div>
-            <div className="text-right">
-              <div className="font-mono text-sm text-foreground">
-                {source.count}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                {percentage.toFixed(1)}%
-              </div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-export function AnalyticsBreakdown({ projectId }: AnalyticsBreakdownProps) {
-  const { data: deviceData, isLoading: deviceLoading } =
-    analyticsHooks.useDeviceAnalytics(projectId);
-  const { data: trafficData, isLoading: trafficLoading } =
-    analyticsHooks.useTrafficSources(projectId);
-
-  return (
-    <div className="grid border-b border-border/60 md:grid-cols-2">
-      <section className="border-r border-border/60 h-90 flex flex-col">
-        {deviceLoading ? (
-          <LoadingBanner />
-        ) : (
-          <Tabs defaultValue="devices" className="w-full flex flex-col flex-1">
-            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-              <div>
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  Device Analytics
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Breakdown by device and browser
-                </p>
-              </div>
-              <TabsList className="h-7 bg-muted/40 p-0.5">
-                <TabsTrigger value="devices" className="h-6 px-2 text-xs">
-                  Devices
-                </TabsTrigger>
-                <TabsTrigger value="browsers" className="h-6 px-2 text-xs">
-                  Browsers
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent
-              value="devices"
-              className="m-0 p-0 flex-1 overflow-y-auto"
-            >
-              {deviceData?.devices && deviceData.devices.length > 0 ? (
-                <TrafficSourcesList
-                  data={deviceData.devices}
-                  iconType="device"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No device data available
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent
-              value="browsers"
-              className="m-0 p-0 flex-1 overflow-y-auto"
-            >
-              {deviceData?.browsers && deviceData.browsers.length > 0 ? (
-                <TrafficSourcesList
-                  data={deviceData.browsers}
-                  iconType="browser"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No browser data available
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
-      </section>
-
-      <section className="h-90 flex flex-col">
-        {trafficLoading ? (
-          <LoadingBanner />
-        ) : (
-          <Tabs
-            defaultValue="referrers"
-            className="w-full flex flex-col flex-1"
-          >
-            <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-              <div>
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                  Traffic Sources
-                </h3>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Where your visitors come from
-                </p>
-              </div>
-              <TabsList className="h-7 bg-muted/40 p-0.5">
-                <TabsTrigger value="referrers" className="h-6 px-2 text-xs">
-                  Referrers
-                </TabsTrigger>
-                <TabsTrigger value="utm_sources" className="h-6 px-2 text-xs">
-                  UTM Source
-                </TabsTrigger>
-                <TabsTrigger value="utm_mediums" className="h-6 px-2 text-xs">
-                  UTM Medium
-                </TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent
-              value="referrers"
-              className="m-0 p-0 flex-1 overflow-y-auto"
-            >
-              {trafficData?.referrers && trafficData.referrers.length > 0 ? (
-                <TrafficSourcesList
-                  data={trafficData.referrers}
-                  iconType="referrer"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No referrer data available
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent
-              value="utm_sources"
-              className="m-0 p-0 flex-1 overflow-y-auto"
-            >
-              {trafficData?.utm_sources &&
-              trafficData.utm_sources.length > 0 ? (
-                <TrafficSourcesList
-                  data={trafficData.utm_sources}
-                  iconType="utm_source"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No UTM source data available
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent
-              value="utm_mediums"
-              className="m-0 p-0 flex-1 overflow-y-auto"
-            >
-              {trafficData?.utm_mediums &&
-              trafficData.utm_mediums.length > 0 ? (
-                <TrafficSourcesList
-                  data={trafficData.utm_mediums}
-                  iconType="utm_medium"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                  No UTM medium data available
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        )}
-      </section>
-    </div>
-  );
 }
