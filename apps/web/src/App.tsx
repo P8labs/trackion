@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { ProjectDashboardLayout } from "@/components/layouts/project-dash";
 import { ErrorBoundary } from "@/components/core/error-boundary";
 import { queryClient } from "@/lib/queryClient";
-import { Loader } from "@trackion/ui/loader";
 
 import { ModalsProvider } from "@mantine/modals";
 import { TrackionProvider } from "@trackion/js/react";
@@ -20,6 +19,7 @@ import { Notifications } from "@mantine/notifications";
 import { flags } from "@/lib/flags";
 import { AppShell } from "./components/layouts/app-shell";
 import { RouteMiddleware } from "./middleware";
+import { LoadingView } from "./Loader";
 
 function App() {
   return (
@@ -39,7 +39,7 @@ function App() {
             <Notifications position="top-left" />
             <BrowserRouter>
               <RouteMiddleware>
-                <Suspense fallback={<Loader />}>
+                <Suspense fallback={<LoadingView />}>
                   <Routes>
                     <Route>
                       {publicRoutes.map((r) => (

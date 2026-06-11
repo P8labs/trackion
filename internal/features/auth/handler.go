@@ -152,13 +152,13 @@ func (h *handler) EmailLogin(w http.ResponseWriter, r *http.Request) {
 
 	userID, err := h.service.SignInWithEmail(r.Context(), payload.Email, payload.Password)
 	if err != nil {
-		res.Error(w, "invalid email or password", 401)
+		res.Error(w, err.Error(), 401)
 		return
 	}
 
 	sessionToken, err := h.service.CreateSession(r.Context(), userID)
 	if err != nil {
-		res.Error(w, "session creation failed", 500)
+		res.Error(w, err.Error(), 500)
 		return
 	}
 
@@ -240,7 +240,7 @@ func (h *handler) SendEmailVerification(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = h.service.SendVerificationEmail(r.Context(), email, db.EmailVerificationReason)
+	err = h.service.SendVerificationEmail(r.Context(), db.EmailVerificationReason, email)
 	if err != nil {
 		res.Error(w, "failed to resend verification code", 500)
 		return
@@ -259,9 +259,9 @@ func (h *handler) SendPasswordResetEmail(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err := h.service.SendVerificationEmail(r.Context(), email, db.PasswordResetReason)
+	err := h.service.SendVerificationEmail(r.Context(), db.PasswordResetReason, email)
 	if err != nil {
-		res.Error(w, "failed to send password reset email", 500)
+		res.Error(w, err.Error(), 500)
 		return
 	}
 
@@ -287,7 +287,7 @@ func (h *handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.PasswordReset(r.Context(), strings.ToUpper(code), newPassword)
 	if err != nil {
-		res.Error(w, "invalid or expired verification code", 400)
+		res.Error(w, err.Error(), 400)
 		return
 	}
 
@@ -301,6 +301,8 @@ func (h *handler) Me(w http.ResponseWriter, r *http.Request) {
 		res.Error(w, "unauthorized", 401)
 		return
 	}
+
+	log.Printf("Fetching user details for user ID: %s", userID)
 
 	user, err := h.service.GetUser(r.Context(), userID)
 	if err != nil {

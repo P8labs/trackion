@@ -79,7 +79,9 @@ export interface User {
   name: string;
   avatar_url?: string;
   is_email_verified: boolean;
-  has_active_subscription: boolean;
+  is_active_subscription: boolean;
+  subscription_ends_at?: string;
+  subscription_plan?: string;
   created_at: string;
   updated_at: string;
 }
