@@ -37,8 +37,35 @@ export function createUserQueries(api: ReturnType<typeof createApi>) {
 
 export function createUserMutations(api: ReturnType<typeof createApi>) {
   return {
-    loginWithToken: () => ({
-      mutationFn: (token: string) => api.loginWithToken(token),
+    loginWithEmail: () => ({
+      mutationFn: ({ email, password }: { email: string; password: string }) =>
+        api.loginWithEmail(email, password),
+    }),
+    signupWithEmail: () => ({
+      mutationFn: ({ email, password }: { email: string; password: string }) =>
+        api.signupWithEmail(email, password),
+    }),
+
+    verifyEmail: () => ({
+      mutationFn: (code: string) => api.verifyEmail(code),
+    }),
+
+    requestEmailVerification: () => ({
+      mutationFn: () => api.requestEmailVerification(),
+    }),
+
+    requestPasswordReset: () => ({
+      mutationFn: (email: string) => api.requestPasswordReset(email),
+    }),
+
+    resetPassword: () => ({
+      mutationFn: ({
+        token,
+        newPassword,
+      }: {
+        token: string;
+        newPassword: string;
+      }) => api.resetPassword(token, newPassword),
     }),
 
     logout: () => ({

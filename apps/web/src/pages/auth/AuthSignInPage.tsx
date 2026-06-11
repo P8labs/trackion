@@ -1,28 +1,73 @@
+import { userHooks } from "@/hooks/queries/use-user";
 import { AuthCard, AuthOAuthButtons } from "./AuthCard";
 import { Button, PasswordInput, TextInput, Text } from "@mantine/core";
-import { Link } from "react-router-dom";
+import { hasLength, isEmail, useForm } from "@mantine/form";
+import { Link, useNavigate } from "react-router-dom";
+import { notifications } from "@mantine/notifications";
 
 export function AuthSignInPage() {
+  const { mutateAsync, isPending } = userHooks.useLoginWithEmail();
+  const navigate = useNavigate();
+
+  const form = useForm({
+    mode: "uncontrolled",
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    validate: {
+      email: isEmail("Please enter a valid email"),
+      password: hasLength({ min: 8 }, "Password must be at least 8 characters"),
+    },
+  });
+
+  async function handleSubmit(values: typeof form.values) {
+    if (form.validate().hasErrors) {
+      return;
+    }
+
+    try {
+      const token = await mutateAsync(values, {
+        onError(error) {
+          console.error("Login error:", error);
+          notifications.show({
+            title: "Login failed",
+            color: "red",
+            message:
+              error instanceof Error
+                ? error.message
+                : "An unexpected error occurred during login.",
+          });
+        },
+        onSuccess() {
+          navigate("/auth/callback?token=" + token);
+        },
+      });
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
+  }
   return (
     <AuthCard
       title="Sign in to Trackion"
       description="Use your email and password, or continue with an OAuth provider."
       className="w-full max-w-md space-y-5"
     >
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+      <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
         <TextInput
+          {...form.getInputProps("email")}
           label="Email"
           placeholder="you@company.com"
           type="email"
-          required
           autoComplete="email"
+          disabled={isPending}
         />
         <PasswordInput
+          {...form.getInputProps("password")}
           label="Password"
           placeholder="Enter your password"
-          required
           autoComplete="current-password"
-          minLength={8}
+          disabled={isPending}
         />
         <div className="flex items-center justify-end gap-3 text-sm -mt-3">
           <Link
@@ -32,7 +77,7 @@ export function AuthSignInPage() {
             Forgot password?
           </Link>
         </div>
-        <Button fullWidth size="lg" type="submit">
+        <Button fullWidth size="lg" type="submit" loading={isPending}>
           Sign in
         </Button>
       </form>

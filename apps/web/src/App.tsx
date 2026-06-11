@@ -23,6 +23,7 @@ import {
   workspaceRoutes,
   workspaceLinks,
 } from "./routes";
+import { Notifications } from "@mantine/notifications";
 
 import { flags } from "@/lib/flags";
 import { useGlobalStore } from "@/store";
@@ -46,9 +47,16 @@ function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
   if (
     isLoggedIn &&
-    publicOnlyRoutePrefixes.some((prefix) =>
-      location.pathname.startsWith(prefix),
-    )
+    publicOnlyRoutePrefixes.some((prefix) => {
+      if (
+        prefix === "/auth" &&
+        location.pathname.startsWith("/auth/email/verify")
+      ) {
+        // Allow access to email verification page even if logged in
+        return false;
+      }
+      return location.pathname.startsWith(prefix);
+    })
   ) {
     return <Navigate to="/projects" replace />;
   }
@@ -58,19 +66,20 @@ function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <TrackionProvider
-      options={{
-        enabled: false,
-        apiKey: flags.trackionToken,
-        serverUrl: flags.trackionUrl,
-        replay: {
+    <QueryClientProvider client={queryClient}>
+      <TrackionProvider
+        options={{
           enabled: false,
-        },
-      }}
-    >
-      <ErrorBoundary>
-        <ModalsProvider>
-          <QueryClientProvider client={queryClient}>
+          apiKey: flags.trackionToken,
+          serverUrl: flags.trackionUrl,
+          replay: {
+            enabled: false,
+          },
+        }}
+      >
+        <ErrorBoundary>
+          <ModalsProvider>
+            <Notifications position="top-left" />
             <BrowserRouter>
               <RouteMiddleware>
                 <Suspense fallback={<Loader />}>
@@ -101,10 +110,10 @@ function App() {
                 </Suspense>
               </RouteMiddleware>
             </BrowserRouter>
-          </QueryClientProvider>
-        </ModalsProvider>
-      </ErrorBoundary>
-    </TrackionProvider>
+          </ModalsProvider>
+        </ErrorBoundary>
+      </TrackionProvider>
+    </QueryClientProvider>
   );
 }
 

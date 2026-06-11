@@ -14,7 +14,7 @@ import {
   RealtimeEventData,
   ReplaySessionPayload,
   ReplaySessionSummary,
-  SelfhostTokenResponse,
+  TokenResponse,
   ServerHealth,
   TopPage,
   TrafficHeatmapData,
@@ -27,12 +27,38 @@ import { createApiClient } from "./client";
 export function createApi(api: ReturnType<typeof createApiClient>) {
   return {
     getServerHealth: () => api.apiCall<ServerHealth>("GET", "/health"),
-    loginWithToken: (token: string) =>
-      api.apiCall<SelfhostTokenResponse>("POST", "/api/v1/auth/verify", {
-        body: JSON.stringify({ token }),
+
+    loginWithEmail: (email: string, password: string) =>
+      api.apiCall<TokenResponse>("POST", "/auth/login/email", {
+        body: JSON.stringify({ email, password }),
+      }),
+
+    signupWithEmail: (email: string, password: string) =>
+      api.apiCall<TokenResponse>("POST", "/auth/signup/email", {
+        body: JSON.stringify({ email, password }),
       }),
     logout: () => api.apiCall<void>("POST", "/api/v1/auth/logout"),
+
+    requestPasswordReset: (email: string) =>
+      api.apiCall<void>("POST", "/auth/password/reset/request", {
+        body: JSON.stringify({ email }),
+      }),
+
+    resetPassword: (token: string, newPassword: string) =>
+      api.apiCall<void>("POST", "/auth/password/reset", {
+        body: JSON.stringify({ token, new_password: newPassword }),
+      }),
+
+    verifyEmail: (code: string) =>
+      api.apiCall<void>("POST", "/auth/email/verify", {
+        body: JSON.stringify({ code }),
+      }),
+
+    requestEmailVerification: () =>
+      api.apiCall<void>("POST", "/auth/email/verify/request"),
+
     getCurrentUser: () => api.apiCall<User>("GET", "/api/v1/auth/me"),
+
     getUsage: () => api.apiCall<UsagePlan>("GET", "/api/v1/billing/usage"),
 
     getProjects: () => api.apiCall<Project[]>("GET", "/api/v1/projects"),

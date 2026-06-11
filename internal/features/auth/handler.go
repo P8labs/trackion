@@ -207,15 +207,14 @@ func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := strings.ToLower(strings.TrimSpace(payload.Email))
 	code := strings.TrimSpace(payload.Code)
 
-	if err := core.Require("email", email, "code", code); err != nil {
-		res.Error(w, "email and code are required", 400)
+	if err := core.Require("code", code); err != nil {
+		res.Error(w, "code is required", 400)
 		return
 	}
 
-	_, err = h.service.VerifyEmailCode(r.Context(), email, strings.ToUpper(code))
+	_, err = h.service.VerifyEmailCode(r.Context(), strings.ToUpper(code))
 	if err != nil {
 		res.Error(w, "invalid or expired verification code", 400)
 		return
@@ -225,16 +224,23 @@ func (h *handler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) SendEmailVerification(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 
-	email := r.URL.Query().Get("email")
-	email = strings.ToLower(strings.TrimSpace(email))
+	userId := ctx.Value(UserIdContextKey)
 
+	user, err := h.service.GetUser(r.Context(), userId.(string))
+	if err != nil {
+		res.Error(w, "user not found", 404)
+		return
+	}
+
+	email := user.Email
 	if email == "" {
 		res.Error(w, "email is required", 400)
 		return
 	}
 
-	err := h.service.SendVerificationEmail(r.Context(), email, db.EmailVerificationReason)
+	err = h.service.SendVerificationEmail(r.Context(), email, db.EmailVerificationReason)
 	if err != nil {
 		res.Error(w, "failed to resend verification code", 500)
 		return
@@ -271,16 +277,15 @@ func (h *handler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := strings.ToLower(strings.TrimSpace(payload.Email))
 	code := strings.TrimSpace(payload.Code)
 	newPassword := payload.NewPassword
 
-	if err := core.Require("email", email, "code", code, "new_password", newPassword); err != nil {
-		res.Error(w, "email, code and new password are required", 400)
+	if err := core.Require("code", code, "new_password", newPassword); err != nil {
+		res.Error(w, "code and new password are required", 400)
 		return
 	}
 
-	err = h.service.PasswordReset(r.Context(), email, strings.ToUpper(code), newPassword)
+	err = h.service.PasswordReset(r.Context(), strings.ToUpper(code), newPassword)
 	if err != nil {
 		res.Error(w, "invalid or expired verification code", 400)
 		return

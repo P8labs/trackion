@@ -21,9 +21,34 @@ export const userHooks = {
     return useAppQuery(q.user.usage());
   },
 
-  useLoginWithToken() {
+  useLoginWithEmail() {
     const m = useMutations();
-    return useAppMutation(m.user.loginWithToken());
+    return useAppMutation(m.user.loginWithEmail());
+  },
+
+  useSignUpWithEmail() {
+    const m = useMutations();
+    return useAppMutation(m.user.signupWithEmail());
+  },
+
+  useResetPassword() {
+    const m = useMutations();
+    return useAppMutation(m.user.resetPassword());
+  },
+
+  useRequestPasswordReset() {
+    const m = useMutations();
+    return useAppMutation(m.user.requestPasswordReset());
+  },
+
+  useRequestEmailVerification() {
+    const m = useMutations();
+    return useAppMutation(m.user.requestEmailVerification());
+  },
+
+  useVerifyEmail() {
+    const m = useMutations();
+    return useAppMutation(m.user.verifyEmail());
   },
 
   useLogout() {
