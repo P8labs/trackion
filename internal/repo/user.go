@@ -21,6 +21,7 @@ var User = struct {
 	Subscription  field.Struct[models.Subscription]
 	Sessions      field.Slice[models.Session]
 	Projects      field.Slice[models.Project]
+	Providers     field.Slice[models.Provider]
 }{
 	ID:            field.Field[uuid.UUID]{}.WithColumn("id"),
 	Email:         field.String{}.WithColumn("email"),
@@ -33,11 +34,12 @@ var User = struct {
 	Subscription:  field.Struct[models.Subscription]{}.WithName("Subscription"),
 	Sessions:      field.Slice[models.Session]{}.WithName("Sessions"),
 	Projects:      field.Slice[models.Project]{}.WithName("Projects"),
+	Providers:     field.Slice[models.Provider]{}.WithName("Providers"),
 }
 
 var Provider = struct {
 	ID         field.Field[uuid.UUID]
-	Type       field.Struct[models.ProviderType]
+	Type       field.String
 	Scope      field.String
 	ProviderID field.String
 	UserID     field.Field[uuid.UUID]
@@ -48,7 +50,7 @@ var Provider = struct {
 	User       field.Struct[models.User]
 }{
 	ID:         field.Field[uuid.UUID]{}.WithColumn("id"),
-	Type:       field.Struct[models.ProviderType]{}.WithName("Type"),
+	Type:       field.String{}.WithColumn("type"),
 	Scope:      field.String{}.WithColumn("scope"),
 	ProviderID: field.String{}.WithColumn("provider_id"),
 	UserID:     field.Field[uuid.UUID]{}.WithColumn("user_id"),
@@ -62,7 +64,8 @@ var Provider = struct {
 var VerificationCode = struct {
 	ID        field.Field[uuid.UUID]
 	UserID    field.Field[uuid.UUID]
-	Code      field.String
+	Reason    field.String
+	Token     field.String
 	ExpiresAt field.Time
 	CreatedAt field.Time
 	UpdatedAt field.Time
@@ -70,7 +73,8 @@ var VerificationCode = struct {
 }{
 	ID:        field.Field[uuid.UUID]{}.WithColumn("id"),
 	UserID:    field.Field[uuid.UUID]{}.WithColumn("user_id"),
-	Code:      field.String{}.WithColumn("code"),
+	Reason:    field.String{}.WithColumn("reason"),
+	Token:     field.String{}.WithColumn("token"),
 	ExpiresAt: field.Time{}.WithColumn("expires_at"),
 	CreatedAt: field.Time{}.WithColumn("created_at"),
 	UpdatedAt: field.Time{}.WithColumn("updated_at"),

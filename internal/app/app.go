@@ -60,23 +60,27 @@ func (app *Application) mount() http.Handler {
 	r.Post("/auth/login/email", authHandler.EmailLogin)
 	r.Post("/auth/signup/email", authHandler.EmailSignUp)
 
-	r.Post("/auth/email/verify/request", authHandler.SendEmailVerification)
-	r.Post("/auth/email/verify", authHandler.VerifyEmail)
-
 	r.Post("/auth/password/reset/request", authHandler.SendPasswordResetEmail)
 	r.Post("/auth/password/reset", authHandler.ResetPassword)
 
 	r.Get("/auth/callback/github", authHandler.GithubCallback)
 	r.Get("/auth/callback/google", authHandler.GoogleCallback)
 
+	// Protected routes
+	r.Group(func(r chi.Router) {
+		r.Use(authMw.AuthMiddleware)
+		r.Post("/auth/email/verify", authHandler.VerifyEmail)
+		r.Post("/auth/email/verify/request", authHandler.SendEmailVerification)
+
+		r.Post("/auth/logout", authHandler.Logout)
+		r.Get("/auth/me", authHandler.Me)
+	})
+
 	r.Route("/api/v1", func(r chi.Router) {
 
 		r.Group(func(r chi.Router) {
 			r.Use(authMw.AuthMiddleware)
 			// all routes here require authentication
-			r.Post("/auth/logout", authHandler.Logout)
-			r.Get("/auth/me", authHandler.Me)
-
 			r.Mount("/billing", billing.Routes(app.db, *app.config))
 			r.Mount("/projects", projects.Routes(app.db, *app.config))
 			r.Mount("/errors", errortracking.Routes(app.db))

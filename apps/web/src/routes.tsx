@@ -3,9 +3,6 @@ import { Navigate } from "react-router-dom";
 import DownloadsPage from "./pages/landing/DownloadsPage";
 import { ChartPieIcon, CogIcon, FolderIcon } from "lucide-react";
 
-const AuthPage = lazy(() =>
-  import("./pages/auth/AuthPage").then((m) => ({ default: m.AuthPage })),
-);
 const AuthSignInPage = lazy(() =>
   import("./pages/auth/AuthSignInPage").then((m) => ({
     default: m.AuthSignInPage,
@@ -155,7 +152,7 @@ export const publicRoutes = [
 ];
 
 export const authRoutes = [
-  { path: "/auth", element: <AuthPage /> },
+  { path: "/auth", element: <Navigate to="/auth/signin" replace /> },
   { path: "/auth/signin", element: <AuthSignInPage /> },
   { path: "/auth/signup", element: <AuthSignUpPage /> },
   { path: "/auth/email/verify", element: <AuthEmailVerifyPage /> },

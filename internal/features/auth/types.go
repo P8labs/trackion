@@ -10,12 +10,10 @@ type EmailAuthRequest struct {
 }
 
 type VerifyEmailRequest struct {
-	Email string `json:"email"`
-	Code  string `json:"code"`
+	Code string `json:"code"`
 }
 
 type ResetPasswordRequest struct {
-	Email       string `json:"email"`
 	Code        string `json:"code"`
 	NewPassword string `json:"new_password"`
 }

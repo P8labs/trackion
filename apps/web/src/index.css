@@ -4,7 +4,7 @@
 @import "@mantine/core/styles.css";
 @import "@mantine/charts/styles.css";
 @import "@mantine/nprogress/styles.css";
-
+@import "@mantine/notifications/styles.css";
 @source "../../../packages/ui/";
 
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
