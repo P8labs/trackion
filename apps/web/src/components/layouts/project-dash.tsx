@@ -6,7 +6,7 @@ import {
   useParams,
 } from "react-router-dom";
 
-import { cn } from "@trackion/ui/lib";
+import { cn } from "@/lib/utils";
 
 import { useDisclosure } from "@mantine/hooks";
 import { userHooks } from "@/hooks/queries/use-user";

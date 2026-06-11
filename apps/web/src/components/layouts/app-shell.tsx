@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { cn } from "@trackion/ui/lib";
+import { cn } from "@/lib/utils";
 import { userHooks } from "@/hooks/queries/use-user";
 import {
   Avatar,
