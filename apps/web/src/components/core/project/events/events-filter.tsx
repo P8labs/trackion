@@ -13,7 +13,7 @@ import {
 } from "@mantine/core";
 
 import { ChevronDown, Filter } from "lucide-react";
-import { cn } from "@trackion/ui/lib";
+import { cn } from "@/lib/utils";
 
 interface AdvancedEventFilterProps {
   eventTypes: Array<{
