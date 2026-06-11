@@ -1,21 +1,23 @@
-import { useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import moment from "moment";
-import {
-  ArrowLeft,
-  AlertCircle,
-  Clock,
-  User,
-  Monitor,
-  Hash,
-  Copy,
-  Check,
-} from "lucide-react";
-import { Button } from "@trackion/ui/button";
-import { Badge } from "@trackion/ui/badge";
-import { Skeleton } from "@trackion/ui/skeleton";
-import type { ErrorOccurrence } from "@trackion/lib/types";
+import { ArrowLeft, AlertCircle } from "lucide-react";
 import { projectHooks } from "@/hooks/queries/use-project";
+import { LoadingView } from "@/Loader";
+import {
+  Anchor,
+  Badge,
+  Box,
+  Button,
+  Center,
+  Code,
+  Divider,
+  Group,
+  SimpleGrid,
+  Stack,
+  Text,
+  ThemeIcon,
+} from "@mantine/core";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 export function ErrorDetailPage() {
   const { fingerprint = "", id: projectId = "" } = useParams<{
@@ -24,7 +26,6 @@ export function ErrorDetailPage() {
   }>();
 
   const navigate = useNavigate();
-  const [copiedFingerprint, setCopiedFingerprint] = useState(false);
 
   const { data: occurrences, isLoading } = projectHooks.useErrorDetail(
     projectId,
@@ -33,14 +34,6 @@ export function ErrorDetailPage() {
 
   const handleBack = () => {
     navigate(`/projects/${projectId}/errors`);
-  };
-
-  const copyFingerprint = async () => {
-    if (fingerprint) {
-      await navigator.clipboard.writeText(fingerprint);
-      setCopiedFingerprint(true);
-      setTimeout(() => setCopiedFingerprint(false), 2000);
-    }
   };
 
   const formatStackTrace = (stackTrace: string) => {
@@ -54,249 +47,199 @@ export function ErrorDetailPage() {
     (occurrences || []).filter((o) => o.user_id).map((o) => o.user_id),
   ).size;
 
-  const compactUrls = useMemo(() => {
-    if (!occurrences || occurrences.length === 0) {
-      return [] as Array<{ url: string; count: number }>;
-    }
-
-    const grouped = new Map<string, number>();
-    for (const occurrence of occurrences) {
-      const url = (occurrence.url || "").trim() || "(no-url)";
-      grouped.set(url, (grouped.get(url) || 0) + 1);
-    }
-
-    return Array.from(grouped.entries())
-      .map(([url, count]) => ({ url, count }))
-      .sort((a, b) => {
-        if (b.count !== a.count) {
-          return b.count - a.count;
-        }
-        return a.url.localeCompare(b.url);
-      })
-      .slice(0, 8);
-  }, [occurrences]);
+  if (isLoading) {
+    return <LoadingView />;
+  }
 
   return (
-    <div className="max-w-7xl mx-auto border-b border-border/60">
-      <section className="px-4 py-3 md:px-6 border-b border-border/60 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-foreground flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            Error Details
-          </h1>
-          {isLoading ? (
-            <Skeleton className="h-5 w-80 mt-2" />
-          ) : firstOccurrence ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {firstOccurrence.message}
-            </p>
-          ) : (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Error fingerprint: {fingerprint}
-            </p>
-          )}
-        </div>
+    <div>
+      <Stack gap={4} mb="xl" px="lg" pt="lg">
+        <Group justify="space-between" align="flex-start">
+          <div>
+            <Text fw={600} size="xl">
+              Error Details
+            </Text>
 
-        <Button
-          variant="outline"
-          className="h-8 px-3 text-xs"
-          onClick={handleBack}
-        >
-          <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-          Back
-        </Button>
-      </section>
+            <Text size="sm" c="dimmed">
+              Inspect error occurrences, stack traces and context.
+            </Text>
+          </div>
 
-      {isLoading ? (
-        <div className="px-4 py-3 md:px-6 space-y-2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-36 w-full" />
-          <Skeleton className="h-48 w-full" />
-        </div>
-      ) : !occurrences || occurrences.length === 0 ? (
-        <section className="px-4 py-10 md:px-6 text-center border-b border-border/60">
-          <AlertCircle className="h-8 w-8 text-muted-foreground/60 mx-auto mb-3" />
-          <h3 className="text-base font-semibold mb-1">No occurrences found</h3>
-          <p className="text-xs text-muted-foreground">
-            This error fingerprint has no recorded occurrences.
-          </p>
-        </section>
+          <Button
+            variant="default"
+            leftSection={<ArrowLeft size={14} />}
+            onClick={handleBack}
+          >
+            Back
+          </Button>
+        </Group>
+
+        {firstOccurrence?.message && (
+          <Code
+            block
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          >
+            {firstOccurrence.message}
+          </Code>
+        )}
+      </Stack>
+
+      {!occurrences || occurrences.length === 0 ? (
+        <Center py={80}>
+          <Stack align="center" gap="xs">
+            <ThemeIcon variant="light" color="red" size={48} radius="xl">
+              <AlertCircle size={22} />
+            </ThemeIcon>
+
+            <Text fw={600}>No occurrences found</Text>
+
+            <Text size="sm" c="dimmed">
+              This error fingerprint has no recorded occurrences.
+            </Text>
+          </Stack>
+        </Center>
       ) : (
-        <>
-          <section className="grid grid-cols-2 lg:grid-cols-4 border-b border-border/60">
-            <div className="px-4 py-3 md:px-6 border-r border-border/60">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Hash className="h-3.5 w-3.5" />
+        <Stack gap={0}>
+          <SimpleGrid cols={{ base: 2, md: 4 }} spacing={0}>
+            <Box p="md">
+              <Text size="xs" c="dimmed" tt="uppercase">
                 Total
-              </p>
-              <p className="mt-1 text-xl font-semibold text-foreground">
+              </Text>
+              <Text fw={700} size="xl">
                 {occurrences.length}
-              </p>
-            </div>
-            <div className="px-4 py-3 md:px-6 border-r border-border/60">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
+              </Text>
+            </Box>
+
+            <Box p="md">
+              <Text size="xs" c="dimmed" tt="uppercase">
                 Last Seen
-              </p>
-              <p className="mt-1 text-sm text-foreground">
+              </Text>
+              <Text size="sm">
                 {moment(occurrences[0].timestamp).format("YYYY-MM-DD HH:mm:ss")}
-              </p>
-            </div>
-            <div className="px-4 py-3 md:px-6 border-r border-border/60">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5" />
+              </Text>
+            </Box>
+
+            <Box p="md">
+              <Text size="xs" c="dimmed" tt="uppercase">
                 Affected Users
-              </p>
-              <p className="mt-1 text-xl font-semibold text-foreground">
-                {uniqueUsers || 0}
-              </p>
-            </div>
-            <div className="px-4 py-3 md:px-6">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground flex items-center gap-1.5">
-                <Monitor className="h-3.5 w-3.5" />
+              </Text>
+              <Text fw={700} size="xl">
+                {uniqueUsers}
+              </Text>
+            </Box>
+
+            <Box p="md">
+              <Text size="xs" c="dimmed" tt="uppercase">
                 Browser
-              </p>
-              <p className="mt-1 text-sm text-foreground truncate">
+              </Text>
+              <Text size="sm" truncate>
                 {firstOccurrence?.browser || "Unknown"}
-              </p>
-            </div>
-          </section>
+              </Text>
+            </Box>
+          </SimpleGrid>
 
-          <section className="px-4 py-3 md:px-6 border-b border-border/60">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <Divider />
+
+          <Box p="md">
+            <Text size="xs" c="dimmed" tt="uppercase" mb="xs">
               Fingerprint
-            </p>
-            <div className="mt-2 flex items-center gap-2 border border-border/60 bg-muted/20 px-3 py-2 font-mono text-xs">
-              <span className="flex-1 truncate">{fingerprint}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyFingerprint}
-                className="h-6 w-6 p-0"
-              >
-                {copiedFingerprint ? (
-                  <Check className="h-3 w-3 text-emerald-600" />
-                ) : (
-                  <Copy className="h-3 w-3" />
-                )}
-              </Button>
-            </div>
-          </section>
+            </Text>
 
-          <section className="px-4 py-3 md:px-6 border-b border-border/60">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-              URLs
-            </p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {compactUrls.map((entry) => (
-                <div
-                  key={entry.url}
-                  className="inline-flex max-w-full items-center gap-2 border border-border/60 bg-muted/20 px-2.5 py-1 text-xs"
-                >
-                  {entry.url === "(no-url)" ? (
-                    <span className="text-muted-foreground">(no-url)</span>
-                  ) : (
-                    <a
-                      href={entry.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="max-w-85 truncate text-foreground hover:text-primary"
-                    >
-                      {entry.url}
-                    </a>
-                  )}
-                  <Badge
-                    variant="outline"
-                    className="h-5 px-1.5 font-mono text-[10px]"
-                  >
-                    {entry.count}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </section>
+            <Group gap="xs" wrap="nowrap">
+              <CodeHighlight className="w-full" code={fingerprint} />
+            </Group>
+          </Box>
 
-          <section className="px-4 py-3 md:px-6 border-b border-border/60">
-            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          <Divider />
+
+          <Box p="md">
+            <Text size="xs" c="dimmed" tt="uppercase" mb="sm">
               Stack Trace
-            </p>
-            <pre className="mt-2 overflow-auto max-h-96 border border-border/60 bg-muted/20 p-3 text-xs leading-5 text-muted-foreground whitespace-pre-wrap wrap-break-word font-mono">
-              {formatStackTrace(firstOccurrence?.stack_trace || "")}
-            </pre>
-          </section>
+            </Text>
 
-          <section className="border-b border-border/60">
-            <div className="grid grid-cols-[120px_minmax(0,1fr)_150px_140px_140px] border-b border-border/60 px-4 py-2 md:px-6 text-[11px] uppercase tracking-wide text-muted-foreground">
-              <span>Timestamp</span>
-              <span>URL</span>
-              <span>User</span>
-              <span>Browser</span>
-              <span>Platform</span>
-            </div>
+            <CodeHighlight
+              code={formatStackTrace(firstOccurrence?.stack_trace || "")}
+            />
+          </Box>
 
-            <div className="divide-y divide-border/60">
-              {occurrences.slice(0, 10).map((occurrence: ErrorOccurrence) => (
-                <div
-                  key={occurrence.id}
-                  className="grid grid-cols-[120px_minmax(0,1fr)_150px_140px_140px] items-start gap-3 px-4 py-2.5 md:px-6 hover:bg-muted/20"
-                >
-                  <p className="text-xs text-muted-foreground pt-0.5">
-                    {moment(occurrence.timestamp).format("YYYY-MM-DD HH:mm:ss")}
-                  </p>
+          <Divider />
 
-                  <div className="min-w-0">
-                    <a
-                      href={occurrence.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-foreground hover:text-primary truncate block"
-                    >
-                      {occurrence.url || "-"}
-                    </a>
-                  </div>
+          <Box p="md">
+            <Text size="xs" c="dimmed" tt="uppercase" mb="md">
+              Recent Occurrences
+            </Text>
 
-                  <div>
+            <Stack gap="xs">
+              {occurrences.slice(0, 10).map((occurrence) => (
+                <Box key={occurrence.id}>
+                  <Group justify="space-between" align="flex-start">
+                    <Stack gap={2} flex={1}>
+                      <Anchor
+                        href={occurrence.url}
+                        target="_blank"
+                        size="sm"
+                        truncate
+                      >
+                        {occurrence.url || "-"}
+                      </Anchor>
+
+                      <Group gap="xs">
+                        <Text size="xs" c="dimmed">
+                          {moment(occurrence.timestamp).format(
+                            "YYYY-MM-DD HH:mm:ss",
+                          )}
+                        </Text>
+
+                        <Badge variant="default" size="xs">
+                          {occurrence.browser || "Unknown"}
+                        </Badge>
+
+                        <Badge variant="default" size="xs">
+                          {occurrence.platform || "Unknown"}
+                        </Badge>
+                      </Group>
+                    </Stack>
+
                     {occurrence.user_id ? (
-                      <Badge variant="outline" className="text-xs font-mono">
-                        {occurrence.user_id}
-                      </Badge>
+                      <Badge variant="light">{occurrence.user_id}</Badge>
                     ) : (
-                      <span className="text-xs text-muted-foreground">
+                      <Text size="xs" c="dimmed">
                         Anonymous
-                      </span>
+                      </Text>
                     )}
-                  </div>
-
-                  <p className="text-xs text-muted-foreground pt-0.5">
-                    {occurrence.browser || "Unknown"}
-                  </p>
-
-                  <p className="text-xs text-muted-foreground pt-0.5">
-                    {occurrence.platform || "Unknown"}
-                  </p>
-                </div>
+                  </Group>
+                </Box>
               ))}
-            </div>
+            </Stack>
 
             {occurrences.length > 10 && (
-              <div className="px-4 py-2.5 md:px-6 text-xs text-muted-foreground border-t border-border/60">
+              <Text mt="md" size="sm" c="dimmed">
                 Showing 10 of {occurrences.length} occurrences
-              </div>
+              </Text>
             )}
-          </section>
+          </Box>
 
           {firstOccurrence?.context &&
             Object.keys(firstOccurrence.context).length > 0 && (
-              <section className="px-4 py-3 md:px-6 border-b border-border/60">
-                <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Additional Context
-                </p>
-                <pre className="mt-2 overflow-auto border border-border/60 bg-muted/20 p-3 text-xs leading-5 text-muted-foreground whitespace-pre-wrap wrap-break-word font-mono">
-                  {JSON.stringify(firstOccurrence.context, null, 2)}
-                </pre>
-              </section>
+              <>
+                <Divider />
+
+                <Box p="md">
+                  <Text size="xs" c="dimmed" tt="uppercase" mb="sm">
+                    Additional Context
+                  </Text>
+
+                  <CodeHighlight
+                    code={JSON.stringify(firstOccurrence.context, null, 2)}
+                    language="json"
+                  />
+                </Box>
+              </>
             )}
-        </>
+        </Stack>
       )}
     </div>
   );

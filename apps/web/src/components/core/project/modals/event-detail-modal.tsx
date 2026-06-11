@@ -14,6 +14,7 @@ import {
 
 import type { RecentEventData } from "@trackion/lib/types";
 import { useMediaQuery } from "@mantine/hooks";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 interface EventDetailsModalProps {
   event: RecentEventData | null;
@@ -191,7 +192,10 @@ export function EventDetailsModal({
           <Divider />
 
           <Section title="Raw Event">
-            <Code block>{JSON.stringify(event, null, 2)}</Code>
+            <CodeHighlight
+              code={JSON.stringify(event, null, 2)}
+              language="json"
+            />
           </Section>
         </Stack>
       </ScrollArea.Autosize>
