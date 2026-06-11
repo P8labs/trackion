@@ -1,234 +1,288 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import {
-  Container,
-  Title,
-  Text,
-  Card,
-  Badge,
-  Button,
-  Group,
-  Stack,
-  SimpleGrid,
-  List,
-  ThemeIcon,
-  Center,
-  Loader,
-  Anchor,
-  Code,
-} from "@mantine/core";
-import { useNavigate } from "react-router-dom";
-import { CheckIcon, XIcon } from "lucide-react";
+  AccountSetting01Icon,
+  AutoConversationsIcon,
+  Folder01Icon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import moment from "moment";
 import { userHooks } from "@/hooks/queries/use-user";
-import { notifications } from "@mantine/notifications";
-import { useGlobalStore } from "@/store";
+import { ErrorBanner } from "@/components/core/error-banner";
+import { LoadingView } from "@/Loader";
+import {
+  Paper,
+  Text,
+  Progress,
+  SimpleGrid,
+  Group,
+  Divider,
+  Badge,
+} from "@mantine/core";
+
+// Helper function to format time remaining into "X years Y months Z days"
+const formatTimeLeft = (endDate: Date | string) => {
+  const now = moment();
+  const end = moment(new Date(endDate));
+
+  if (end.isBefore(now)) return "0 days";
+
+  const years = end.diff(now, "years");
+  now.add(years, "years");
+  const months = end.diff(now, "months");
+  now.add(months, "months");
+  const days = end.diff(now, "days");
+
+  const parts = [];
+  if (years > 0) parts.push(`${years} year${years > 1 ? "s" : ""}`);
+  if (months > 0) parts.push(`${months} month${months > 1 ? "s" : ""}`);
+  if (days > 0) parts.push(`${days} day${days > 1 ? "s" : ""}`);
+
+  if (parts.length === 0) return "Less than a day";
+  return parts.join(" ");
+};
 
 export function SubscriptionsPage() {
-  const navigate = useNavigate();
-  const [selectedPlanType, setSelectedPlanType] = useState<string | null>(null);
-  const logoutMutation = userHooks.useLogout();
-  const { data, isLoading: loading } = userHooks.useSubscriptionPlans();
-  const { mutateAsync, isPending } = userHooks.useSubscribeToPlan();
+  const { data: usage, isLoading, error } = userHooks.useUsage();
 
-  const handleActivate = async () => {
-    if (!selectedPlanType) return;
-    console.log(`Activating plan: ${selectedPlanType}`);
-
-    try {
-      await mutateAsync(selectedPlanType, {
-        onError(error) {
-          console.error("Subscription error:", error);
-          notifications.show({
-            title: "Subscription failed",
-            color: "red",
-            message:
-              error instanceof Error
-                ? error.message
-                : "An unexpected error occurred during subscription.",
-          });
-        },
-      });
-
-      await useGlobalStore.getState().actions.fetchCurrentUser(true);
-      navigate("/projects");
-    } catch (error) {
-      console.error("Error activating subscription:", error);
+  const eventPercent = useMemo(() => {
+    if (!usage || usage.events_limit <= 0) {
+      return 0; // -1 (Unlimited) or 0 will return 0 safely
     }
-  };
+    return Math.min((usage.events_used / usage.events_limit) * 100, 100);
+  }, [usage]);
 
-  const handleLogout = async () => {
-    console.log("Logging out...");
-    try {
-      await logoutMutation.mutateAsync(undefined);
-    } catch (error) {
-      console.error("[SERVER LOGOUT FAILED]", error);
-    } finally {
-      useGlobalStore.getState().actions.reset();
-    }
-    navigate("/auth");
-  };
-
-  if (loading) {
-    return (
-      <Center h="100vh">
-        <Loader color="blue" size="lg" type="bars" />
-      </Center>
-    );
+  if (isLoading) {
+    return <LoadingView />;
   }
 
-  const selectedPlan = data?.plans.find((p) => p.type === selectedPlanType);
+  if (error || !usage) {
+    return <ErrorBanner label="Unable to load usage details." error={error} />;
+  }
+
+  const periodEndLabel = moment(new Date(usage.current_period_end)).format(
+    "MM/DD/YYYY",
+  );
+  const lastResetLabel = moment(new Date(usage.last_usage_reset)).format(
+    "MM/DD/YYYY",
+  );
+
+  const timeLeftString = formatTimeLeft(usage.current_period_end);
+
+  const isEventsUnlimited = usage.events_limit === -1;
+  const isProjectsUnlimited = usage.projects_limit === -1;
+  const isConfigsUnlimited =
+    usage.config_keys_limit === -1 || usage.config_unlimited;
 
   return (
-    <Container
-      size="sm"
-      py="sm"
-      className="flex flex-col justify-center min-h-screen items-center"
-    >
-      <Stack align="center" mb={40}>
-        <Title order={1} c="gray.2">
-          Choose your plan
-        </Title>
-        <Text c="dimmed" size="lg" ta="center" maw={600}>
-          Select the perfect plan for your application's needs. You can always
-          upgrade or downgrade later.
-        </Text>
-      </Stack>
-
-      <SimpleGrid
-        cols={{
-          base: 1,
-          sm: data?.plans.length === 1 ? 1 : 2,
-          md: data?.plans.length,
-        }}
-        spacing="lg"
-        mb={50}
-      >
-        {data?.plans.map((plan) => {
-          const isSelected = selectedPlanType === plan.type;
-
-          return (
-            <Card
-              key={plan.type}
-              shadow="sm"
-              padding="xl"
-              radius="md"
-              withBorder
-              onClick={() => setSelectedPlanType(plan.type)}
-              style={{
-                cursor: "pointer",
-                borderColor: isSelected ? "#339AF0" : "#373A40",
-                transition: "border-color 0.2s ease",
-              }}
-            >
-              <Group justify="space-between" mb="xs">
-                <Text fw={700} size="xl" c="gray.1">
-                  {plan.title}
-                </Text>
-                {plan.type === "pro" && (
-                  <Badge variant="light" color="blue">
-                    Popular
-                  </Badge>
-                )}
-              </Group>
-
-              <Text c="dimmed" size="sm" mb="md">
-                {plan.description}
+    <section className="mx-auto h-full">
+      <Paper radius="xs" className="overflow-hidden">
+        <div className="p-5 md:p-6 bg-muted/30">
+          <SimpleGrid cols={{ base: 2, sm: 4 }} spacing="lg">
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Plan
               </Text>
-
-              <Group align="flex-end" gap="xs" mb="xl">
-                <Text fz={40} fw={700} lh={1} c="gray.1">
-                  {plan.price}
-                </Text>
-                {plan.price !== "$0" && (
-                  <Text fz="sm" c="dimmed" mb={5}>
-                    /month
-                  </Text>
-                )}
-              </Group>
-
-              <List
-                spacing="sm"
-                size="sm"
-                center
-                icon={
-                  <ThemeIcon color="blue" size={20} radius="xl">
-                    <CheckIcon size={14} />
-                  </ThemeIcon>
-                }
+              <Badge mt="xs" variant="light" size="lg" className="capitalize">
+                {usage.plan}
+              </Badge>
+            </div>
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Status
+              </Text>
+              <Badge
+                mt="xs"
+                color={usage.status === "active" ? "green" : "gray"}
+                variant="dot"
+                size="lg"
+                className="capitalize"
               >
-                <List.Item>
-                  <b>
-                    {plan.limits.monthly_events == -1
-                      ? "Unlimited"
-                      : plan.limits.monthly_events.toLocaleString()}
-                  </b>{" "}
-                  Events/mo
-                </List.Item>
-                <List.Item>
-                  <b>
-                    {plan.limits.max_projects == -1
-                      ? "Unlimited"
-                      : plan.limits.max_projects}
-                  </b>{" "}
-                  Projects
-                </List.Item>
-                <List.Item>
-                  <b>
-                    {plan.limits.error_retention == -1
-                      ? "Unlimited"
-                      : plan.limits.error_retention}
-                  </b>{" "}
-                  Day Retention
-                </List.Item>
+                {usage.status}
+              </Badge>
+            </div>
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Period Ends
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
+                {periodEndLabel}
+              </Text>
+            </div>
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Last Reset
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
+                {lastResetLabel}
+              </Text>
+            </div>
+          </SimpleGrid>
+          <Text mt="md" size="xs" c="dimmed">
+            Current billing window has{" "}
+            <Text component="span" fw={600} c="foreground">
+              {timeLeftString}
+            </Text>{" "}
+            remaining.
+          </Text>
+        </div>
 
-                {plan.limits.supports_rollout ? (
-                  <List.Item>Feature Rollouts</List.Item>
-                ) : (
-                  <List.Item
-                    c="dimmed"
-                    icon={
-                      <ThemeIcon
-                        color="gray"
-                        variant="light"
-                        size={20}
-                        radius="xl"
-                      >
-                        <XIcon size={14} />
-                      </ThemeIcon>
-                    }
-                  >
-                    No Feature Rollouts
-                  </List.Item>
-                )}
-              </List>
-            </Card>
-          );
-        })}
-      </SimpleGrid>
+        <Divider />
 
-      <Stack align="center" mt="auto">
-        <Button
-          size="lg"
-          w={{ base: "100%", sm: 400 }}
-          onClick={handleActivate}
-          disabled={!selectedPlanType || isPending}
-          color="blue.7"
-        >
-          {selectedPlan ? `Activate ${selectedPlan.title}` : "Select a Plan"}
-        </Button>
+        <div className="p-5 md:p-6">
+          <Group justify="space-between" mb="xs">
+            <Group gap="sm" c="dimmed">
+              <HugeiconsIcon icon={AutoConversationsIcon} size={18} />
+              <Text size="sm" fw={500}>
+                Events
+              </Text>
+            </Group>
+            <Text size="sm" fw={600}>
+              {usage.events_used.toLocaleString()} /{" "}
+              {isEventsUnlimited
+                ? "Unlimited"
+                : usage.events_limit.toLocaleString()}
+            </Text>
+          </Group>
 
-        <Text size="sm" c="dimmed">
-          Logged into <Code>{useGlobalStore.getState().user?.email}</Code>.{" "}
-          <Anchor
-            component="button"
-            disabled={isPending}
-            onClick={handleLogout}
-            c="#22b8cf"
-            fw={500}
-          >
-            Logout here
-          </Anchor>
-        </Text>
-      </Stack>
-    </Container>
+          {!isEventsUnlimited && (
+            <Progress
+              value={eventPercent}
+              size="md"
+              radius="xl"
+              color={eventPercent > 90 ? "red" : "blue"}
+            />
+          )}
+
+          <Group justify="space-between" mt="xs">
+            <Text size="xs" c="dimmed">
+              {isEventsUnlimited
+                ? "Unlimited plan"
+                : `Used ${eventPercent.toFixed(1)}%`}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {isEventsUnlimited
+                ? "No event cap"
+                : `${usage.events_remaining.toLocaleString()} remaining`}
+            </Text>
+          </Group>
+        </div>
+
+        <Divider />
+
+        <div className="p-5 md:p-6">
+          <Group justify="space-between" mb="xs">
+            <Group gap="sm" c="dimmed">
+              <HugeiconsIcon icon={Folder01Icon} size={18} />
+              <Text size="sm" fw={500}>
+                Projects
+              </Text>
+            </Group>
+            <Text size="sm" fw={600}>
+              {usage.projects_used} /{" "}
+              {isProjectsUnlimited ? "Unlimited" : usage.projects_limit}
+            </Text>
+          </Group>
+
+          {!isProjectsUnlimited && (
+            <Progress
+              value={usage.projects_used_percent}
+              size="md"
+              radius="xl"
+              color={usage.projects_used_percent > 90 ? "red" : "blue"}
+            />
+          )}
+
+          <Group justify="space-between" mt="xs">
+            <Text size="xs" c="dimmed">
+              {isProjectsUnlimited
+                ? "Unlimited plan"
+                : `Used ${usage.projects_used_percent.toFixed(1)}%`}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {isProjectsUnlimited
+                ? "No project cap"
+                : `${usage.projects_remaining} slots remaining`}
+            </Text>
+          </Group>
+        </div>
+
+        <Divider />
+
+        <div className="p-5 md:p-6">
+          <Group justify="space-between" mb="xs">
+            <Group gap="sm" c="dimmed">
+              <HugeiconsIcon icon={AccountSetting01Icon} size={18} />
+              <Text size="sm" fw={500}>
+                Remote Config Keys
+              </Text>
+            </Group>
+            <Text size="sm" fw={600}>
+              {usage.configs_used} /{" "}
+              {isConfigsUnlimited ? "Unlimited" : usage.config_keys_limit}
+            </Text>
+          </Group>
+
+          {!isConfigsUnlimited && (
+            <Progress
+              value={usage.config_keys_used_percent}
+              size="md"
+              radius="xl"
+              color={usage.config_keys_used_percent > 90 ? "red" : "blue"}
+            />
+          )}
+
+          <Group justify="space-between" mt="xs">
+            <Text size="xs" c="dimmed">
+              {isConfigsUnlimited
+                ? "Unlimited plan"
+                : `Used ${usage.config_keys_used_percent.toFixed(1)}%`}
+            </Text>
+            <Text size="xs" c="dimmed">
+              {isConfigsUnlimited
+                ? "No key cap"
+                : `${usage.config_keys_remaining} keys remaining`}
+            </Text>
+          </Group>
+        </div>
+
+        <Divider />
+
+        <div className="p-5 md:p-6">
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Feature Flags
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
+                {usage.feature_flags_used} active
+              </Text>
+            </div>
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Error Retention
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
+                {usage.error_retention_days === -1
+                  ? "Unlimited"
+                  : `${usage.error_retention_days} days`}
+              </Text>
+            </div>
+            <div>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Rollout Support
+              </Text>
+              <Text
+                mt="xs"
+                size="sm"
+                fw={500}
+                c={usage.supports_rollout ? "green" : "dimmed"}
+              >
+                {usage.supports_rollout ? "Enabled" : "Not available"}
+              </Text>
+            </div>
+          </SimpleGrid>
+        </div>
+      </Paper>
+    </section>
   );
 }

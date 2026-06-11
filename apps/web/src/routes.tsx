@@ -9,11 +9,18 @@ const AuthSignInPage = lazy(() =>
   })),
 );
 
+const SubscribePage = lazy(() =>
+  import("./pages/subscriptions/SubscribePage").then((m) => ({
+    default: m.SubscribePage,
+  })),
+);
+
 const SubscriptionsPage = lazy(() =>
   import("./pages/subscriptions/SubscriptionsPage").then((m) => ({
     default: m.SubscriptionsPage,
   })),
 );
+
 const AuthSignUpPage = lazy(() =>
   import("./pages/auth/AuthSignUpPage").then((m) => ({
     default: m.AuthSignUpPage,
@@ -84,11 +91,7 @@ const SettingsPage = lazy(() =>
     default: m.SettingsPage,
   })),
 );
-const UsagePage = lazy(() =>
-  import("./pages/usage/UsagePage").then((m) => ({
-    default: m.UsagePage,
-  })),
-);
+
 const ErrorListPage = lazy(() =>
   import("./pages/projects/errors/ErrorListPage").then((m) => ({
     default: m.ErrorListPage,
@@ -129,8 +132,7 @@ export const workspaceRoutes = [
   { path: "/projects", element: <ProjectsPage /> },
   { path: "/projects/new", element: <CreateProjectPage /> },
   { path: "/settings", element: <SettingsPage /> },
-  { path: "/usage", element: <UsagePage /> },
-  { path: "*", element: <NotFoundPage /> },
+  { path: "/subscriptions", element: <SubscriptionsPage /> },
 ];
 
 export const projectRoutes = [
@@ -155,6 +157,7 @@ export const publicRoutes = [
   { path: "/about", element: <AboutPage /> },
   { path: "/terms", element: <TermsPage /> },
   { path: "/privacy", element: <PrivacyPage /> },
+  { path: "*", element: <NotFoundPage /> },
 ];
 
 export const authRoutes = [
@@ -164,11 +167,11 @@ export const authRoutes = [
   { path: "/auth/email/verify", element: <AuthEmailVerifyPage /> },
   { path: "/auth/email/recovery", element: <AuthEmailRecoveryPage /> },
   { path: "/auth/callback", element: <AuthCallbackPage /> },
-  { path: "/subscriptions", element: <SubscriptionsPage /> },
+  { path: "/subscribe", element: <SubscribePage /> },
 ];
 
 export const workspaceLinks = [
   { path: "/projects", name: "Projects", icon: FolderIcon },
-  { path: "/usage", name: "Usage", icon: ChartPieIcon },
+  { path: "/subscriptions", name: "Subscriptions", icon: ChartPieIcon },
   { path: "/settings", name: "Settings", icon: CogIcon },
 ];
