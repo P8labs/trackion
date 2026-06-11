@@ -15,6 +15,7 @@ import { LogoutModal } from "../core/modals/logout-modal";
 import { useDisclosure } from "@mantine/hooks";
 import { Breadcrumb } from "./breadcrumbs";
 import { ThemeToggle } from "./theme-toggle";
+import { useGlobalStore } from "@/store";
 
 export function AppShell({
   links,
@@ -27,7 +28,7 @@ export function AppShell({
   const [sidebarOpened, { toggle: sideBarToggle }] = useDisclosure(false);
   const [opened, { close, open }] = useDisclosure(false);
   const { data: serverHealth } = userHooks.useServerHealth();
-  const { data: user, isLoading: userLoading } = userHooks.useUser();
+  const user = useGlobalStore((state) => state.user);
 
   const serverVersion = serverHealth?.server_version
     ? `v${serverHealth.server_version}`
@@ -112,7 +113,7 @@ export function AppShell({
             <Menu>
               <Menu.Target>
                 <Avatar
-                  src={userLoading ? "" : user?.avatar_url || ""}
+                  src={user?.avatar_url || ""}
                   size="sm"
                   name={profileName}
                   className="cursor-pointer"
