@@ -1,14 +1,14 @@
 import { Button } from "@trackion/ui/button";
 import { Field, FieldError, FieldGroup, FieldLabel } from "@trackion/ui/field";
 import { Input } from "@trackion/ui/input";
-import { userHooks } from "@/hooks/queries/use-user";
+// import { userHooks } from "@/hooks/queries/use-user";
 import { SERVER_URL } from "@/lib/constants";
 import { cn } from "@trackion/ui/lib";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ChevronDownIcon,
   ChevronUpIcon,
-  Loader2Icon,
+  // Loader2Icon,
   LockIcon,
   ServerIcon,
 } from "lucide-react";
@@ -36,7 +36,7 @@ export function SelfHostAuthForm() {
     },
   });
 
-  const loginMutation = userHooks.useLoginWithToken();
+  // const loginMutation = userHooks.useLoginWithToken();
 
   // const handleTokenLogin = async (values: AuthFormValues) => {
   //   console.log("Logging in with server URL:", values.serverUrl);
@@ -91,7 +91,7 @@ export function SelfHostAuthForm() {
             <FieldGroup>
               <Controller
                 name="serverUrl"
-                disabled={loginMutation.isPending}
+                // disabled={loginMutation.isPending}
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
@@ -121,8 +121,8 @@ export function SelfHostAuthForm() {
 
               <Controller
                 name="adminToken"
+                // disabled={loginMutation.isPending}
                 control={form.control}
-                disabled={loginMutation.isPending}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel
@@ -149,7 +149,7 @@ export function SelfHostAuthForm() {
               />
             </FieldGroup>
 
-            {loginMutation.isError && (
+            {/* {loginMutation.isError && (
               <div className="border border-destructive/40 bg-destructive/10 px-3 py-2 text-destructive">
                 <p className="text-sm">
                   {loginMutation.error instanceof Error
@@ -157,22 +157,22 @@ export function SelfHostAuthForm() {
                     : "Login failed"}
                 </p>
               </div>
-            )}
+            )} */}
 
             <Button
               type="submit"
-              disabled={loginMutation.isPending}
+              // disabled={loginMutation.isPending}
               variant="outline"
               className="h-10 w-full cursor-pointer justify-center rounded-md border-border/60 bg-background text-sm font-medium hover:bg-muted/20 dark:bg-muted/20 dark:hover:bg-muted/35"
             >
-              {loginMutation.isPending ? (
+              {/* {loginMutation.isPending ? (
                 <>
                   <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
                   Logging in...
                 </>
-              ) : (
-                "Login with admin token"
-              )}
+              ) : ( */}
+              "Login with admin token"
+              {/* )} */}
             </Button>
           </form>
         </div>
