@@ -4,13 +4,14 @@ import { useGlobalStore } from "./store";
 import { Loader } from "@mantine/core";
 
 const VERIFY_EMAIL_PATH = "/auth/email/verify";
-const SUBSCRIPTION_PATH = "/subscriptions";
+const SUBSCRIBE_PATH = "/subscribe";
 const DASHBOARD_PATH = "/projects";
 
 const protectedRoutePrefixes = [
   "/projects",
   "/settings",
   "/usage",
+  "/subscribe",
   "/subscriptions",
 ];
 const publicOnlyRoutePrefixes = ["/auth"];
@@ -63,7 +64,7 @@ export function RouteMiddleware({ children }: { children: React.ReactNode }) {
   );
 
   const isVerifyEmailRoute = location.pathname.startsWith(VERIFY_EMAIL_PATH);
-  const isSubscriptionRoute = location.pathname.startsWith(SUBSCRIPTION_PATH);
+  const isSubscribeRoute = location.pathname.startsWith(SUBSCRIBE_PATH);
 
   // --------------------------------------------------------
   // Unauthenticated Flow
@@ -81,7 +82,7 @@ export function RouteMiddleware({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------
 
   // if subscribed but trying to access subscription page, redirect to dashboard
-  if (user.is_active_subscription && isSubscriptionRoute) {
+  if (user.is_active_subscription && isSubscribeRoute) {
     return <Navigate to={DASHBOARD_PATH} replace />;
   }
 
@@ -95,8 +96,8 @@ export function RouteMiddleware({ children }: { children: React.ReactNode }) {
 
   // Priority 2: Active Subscription
   if (!user.is_active_subscription) {
-    if (!isSubscriptionRoute) {
-      return <Navigate to={SUBSCRIPTION_PATH} replace />;
+    if (!isSubscribeRoute) {
+      return <Navigate to={SUBSCRIBE_PATH} replace />;
     }
     return <>{children}</>;
   }

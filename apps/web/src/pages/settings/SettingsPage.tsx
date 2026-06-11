@@ -1,11 +1,22 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@trackion/ui/avatar";
 import moment from "moment";
 import { WEB_VERSION } from "@/lib/constants";
-import { PlusDecor, PLine } from "@trackion/ui/decoration";
 import { userHooks } from "@/hooks/queries/use-user";
+import {
+  Paper,
+  Text,
+  Avatar,
+  Group,
+  Divider,
+  SimpleGrid,
+  Badge,
+  Anchor,
+} from "@mantine/core";
+import { useGlobalStore } from "@/store";
+import DeviceInfo from "./components/DeviceInfo";
+import Updater from "./components/Updater";
 
 export function SettingsPage() {
-  const { data: currentUser } = userHooks.useUser();
+  const currentUser = useGlobalStore((state) => state.user);
 
   const {
     data: health,
@@ -20,141 +31,159 @@ export function SettingsPage() {
     .join("");
 
   return (
-    <section className="relative max-w-4xl mx-auto py-4 h-full">
-      <PLine />
-      <div className="px-4 md:px-6 py-6 relative border-b">
-        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
-          Settings
-        </p>
-        <h1 className="text-xl font-medium mt-1">Workspace configuration</h1>
-        <PlusDecor />
-      </div>
-
-      <div className="border-border/60">
-        <div className="px-4 md:px-6 py-6 relative border-b">
-          <p className="text-sm font-medium mb-4">Profile</p>
+    <section>
+      <Paper className="overflow-hidden">
+        <div className="p-5 md:p-6">
+          <Text size="sm" fw={600} mb="md">
+            Profile
+          </Text>
 
           {currentUser ? (
-            <div className="flex items-center gap-4">
-              <Avatar data-size="lg">
-                <AvatarImage src={currentUser.avatar_url} />
-                <AvatarFallback>{userInitials || "TR"}</AvatarFallback>
+            <Group wrap="nowrap" gap="lg">
+              <Avatar
+                src={currentUser.avatar_url}
+                size="xl"
+                radius="md"
+                color="blue"
+              >
+                {userInitials || "TR"}
               </Avatar>
 
-              <div className="min-w-0">
-                <p className="text-sm font-medium">
+              <div>
+                <Text fw={600} size="lg">
                   {currentUser.name || "Trackion User"}
-                </p>
-                <p className="text-xs text-muted-foreground">
+                </Text>
+                <Text c="dimmed" size="sm">
                   {currentUser.email || "No email"}
-                </p>
+                </Text>
 
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span>Joined {moment(currentUser.created_at).fromNow()}</span>
-                </div>
+                <Text size="xs" c="dimmed" mt="sm">
+                  Joined {moment(currentUser.created_at).fromNow()}
+                </Text>
               </div>
-            </div>
+            </Group>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <Text size="sm" c="dimmed">
               No profile available for this mode.
-            </p>
+            </Text>
           )}
-          <PlusDecor />
         </div>
 
-        <div className="px-4 md:px-6 py-6 relative border-b">
-          <p className="text-sm font-medium mb-4">System</p>
+        <Divider />
 
-          <div className="grid sm:grid-cols-2 gap-4 text-sm">
+        <div className="p-5 md:p-6">
+          <Text size="sm" fw={600} mb="md">
+            System
+          </Text>
+
+          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg">
             <div>
-              <p className="text-muted-foreground">Server Status</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    healthError ? "bg-red-500" : "bg-emerald-500"
-                  }`}
-                />
-                <span className="text-foreground">
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Server Status
+              </Text>
+              <Group gap="xs" mt="xs">
+                <Badge
+                  color={healthError ? "red" : "green"}
+                  variant="dot"
+                  size="lg"
+                >
                   {healthLoading
                     ? "Checking..."
                     : healthError
                       ? "Down"
                       : "Operational"}
-                </span>
-              </div>
+                </Badge>
+              </Group>
             </div>
 
             <div>
-              <p className="text-muted-foreground">Server Version</p>
-              <p className="text-foreground mt-1">
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Server Version
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
                 {health?.server_version || "Unknown"}
-              </p>
+              </Text>
             </div>
 
             <div>
-              <p className="text-muted-foreground">Web Version</p>
-              <p className="text-foreground mt-1">{WEB_VERSION}</p>
+              <Text size="xs" tt="uppercase" fw={600} c="dimmed">
+                Web Version
+              </Text>
+              <Text mt="xs" size="sm" fw={500}>
+                {WEB_VERSION}
+              </Text>
             </div>
-          </div>
-          <PlusDecor />
+          </SimpleGrid>
         </div>
 
-        <div className="px-4 md:px-6 py-6 border-b border-border/60">
-          <p className="text-sm font-medium mb-4">Data & Privacy</p>
+        <Divider />
+        <DeviceInfo />
 
-          <div className="space-y-2 text-sm text-muted-foreground max-w-xl">
-            <p>
-              All tracking data is stored on your server if using the
-              self-hosted version.
-              <br />
-              On delete of projects or events, data is will delete permanently
-              and cannot be recovered.
-            </p>
-          </div>
+        <Divider />
+        <Updater />
+        <Divider />
+
+        <div className="p-5 md:p-6">
+          <Text size="sm" fw={600} mb="xs">
+            Data & Privacy
+          </Text>
+          <Text size="sm" c="dimmed" maw={600} lh={1.6}>
+            All tracking data is stored on your server if using the self-hosted
+            version. On deletion of projects or events, data will be deleted
+            permanently and cannot be recovered.
+          </Text>
         </div>
-        <div className="px-4 md:px-6 py-6 border-t border-border/60">
-          <p className="text-sm font-medium mb-4">Resources</p>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-              <a
+
+        <Divider />
+
+        <div className="p-5 md:p-6 bg-muted/10">
+          <Text size="sm" fw={600} mb="md">
+            Resources
+          </Text>
+          <Group justify="space-between" align="flex-end">
+            <Group gap="lg">
+              <Anchor
                 href="/docs/"
                 target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
+                size="sm"
+                c="dimmed"
+                className="hover:text-foreground transition-colors"
               >
                 Documentation
-              </a>
-
-              <a
+              </Anchor>
+              <Anchor
                 href="/docs/quick-start/"
                 target="_blank"
-                rel="noreferrer"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
+                size="sm"
+                c="dimmed"
+                className="hover:text-foreground transition-colors"
               >
                 Quick Start
-              </a>
-
-              <a
+              </Anchor>
+              <Anchor
                 href="/terms"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
+                size="sm"
+                c="dimmed"
+                className="hover:text-foreground transition-colors"
               >
                 Terms
-              </a>
-
-              <a
+              </Anchor>
+              <Anchor
                 href="/privacy"
-                className="text-muted-foreground hover:text-foreground transition hover:underline"
+                size="sm"
+                c="dimmed"
+                className="hover:text-foreground transition-colors"
               >
                 Privacy
-              </a>
-            </div>
+              </Anchor>
+            </Group>
 
-            <p className="text-xs text-muted-foreground">
+            <Text size="xs" c="dimmed" mt={{ base: "md", sm: 0 }}>
               © {new Date().getFullYear()} Trackion. Built at P8labs.
-            </p>
-          </div>
+            </Text>
+          </Group>
         </div>
-      </div>
+      </Paper>
     </section>
   );
 }
