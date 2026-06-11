@@ -35,14 +35,15 @@ const (
 
 type Provider struct {
 	ID         uuid.UUID `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	Type       string    `gorm:"column:type" json:"type"`
+	Type       string    `gorm:"column:type;uniqueIndex:idx_user_provider_type" json:"type"`
 	Scope      *string   `gorm:"column:scope" json:"scope,omitempty"`
 	ProviderID *string   `gorm:"column:provider_id" json:"provider_id,omitempty"`
-	UserID     uuid.UUID `gorm:"column:user_id;unique" json:"user_id"`
-	Hash       string    `gorm:"column:hash" json:"-"`
-	Verified   bool      `gorm:"column:verified" json:"verified"`
-	CreatedAt  time.Time `gorm:"column:created_at" json:"created_at"`
-	UpdatedAt  time.Time `gorm:"column:updated_at" json:"updated_at"`
+	// 2. Remove 'unique' and add the matching uniqueIndex tag to UserID
+	UserID    uuid.UUID `gorm:"column:user_id;uniqueIndex:idx_user_provider_type" json:"user_id"`
+	Hash      string    `gorm:"column:hash" json:"-"`
+	Verified  bool      `gorm:"column:verified" json:"verified"`
+	CreatedAt time.Time `gorm:"column:created_at" json:"created_at"`
+	UpdatedAt time.Time `gorm:"column:updated_at" json:"updated_at"`
 
 	User User `gorm:"foreignKey:UserID;references:ID;constraint:OnDelete:CASCADE" json:"-"`
 }

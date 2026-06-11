@@ -345,26 +345,29 @@ func (s *Service) VerifyEmailCode(ctx context.Context, code string) (string, err
 
 	return provider.UserID.String(), nil
 }
-
 func (s *Service) SignInWithOAuth(ctx context.Context, provider, externalID, email, name, avatarURL string) (uuid.UUID, error) {
 
 	user, err := gorm.G[db.User](s.db).Where(repo.User.Email.Eq(email)).First(ctx)
 	if err != nil {
-
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return uuid.Nil, err
 		}
 
 		user = db.User{
 			Email:     email,
-			Name:      core.StrPtr(name),
-			AvatarUrl: core.StrPtr(avatarURL),
+			Name:      &name,
+			AvatarUrl: &avatarURL,
 		}
 
 		err := gorm.G[db.User](s.db).Create(ctx, &user)
 		if err != nil {
 			return uuid.Nil, err
 		}
+	} else {
+		s.db.WithContext(ctx).Model(&db.User{}).Where("id = ?", user.ID).Updates(map[string]any{
+			"name":       name,
+			"avatar_url": avatarURL,
+		})
 	}
 
 	providerType, err := db.ParseProvider(provider)
@@ -372,13 +375,36 @@ func (s *Service) SignInWithOAuth(ctx context.Context, provider, externalID, ema
 		return uuid.Nil, err
 	}
 
-	providerRecord := db.Provider{
-		Type:       providerType,
-		ProviderID: core.StrPtr(externalID),
-		UserID:     user.ID,
+	existingProvider, err := gorm.G[db.Provider](s.db).
+		Where(repo.Provider.UserID.Eq(user.ID)).
+		Where(repo.Provider.Type.Eq(providerType)).
+		First(ctx)
+
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			providerRecord := db.Provider{
+				Type:       providerType,
+				ProviderID: &externalID,
+				UserID:     user.ID,
+				Verified:   true,
+			}
+
+			err = gorm.G[db.Provider](s.db).Create(ctx, &providerRecord)
+			if err != nil {
+				return uuid.Nil, err
+			}
+			return user.ID, nil
+		}
+		return uuid.Nil, err
 	}
 
-	err = gorm.G[db.Provider](s.db).Create(ctx, &providerRecord)
+	err = s.db.WithContext(ctx).Model(&db.Provider{}).
+		Where("id = ?", existingProvider.ID).
+		Updates(map[string]any{
+			"provider_id": externalID,
+			"verified":    true,
+		}).Error
+
 	if err != nil {
 		return uuid.Nil, err
 	}
