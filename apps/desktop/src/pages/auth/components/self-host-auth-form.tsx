@@ -14,9 +14,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
 import z from "zod";
-import { useGlobal } from "@/providers/global-provider";
 
 const authSchema = z.object({
   serverUrl: z.url("Enter a valid server URL."),
@@ -26,8 +24,8 @@ const authSchema = z.object({
 type AuthFormValues = z.infer<typeof authSchema>;
 
 export function SelfHostAuthForm() {
-  const navigate = useNavigate();
-  const { login, setupServerUrl } = useGlobal();
+  // const navigate = useNavigate();
+  // const { login, setupServerUrl } = useGlobal();
   const [showSelfHostInputs, setShowSelfHostInputs] = useState(false);
 
   const form = useForm<AuthFormValues>({
@@ -40,16 +38,16 @@ export function SelfHostAuthForm() {
 
   const loginMutation = userHooks.useLoginWithToken();
 
-  const handleTokenLogin = async (values: AuthFormValues) => {
-    console.log("Logging in with server URL:", values.serverUrl);
-    setupServerUrl(values.serverUrl);
-    await loginMutation.mutateAsync(values.adminToken.trim(), {
-      onSuccess: ({ token }) => {
-        login(token);
-        navigate("/projects");
-      },
-    });
-  };
+  // const handleTokenLogin = async (values: AuthFormValues) => {
+  //   console.log("Logging in with server URL:", values.serverUrl);
+  //   setupServerUrl(values.serverUrl);
+  //   await loginMutation.mutateAsync(values.adminToken.trim(), {
+  //     onSuccess: ({ token }) => {
+  //       login(token);
+  //       navigate("/projects");
+  //     },
+  //   });
+  // };
 
   return (
     <div className="w-full rounded-md rounded-t-none border border-t-0 border-border/60 bg-background text-left transition-colors hover:bg-muted/20 dark:bg-muted/15 dark:hover:bg-muted/30">
@@ -86,7 +84,7 @@ export function SelfHostAuthForm() {
       >
         <div className="overflow-hidden px-3 py-2.5">
           <form
-            onSubmit={form.handleSubmit(handleTokenLogin)}
+            // onSubmit={form.handleSubmit(handleTokenLogin)}
             className="space-y-4"
             id="login-form"
           >

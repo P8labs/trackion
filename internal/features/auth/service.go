@@ -22,8 +22,6 @@ type Service struct {
 	mail *mail.Service
 }
 
-const defaultMonthlyEventLimit int = 10000
-
 func NewService(db *gorm.DB, cfg config.Config) *Service {
 	return &Service{
 		db:   db,
@@ -48,13 +46,37 @@ func (s *Service) SignUpWithEmail(ctx context.Context, email, password string) (
 		Type:     db.ProviderEmail,
 		Hash:     hashedPassword,
 		Verified: false,
-		User: db.User{
-			Email: email,
-		},
 	}
 
-	err = gorm.G[db.Provider](s.db).Create(ctx, &provider)
+	user := db.User{
+		Email: email,
+	}
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		if err := gorm.G[db.User](tx).Create(ctx, &user); err != nil {
+			if errors.Is(err, gorm.ErrDuplicatedKey) {
+				return errors.New("email already in use")
+			}
+			if strings.Contains(err.Error(), "uni_users_email") {
+				return errors.New("email already in use")
+			}
+
+			return err
+		}
+
+		provider.UserID = user.ID
+
+		if err := gorm.G[db.Provider](tx).Create(ctx, &provider); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
 	if err != nil {
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", errors.New("email already in use")
+		}
 		return "", err
 	}
 
@@ -314,14 +336,48 @@ func (s *Service) SignInWithOAuth(ctx context.Context, provider, externalID, ema
 	return user.ID.String(), nil
 }
 
-func (s *Service) GetUser(ctx context.Context, userID string) (db.User, error) {
+func (s *Service) GetUser(ctx context.Context, userID string) (UserResponse, error) {
 
-	user, err := gorm.G[db.User](s.db).Preload("providers", func(db gorm.PreloadBuilder) error {
-		db.Select("type", "verified", "created_at").Where(repo.Provider.UserID.Eq(uuid.MustParse(userID)))
-		return nil
-	}).Where(repo.User.ID.Eq(uuid.MustParse(userID))).First(ctx)
+	user, err := gorm.G[db.User](s.db).
+		Preload("subscriptions", func(db gorm.PreloadBuilder) error {
+			db.Where(repo.Subscription.UserID.Eq(uuid.MustParse(userID)))
+			return nil
+		}).
+		Preload("providers", func(db gorm.PreloadBuilder) error {
+			db.Select("type", "verified", "created_at").Where(repo.Provider.UserID.Eq(uuid.MustParse(userID)))
+			return nil
+		}).Where(repo.User.ID.Eq(uuid.MustParse(userID))).First(ctx)
 
-	return user, err
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return UserResponse{}, errors.New("user not found")
+		}
+		return UserResponse{}, err
+	}
+
+	isEmailVerified := false
+	for _, p := range user.Providers {
+		if p.Type == db.ProviderEmail && p.Verified {
+			isEmailVerified = true
+			break
+		}
+	}
+
+	isActiveSubscription := false
+	if user.Subscription.Status == "active" && user.Subscription.CurrentPeriodEnd.After(time.Now()) {
+		isActiveSubscription = true
+	}
+
+	return UserResponse{
+		ID:                   user.ID.String(),
+		Email:                user.Email,
+		Name:                 user.Name,
+		AvatarUrl:            user.AvatarUrl,
+		CreatedAt:            user.CreatedAt.String(),
+		UpdatedAt:            user.UpdatedAt.String(),
+		IsEmailVerified:      isEmailVerified,
+		IsActiveSubscription: isActiveSubscription,
+	}, err
 
 }
 
@@ -355,68 +411,68 @@ func (s *Service) DeleteSession(ctx context.Context, token string) error {
 	return err
 }
 
-func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUID) error {
-	if s.cfg.IsSelfHost() {
-		periodEnd := time.Now().AddDate(100, 0, 0)
-		sub := db.Subscription{
-			UserID:             userID,
-			Plan:               "selfhost",
-			MonthlyEventLimit:  -1,
-			Status:             "active",
-			CurrentPeriodEnd:   periodEnd,
-			MaxProjects:        -1,
-			MaxConfigKeys:      -1,
-			ErrorRetentionDays: 90,
-			SupportsRollout:    true,
-		}
-		return gorm.G[db.Subscription](s.db).Create(ctx, &sub)
+// func (s *Service) createDefaultSubscription(ctx context.Context, userID uuid.UUID) error {
+// 	if s.cfg.IsSelfHost() {
+// 		periodEnd := time.Now().AddDate(100, 0, 0)
+// 		sub := db.Subscription{
+// 			UserID:             userID,
+// 			Plan:               "selfhost",
+// 			MonthlyEventLimit:  -1,
+// 			Status:             "active",
+// 			CurrentPeriodEnd:   periodEnd,
+// 			MaxProjects:        -1,
+// 			MaxConfigKeys:      -1,
+// 			ErrorRetentionDays: 90,
+// 			SupportsRollout:    true,
+// 		}
+// 		return gorm.G[db.Subscription](s.db).Create(ctx, &sub)
 
-	}
+// 	}
 
-	periodEnd := time.Now().AddDate(0, 1, 0)
+// 	periodEnd := time.Now().AddDate(0, 1, 0)
 
-	sub := db.Subscription{
-		UserID:            userID,
-		Plan:              "free",
-		MonthlyEventLimit: defaultMonthlyEventLimit,
-		Status:            "active",
-		CurrentPeriodEnd:  periodEnd,
-	}
+// 	sub := db.Subscription{
+// 		UserID:            userID,
+// 		Plan:              "free",
+// 		MonthlyEventLimit: defaultMonthlyEventLimit,
+// 		Status:            "active",
+// 		CurrentPeriodEnd:  periodEnd,
+// 	}
 
-	return gorm.G[db.Subscription](s.db).Create(ctx, &sub)
-}
+// 	return gorm.G[db.Subscription](s.db).Create(ctx, &sub)
+// }
 
-func (s *Service) ensureActiveSubscription(ctx context.Context, userID uuid.UUID) error {
-	if s.cfg.IsSelfHost() {
-		return s.createDefaultSubscription(ctx, userID)
-	}
+// func (s *Service) ensureActiveSubscription(ctx context.Context, userID uuid.UUID) error {
+// 	if s.cfg.IsSelfHost() {
+// 		return s.createDefaultSubscription(ctx, userID)
+// 	}
 
-	subscription, err := gorm.G[db.Subscription](s.db).Where(repo.Subscription.UserID.Eq(userID)).First(ctx)
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
+// 	subscription, err := gorm.G[db.Subscription](s.db).Where(repo.Subscription.UserID.Eq(userID)).First(ctx)
+// 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+// 		return err
+// 	}
 
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return s.createDefaultSubscription(ctx, userID)
-	}
+// 	if errors.Is(err, gorm.ErrRecordNotFound) {
+// 		return s.createDefaultSubscription(ctx, userID)
+// 	}
 
-	if subscription.Plan == "free" {
-		_, err := gorm.G[db.Subscription](s.db).
-			Where(repo.Subscription.ID.Eq(userID)).
-			Where(repo.Subscription.Status.Eq("active")).
-			Where(repo.Subscription.Plan.Eq("free")).
-			Where(repo.Subscription.CurrentPeriodEnd.IsNull()).Or(
-			repo.Subscription.CurrentPeriodEnd.Lte(time.Now()),
-		).
-			Set(repo.Subscription.CurrentPeriodEnd.Set(time.Now().AddDate(0, 1, 0))).
-			Update(ctx)
-		if err != nil {
-			return err
-		}
-	}
+// 	if subscription.Plan == "free" {
+// 		_, err := gorm.G[db.Subscription](s.db).
+// 			Where(repo.Subscription.ID.Eq(userID)).
+// 			Where(repo.Subscription.Status.Eq("active")).
+// 			Where(repo.Subscription.Plan.Eq("free")).
+// 			Where(repo.Subscription.CurrentPeriodEnd.IsNull()).Or(
+// 			repo.Subscription.CurrentPeriodEnd.Lte(time.Now()),
+// 		).
+// 			Set(repo.Subscription.CurrentPeriodEnd.Set(time.Now().AddDate(0, 1, 0))).
+// 			Update(ctx)
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 // TODO: remove this function and use SignInWithOAuth instead, need to update handler and tests accordingly
 // func (s *Service) UpsertOAuthUser(ctx context.Context, provider, externalID, email, name, avatarURL string) (string, error) {

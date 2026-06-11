@@ -68,6 +68,10 @@ export function createUserMutations(api: ReturnType<typeof createApi>) {
       }) => api.resetPassword(token, newPassword),
     }),
 
+    setupDefaultSubscription: () => ({
+      mutationFn: () => api.setupDefaultSubscription(),
+    }),
+
     logout: () => ({
       mutationFn: () => api.logout(),
     }),

@@ -1,0 +1,47 @@
+[
+  {
+    "title": "Free Plan",
+    "description": "Ideal for individual users and small teams to get started with Trackion.",
+    "message": "Get started with Trackion for free and enjoy basic features to manage your projects and track your time effectively.",
+    "type": "free",
+    "price": "$0/month",
+    "limits": {
+      "monthly_events": 10000,
+      "max_projects": 3,
+      "max_config_keys": 10,
+      "error_retention": "3 days",
+      "supports_rollout": false
+    },
+    "features": [
+      "Basic project management",
+      "Time tracking",
+      "Error tracking with 3 days retention",
+      "Email support"
+    ],
+    "cta": "Sign Up for Free",
+    "href": "#"
+  },
+  {
+    "title": "Unlimited Plan",
+    "description": "Best for large enterprises and organizations that require unlimited access to all features and resources.",
+    "message": "Experience the full power of Trackion with the Unlimited Plan, offering unlimited access to all features, resources, and premium support.",
+    "type": "unlimited",
+    "price": "$199/month",
+    "limits": {
+      "monthly_events": -1,
+      "max_projects": -1,
+      "max_config_keys": -1,
+      "error_retention": -1,
+      "supports_rollout": true
+    },
+    "features": [
+      "Unlimited project management",
+      "Comprehensive time tracking",
+      "Unlimited error tracking retention",
+      "24/7 premium support",
+      "Dedicated account manager"
+    ],
+    "cta": "Contact Sales",
+    "href": "#"
+  }
+]

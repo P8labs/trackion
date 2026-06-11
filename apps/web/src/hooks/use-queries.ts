@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { createMutations, createQueries } from "@trackion/lib/queries";
 
 import { useGlobalStore } from "@/store";
@@ -40,10 +39,8 @@ export function useAppMutation<TVars, TRes>(
 }
 
 export function useMutations() {
-  const { api } = useGlobalStore();
-  return useMemo(() => createMutations(api()), [api]);
+  return createMutations(useGlobalStore.getState().actions.getApi());
 }
 export function useQueries() {
-  const { api } = useGlobalStore();
-  return useMemo(() => createQueries(api()), [api]);
+  return createQueries(useGlobalStore.getState().actions.getApi());
 }
