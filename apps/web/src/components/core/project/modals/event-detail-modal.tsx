@@ -1,13 +1,19 @@
 import { useMemo } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@trackion/ui/dialog";
-import { Badge } from "@trackion/ui/badge";
 import moment from "moment";
+
+import {
+  Badge,
+  Code,
+  Divider,
+  Group,
+  Modal,
+  ScrollArea,
+  Stack,
+  Text,
+} from "@mantine/core";
+
 import type { RecentEventData } from "@trackion/lib/types";
+import { useMediaQuery } from "@mantine/hooks";
 
 interface EventDetailsModalProps {
   event: RecentEventData | null;
@@ -20,71 +26,66 @@ export function EventDetailsModal({
   open,
   onOpenChange,
 }: EventDetailsModalProps) {
-  const parseProperties = (properties: unknown): Record<string, unknown> => {
-    if (!properties) return {};
+  const mobile = useMediaQuery("(max-width: 768px)");
+
+  const properties = useMemo(() => {
+    if (!event?.properties) {
+      return {};
+    }
+
     try {
       const parsed =
-        typeof properties === "string" ? JSON.parse(properties) : properties;
-      if (parsed && typeof parsed === "object") {
-        return parsed as Record<string, unknown>;
-      }
+        typeof event.properties === "string"
+          ? JSON.parse(event.properties)
+          : event.properties;
+
+      return typeof parsed === "object" && parsed ? parsed : {};
     } catch {
       return {};
     }
-    return {};
-  };
-
-  const getEventColor = (eventName: string) => {
-    switch (eventName) {
-      case "page.view":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30";
-      case "page.click":
-        return "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30";
-      case "page.time_spent":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30";
-      default:
-        return "bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30";
-    }
-  };
-
-  const properties = useMemo(() => {
-    return parseProperties(event?.properties);
   }, [event?.properties]);
 
-  if (!event) return null;
+  if (!event) {
+    return null;
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="z-100 w-[min(96vw,980px)] sm:max-w-4xl max-h-[90vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-5 py-4 border-b border-border/60">
-          <div className="flex items-center justify-between gap-3">
-            <DialogTitle className="flex items-center gap-3 min-w-0">
-              <Badge className={getEventColor(event.event_name)}>
-                {event.event_name}
-              </Badge>
-              <span className="text-xs font-normal text-muted-foreground truncate">
-                {moment(event.created_at).format("MMM D, HH:mm:ss")}
-              </span>
-              <span className="text-xs font-mono text-muted-foreground shrink-0">
-                #{event.id}
-              </span>
-            </DialogTitle>
-          </div>
-        </DialogHeader>
+    <Modal
+      opened={open}
+      onClose={() => onOpenChange(false)}
+      size="xl"
+      fullScreen={mobile}
+      title={
+        <Group gap="sm">
+          <Badge variant="gradient" color={getEventColor(event.event_name)}>
+            {event.event_name}
+          </Badge>
 
-        <div className="flex-1 overflow-y-auto text-sm">
+          <Text size="sm" c="dimmed">
+            {moment(event.created_at).format("MMM D, YYYY h:mm:ss A")}
+          </Text>
+
+          <Code>#{event.id}</Code>
+        </Group>
+      }
+    >
+      <ScrollArea.Autosize>
+        <Stack gap={0}>
           <Section title="Event">
             {event.event_type && <Row label="Type">{event.event_type}</Row>}
+
             {event.user_id && (
               <Row label="User ID">
-                <code className="break-all">{event.user_id}</code>
+                <Code>{event.user_id}</Code>
               </Row>
             )}
           </Section>
 
+          <Divider />
+
           <Section title="Session">
             <Row label="Session ID">
-              <code className="truncate">{event.session_id}</code>
+              <Code>{event.session_id}</Code>
             </Row>
 
             <Row label="Timestamp">
@@ -92,33 +93,35 @@ export function EventDetailsModal({
             </Row>
           </Section>
 
-          {(event.page_path || event.referrer) && (
-            <Section title="Page">
-              {event.page_title && (
-                <Row label="Title">
-                  <span className="break-all">{event.page_title}</span>
-                </Row>
-              )}
+          {(event.page_path || event.page_title || event.referrer) && (
+            <>
+              <Divider />
 
-              {event.page_path && (
-                <Row label="Path">
-                  <code className="break-all">{event.page_path}</code>
-                </Row>
-              )}
+              <Section title="Page">
+                {event.page_title && (
+                  <Row label="Title">{event.page_title}</Row>
+                )}
 
-              {event.referrer && event.referrer !== "Direct" && (
-                <Row label="Referrer">
-                  <a
-                    href={event.referrer}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="text-primary hover:underline break-all"
-                  >
-                    {event.referrer}
-                  </a>
-                </Row>
-              )}
-            </Section>
+                {event.page_path && (
+                  <Row label="Path">
+                    <Code>{event.page_path}</Code>
+                  </Row>
+                )}
+
+                {event.referrer && event.referrer !== "Direct" && (
+                  <Row label="Referrer">
+                    <Text
+                      component="a"
+                      href={event.referrer}
+                      target="_blank"
+                      c="cyan"
+                    >
+                      {event.referrer}
+                    </Text>
+                  </Row>
+                )}
+              </Section>
+            </>
           )}
 
           {(event.platform ||
@@ -126,51 +129,73 @@ export function EventDetailsModal({
             event.browser ||
             event.os_version ||
             event.app_version) && (
-            <Section title="Device">
-              {event.platform && <Row label="Platform">{event.platform}</Row>}
-              {event.device && <Row label="Device">{event.device}</Row>}
-              {event.browser && <Row label="Browser">{event.browser}</Row>}
-              {event.os_version && (
-                <Row label="OS Version">{event.os_version}</Row>
-              )}
-              {event.app_version && (
-                <Row label="App Version">{event.app_version}</Row>
-              )}
-            </Section>
+            <>
+              <Divider />
+
+              <Section title="Device">
+                {event.platform && <Row label="Platform">{event.platform}</Row>}
+
+                {event.device && <Row label="Device">{event.device}</Row>}
+
+                {event.browser && <Row label="Browser">{event.browser}</Row>}
+
+                {event.os_version && (
+                  <Row label="OS Version">{event.os_version}</Row>
+                )}
+
+                {event.app_version && (
+                  <Row label="App Version">{event.app_version}</Row>
+                )}
+              </Section>
+            </>
           )}
 
           {(event.utm_source || event.utm_medium || event.utm_campaign) && (
-            <Section title="UTM">
-              {event.utm_source && <Row label="Source">{event.utm_source}</Row>}
-              {event.utm_medium && <Row label="Medium">{event.utm_medium}</Row>}
-              {event.utm_campaign && (
-                <Row label="Campaign">{event.utm_campaign}</Row>
-              )}
-            </Section>
+            <>
+              <Divider />
+
+              <Section title="UTM">
+                {event.utm_source && (
+                  <Row label="Source">{event.utm_source}</Row>
+                )}
+
+                {event.utm_medium && (
+                  <Row label="Medium">{event.utm_medium}</Row>
+                )}
+
+                {event.utm_campaign && (
+                  <Row label="Campaign">{event.utm_campaign}</Row>
+                )}
+              </Section>
+            </>
           )}
 
           {Object.keys(properties).length > 0 && (
-            <Section title="Properties">
-              {Object.entries(properties).map(([key, value]) => (
-                <Row key={key} label={key}>
-                  <code className="break-all">
-                    {typeof value === "object"
-                      ? JSON.stringify(value)
-                      : String(value)}
-                  </code>
-                </Row>
-              ))}
-            </Section>
+            <>
+              <Divider />
+
+              <Section title="Properties">
+                {Object.entries(properties).map(([key, value]) => (
+                  <Row key={key} label={key}>
+                    <Code block>
+                      {typeof value === "object"
+                        ? JSON.stringify(value, null, 2)
+                        : String(value)}
+                    </Code>
+                  </Row>
+                ))}
+              </Section>
+            </>
           )}
 
-          <Section title="Raw">
-            <pre className="text-xs text-muted-foreground overflow-x-auto">
-              {JSON.stringify(event, null, 2)}
-            </pre>
+          <Divider />
+
+          <Section title="Raw Event">
+            <Code block>{JSON.stringify(event, null, 2)}</Code>
           </Section>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </Stack>
+      </ScrollArea.Autosize>
+    </Modal>
   );
 }
 
@@ -182,12 +207,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-border/60 px-5 py-4 space-y-3">
-      <p className="text-[11px] uppercase tracking-wide text-muted-foreground">
+    <Stack gap="sm" py="md">
+      <Text size="xs" fw={700} c="dimmed" tt="uppercase">
         {title}
-      </p>
-      <div className="space-y-2">{children}</div>
-    </div>
+      </Text>
+
+      {children}
+    </Stack>
   );
 }
 
@@ -199,12 +225,28 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex gap-4">
-      <div className="w-32 shrink-0 text-xs text-muted-foreground font-mono">
+    <Group align="flex-start" wrap="wrap">
+      <Text size="sm" c="dimmed" w={140}>
         {label}
-      </div>
+      </Text>
 
-      <div className="flex-1 text-sm text-foreground">{children}</div>
-    </div>
+      <div style={{ flex: 1 }}>{children}</div>
+    </Group>
   );
+}
+
+function getEventColor(eventName: string): string {
+  switch (eventName) {
+    case "page.view":
+      return "green";
+
+    case "page.click":
+      return "red";
+
+    case "page.time_spent":
+      return "yellow";
+
+    default:
+      return "blue";
+  }
 }
