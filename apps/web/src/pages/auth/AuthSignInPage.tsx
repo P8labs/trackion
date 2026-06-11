@@ -56,7 +56,7 @@ export function AuthSignInPage() {
       <form className="space-y-4" onSubmit={form.onSubmit(handleSubmit)}>
         <TextInput
           {...form.getInputProps("email")}
-          label="Email"
+          label="Your Email"
           placeholder="you@company.com"
           type="email"
           autoComplete="email"
@@ -64,7 +64,7 @@ export function AuthSignInPage() {
         />
         <PasswordInput
           {...form.getInputProps("password")}
-          label="Password"
+          label="Your Password"
           placeholder="Enter your password"
           autoComplete="current-password"
           disabled={isPending}

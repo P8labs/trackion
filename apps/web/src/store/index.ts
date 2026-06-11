@@ -3,38 +3,83 @@ import { persist } from "zustand/middleware";
 import { SERVER_URL } from "@/lib/constants";
 import { createApi, createApiClient } from "@trackion/lib/api";
 import { flags } from "@/lib/flags";
+import type { User } from "@trackion/lib/types";
+
+const USER_STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
 
 type GlobalState = {
+  user: User | null;
+  userUpdatedAt: number | null;
+
   serverURL: string;
   authToken: string | null;
-  api: () => ReturnType<typeof createApi>;
 
   actions: {
-    reset: () => void;
+    getApi: () => ReturnType<typeof createApi>;
+    fetchCurrentUser: (forceUpdate?: boolean) => Promise<User | null>;
     setServerUrl: (serverUrl: string) => void;
     setAuthToken: (token: string) => void;
+    reset: () => void;
   };
 };
 
 export const useGlobalStore = create<GlobalState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       serverURL: SERVER_URL,
       authToken: null,
-      api: () => {
-        const client = createApiClient({
-          baseUrl: useGlobalStore.getState().serverURL,
-          getAuthToken: () => useGlobalStore.getState().authToken,
-        });
-        return createApi(client);
-      },
+      user: null,
+      userUpdatedAt: null,
       actions: {
-        reset: () => set({ authToken: null }),
+        getApi: () => {
+          const { serverURL, authToken } = get();
+          const client = createApiClient({
+            baseUrl: serverURL,
+            getAuthToken: () => authToken,
+          });
+          return createApi(client);
+        },
+        fetchCurrentUser: async (forceUpdate = false) => {
+          const { user, userUpdatedAt, actions } = get();
+
+          // Check if we have a user and if the cache is still fresh
+          const isStale =
+            !userUpdatedAt || Date.now() - userUpdatedAt > USER_STALE_TIME_MS;
+
+          if (user && !isStale && !forceUpdate) {
+            return user;
+          }
+
+          try {
+            const api = actions.getApi();
+            const fetchedUser = await api.getCurrentUser();
+
+            set({
+              user: fetchedUser,
+              userUpdatedAt: Date.now(),
+            });
+
+            return fetchedUser;
+          } catch (error) {
+            console.error("Failed to fetch user:", error);
+            return null;
+          }
+        },
+        reset: () => set({ authToken: null, user: null, userUpdatedAt: null }),
         setServerUrl: (url) => set({ serverURL: url }),
         setAuthToken: (token) => set({ authToken: token }),
       },
     }),
-    { name: "trackion.global-state", version: 1 },
+    {
+      name: "trackion.global-state",
+      version: 1,
+      partialize: (state) => ({
+        user: state.user,
+        userUpdatedAt: state.userUpdatedAt,
+        serverURL: state.serverURL,
+        authToken: state.authToken,
+      }),
+    },
   ),
 );
 

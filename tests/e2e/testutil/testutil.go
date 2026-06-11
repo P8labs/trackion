@@ -30,6 +30,13 @@ type APIEnvelope struct {
 func SetupE2EApp(t *testing.T) http.Handler {
 	t.Helper()
 
+	handler, _ := SetupE2EAppWithDB(t)
+	return handler
+}
+
+func SetupE2EAppWithDB(t *testing.T) (http.Handler, *gorm.DB) {
+	t.Helper()
+
 	defer func() {
 		if r := recover(); r != nil {
 			t.Skipf("skipping e2e test: test DB setup failed: %v", r)
@@ -48,7 +55,7 @@ func SetupE2EApp(t *testing.T) http.Handler {
 	logger := slog.New(slog.NewTextHandler(io.Discard, &slog.HandlerOptions{Level: slog.LevelError}))
 
 	api := app.NewApplication(database, cfg, logger, "test")
-	return api.Handler()
+	return api.Handler(), database
 }
 
 func seedSelfHostAdminData(database *gorm.DB) {

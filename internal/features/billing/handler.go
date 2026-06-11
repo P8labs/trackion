@@ -5,6 +5,7 @@ import (
 	"trackion/internal/features/auth"
 	"trackion/internal/res"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
@@ -14,6 +15,24 @@ type Handler struct {
 
 func NewHandler(service *Service) *Handler {
 	return &Handler{service: service}
+}
+
+func (h *Handler) ListPlans(w http.ResponseWriter, r *http.Request) {
+	plans := h.service.GetPlans(r.Context())
+	res.Success(w, plans, "Plans retrieved successfully")
+}
+
+func (h *Handler) SetupSubscription(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(auth.UserIdContextKey).(string)
+	plan := chi.URLParam(r, "plan")
+
+	err := h.service.SetupDefaultSubscription(r.Context(), userID, plan)
+	if err != nil {
+		res.Error(w, "Unable to setup subscription", http.StatusInternalServerError)
+		return
+	}
+
+	res.Success(w, map[string]string{"message": "Subscription setup successfully"}, "Subscription setup successfully")
 }
 
 func (h *Handler) GetUsage(w http.ResponseWriter, r *http.Request) {
@@ -28,7 +47,6 @@ func (h *Handler) GetUsage(w http.ResponseWriter, r *http.Request) {
 
 	res.Success(w, usage, "Usage retrieved successfully")
 }
-
 func (h *Handler) GetPlan(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(auth.UserIdContextKey).(string)
 	userUUID := uuid.MustParse(userID)

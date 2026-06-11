@@ -27,7 +27,7 @@ type Service struct {
 func NewService(db *gorm.DB, cfg config.Config) Service {
 	return Service{
 		db:      db,
-		billing: billing.NewService(db),
+		billing: billing.NewService(db, &cfg),
 		config:  cfg,
 	}
 }

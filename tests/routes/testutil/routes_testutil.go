@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func CollectRoutes(t *testing.T, router *chi.Mux) map[string]struct{} {
+func CollectRoutes(t *testing.T, router chi.Routes) map[string]struct{} {
 	t.Helper()
 
 	routes := map[string]struct{}{}

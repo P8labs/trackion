@@ -21,6 +21,7 @@ import {
   TrafficSource,
   UsagePlan,
   User,
+  Plan,
 } from "../types";
 import { createApiClient } from "./client";
 
@@ -57,9 +58,16 @@ export function createApi(api: ReturnType<typeof createApiClient>) {
     requestEmailVerification: () =>
       api.apiCall<void>("POST", "/auth/email/verify/request"),
 
+    setupSubscription: (plan: string) =>
+      api.apiCall<void>("POST", `/api/v1/subscriptions/setup/${plan}`),
+
+    fetchSubscriptionPlans: () =>
+      api.apiCall<{ plans: Plan[] }>("GET", "/api/v1/subscriptions/plans"),
+
     getCurrentUser: () => api.apiCall<User>("GET", "/api/v1/auth/me"),
 
-    getUsage: () => api.apiCall<UsagePlan>("GET", "/api/v1/billing/usage"),
+    getUsage: () =>
+      api.apiCall<UsagePlan>("GET", "/api/v1/subscriptions/usage"),
 
     getProjects: () => api.apiCall<Project[]>("GET", "/api/v1/projects"),
     getProject: (id: string) =>

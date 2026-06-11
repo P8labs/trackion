@@ -2,10 +2,13 @@ package billing
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"time"
+	"trackion/internal/config"
 	db "trackion/internal/db/models"
 	"trackion/internal/features/auth"
+	"trackion/internal/static"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -19,11 +22,86 @@ var (
 )
 
 type Service struct {
-	db *gorm.DB
+	db  *gorm.DB
+	cfg *config.Config
 }
 
-func NewService(db *gorm.DB) *Service {
-	return &Service{db: db}
+func NewService(db *gorm.DB, cfg *config.Config) *Service {
+	return &Service{db: db, cfg: cfg}
+}
+
+func (s *Service) GetPlans(ctx context.Context) PlansResponse {
+
+	var raw []byte
+	switch s.cfg.Mode {
+	case config.BETA:
+		raw = static.PlanBetaJSON
+	case config.PAID:
+		raw = static.PlanPaidJSON
+	case config.UNLIMITED:
+		raw = static.PlanUnlimitedJSON
+	default:
+		raw = static.PlanBetaJSON
+	}
+
+	parsedPlans, err := ParsePlans(raw)
+	if err != nil {
+		// fallback to hardcoded plans if parsing fails
+		return s.getHardcodedPlans()
+	}
+
+	return PlansResponse{
+		Plans: parsedPlans,
+	}
+
+}
+
+func (s *Service) SetupDefaultSubscription(ctx context.Context, userID string, plan string) error {
+
+	planType, err := ParsePlan(plan)
+	if err != nil {
+		return err
+	}
+
+	isValid := false
+
+	switch s.cfg.Mode {
+	case config.BETA:
+		isValid = (planType == FreePlan)
+	case config.PAID:
+		isValid = (planType == FreePlan || planType == ProPlan)
+	case config.UNLIMITED:
+		isValid = (planType == FreePlan || planType == UnlimitedPlan)
+	}
+
+	if !isValid {
+		return ErrPlanNotFound
+	}
+
+	var subscription db.Subscription
+	err = s.db.WithContext(ctx).
+		Where("user_id = ? AND status = ?", uuid.MustParse(userID), "active").
+		Order("created_at DESC").
+		First(&subscription).Error
+
+	if err == nil {
+		return nil
+	}
+
+	p := NewPlanInfo(plan, "active")
+	subscription = db.Subscription{
+		UserID:             uuid.MustParse(userID),
+		Status:             p.Status,
+		Plan:               string(p.Plan),
+		CurrentPeriodEnd:   p.CurrentPeriodEnd,
+		MonthlyEventLimit:  p.Limits.MonthlyEvents,
+		MaxProjects:        p.Limits.MaxProjects,
+		MaxConfigKeys:      p.Limits.MaxConfigKeys,
+		ErrorRetentionDays: p.Limits.ErrorRetention,
+		SupportsRollout:    p.Limits.SupportsRollout,
+	}
+
+	return gorm.G[db.Subscription](s.db).Create(ctx, &subscription)
 }
 
 func (s *Service) GetUserPlan(ctx context.Context, userID uuid.UUID) (PlanInfo, error) {
@@ -200,7 +278,7 @@ func (s *Service) CheckEventLimit(ctx context.Context, userID uuid.UUID, additio
 		return err
 	}
 
-	if subscription.Plan == string(PlanTypeSelfhost) {
+	if subscription.Plan == string(UnlimitedPlan) {
 		return nil
 	}
 
@@ -347,4 +425,37 @@ func (s *Service) UpgradeSubscription(ctx context.Context, userID uuid.UUID) err
 			"error_retention_days": 14,
 			"supports_rollout":     true,
 		}).Error
+}
+
+func ParsePlans(raw []byte) ([]Plan, error) {
+	var plans []Plan
+	err := json.Unmarshal(raw, &plans)
+	if err != nil {
+		return nil, err
+	}
+	return plans, nil
+}
+
+func (s *Service) getHardcodedPlans() PlansResponse {
+	plans := []Plan{
+		{
+			Type:        FreePlan,
+			Limits:      GetPlanLimits(FreePlan),
+			Href:        "#",
+			Cta:         "Get Started",
+			Message:     "Ideal for small projects and personal use. Get started with basic features and limited usage.",
+			Description: "The Free Plan offers essential features for small projects and personal use. It includes a monthly event limit of 10,000, support for up to 3 projects, and basic error retention for 3 days. This plan is perfect for those who are just getting started and want to explore our platform without any cost.",
+			Title:       "Free Plan",
+			Price:       "$0/month",
+			Features: []string{
+				"10,000 monthly events",
+				"Up to 3 projects",
+				"10 config keys per project",
+				"3 days error retention",
+			},
+		}}
+
+	return PlansResponse{
+		Plans: plans,
+	}
 }

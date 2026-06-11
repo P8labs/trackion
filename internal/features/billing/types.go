@@ -26,3 +26,35 @@ type Usage struct {
 	ProjectsUsedPercent   float64 `json:"projects_used_percent"`
 	ConfigKeysUsedPercent float64 `json:"config_keys_used_percent"`
 }
+
+type PlanType string
+
+const (
+	FreePlan      PlanType = "free"
+	ProPlan       PlanType = "pro"
+	UnlimitedPlan PlanType = "unlimited"
+)
+
+type PlansResponse struct {
+	Plans []Plan `json:"plans"`
+}
+
+type Plan struct {
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Message     string     `json:"message"`
+	Type        PlanType   `json:"type"`
+	Price       string     `json:"price"`
+	Limits      PlanLimits `json:"limits"`
+	Features    []string   `json:"features"`
+	Cta         string     `json:"cta"`
+	Href        string     `json:"href"`
+}
+
+type PlanLimits struct {
+	MonthlyEvents   int  `json:"monthly_events"`
+	MaxProjects     int  `json:"max_projects"`
+	MaxConfigKeys   int  `json:"max_config_keys"`  // per project
+	ErrorRetention  int  `json:"error_retention"`  // in days
+	SupportsRollout bool `json:"supports_rollout"` // feature flag rollout %
+}

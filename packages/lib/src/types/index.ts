@@ -19,6 +19,24 @@ export interface ProjectSettings {
   clicks: boolean;
 }
 
+export interface Plan {
+  title: string;
+  description: string;
+  message: string;
+  type: "free" | "pro" | "unlimited";
+  price: string;
+  features: string[];
+  cta: string;
+  href: string;
+  limits: {
+    monthly_events: number;
+    max_projects: number;
+    max_config_keys: number;
+    error_retention: number;
+    supports_rollout: boolean;
+  };
+}
+
 export interface CreateProjectInput {
   name: string;
   domains: string[];
@@ -57,13 +75,24 @@ export interface EventBreakdown {
 
 export interface User {
   id: string;
-  github_id?: string;
-  google_id?: string;
-  email?: string;
-  name?: string;
+  email: string;
+  name: string;
   avatar_url?: string;
-  created_at?: string;
-  providers?: Provider[];
+  is_email_verified: boolean;
+  has_active_subscription: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Subscription {
+  plan: string;
+  status: string;
+  current_period_end: string;
+  events_limit: number;
+  projects_limit: number;
+  config_keys_limit: number;
+  error_retention_days: number;
+  supports_rollout: boolean;
 }
 
 export interface Provider {
