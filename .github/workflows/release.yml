@@ -124,7 +124,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: client/pnpm-lock.yaml
 
       - name: Clean Tauri build
         shell: bash
@@ -316,7 +316,7 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+          cache-dependency-path: client/pnpm-lock.yaml
 
       - name: Clean Tauri build
         shell: bash
