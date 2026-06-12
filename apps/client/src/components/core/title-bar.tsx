@@ -1,10 +1,13 @@
+import { IsDesktop } from "@/lib/flags";
 import { ActionIcon, Group, Text } from "@mantine/core";
-import { invoke } from "@tauri-apps/api/core";
 import { Maximize2, Minus, RefreshCw, X } from "lucide-react";
 
 export default function TitleBar() {
   const onAction = async (action: "min" | "max" | "close") => {
-    await invoke("handle_window_action", { action });
+    if (IsDesktop()) {
+      const { invoke } = await import("@tauri-apps/api/core");
+      await invoke("handle_window_action", { action });
+    }
   };
 
   return (

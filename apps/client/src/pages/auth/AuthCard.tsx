@@ -127,7 +127,6 @@ export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
       <Button
         component="a"
         href={oauthLogin("google")}
-        target="_blank"
         rel="noopener noreferrer"
         variant="default"
         size="lg"
@@ -142,7 +141,6 @@ export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
       <Button
         component="a"
         href={oauthLogin("github")}
-        target="_blank"
         rel="noopener noreferrer"
         variant="default"
         size="lg"

@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { Button } from "@trackion/ui/button";
 import { Icons } from "@/lib/icons";
 import { Download, ExternalLink } from "lucide-react";
 import { PublicPageLayout } from "./components/PublicPageLayout";
-import { FullLine, PLine } from "@trackion/ui/decoration";
 import moment from "moment";
 import { Link } from "react-router-dom";
+import { Button } from "@mantine/core";
 
 type GithubAsset = {
   id: number;
@@ -132,14 +131,10 @@ export default function DownloadsPage() {
       asset.name.startsWith("trackion-server_") && !asset.name.endsWith(".sig"),
   );
 
-  const mobileAssets = assets.filter(
-    (asset) =>
-      asset.name.startsWith("app-"),
-  );
+  const mobileAssets = assets.filter((asset) => asset.name.startsWith("app-"));
 
   return (
     <PublicPageLayout>
-      <PLine />
       <div className="p-6 pt-12 md:pt-16">
         <div className="text-center mb-10 md:mb-12">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
@@ -290,7 +285,6 @@ export default function DownloadsPage() {
           )}
         </section>
       </div>
-      <FullLine />
     </PublicPageLayout>
   );
 }

@@ -1,10 +1,8 @@
-import { FullLine, PLine } from "@trackion/ui/decoration";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 
 export function PrivacyPage() {
   return (
     <PublicPageLayout>
-      <PLine />
       <div className="p-6">
         <div className="prose prose-lg max-w-none">
           <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
@@ -177,7 +175,6 @@ export function PrivacyPage() {
           </section>
         </div>
       </div>
-      <FullLine />
     </PublicPageLayout>
   );
 }
