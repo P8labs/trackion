@@ -13,7 +13,7 @@ export default function TitleBar() {
   return (
     <header
       data-tauri-drag-region
-      className="sticky top-0 z-50 h-10 min-h-10 shrink-0 flex items-center justify-between pl-4 pr-1 -mb-10"
+      className="sticky top-0 z-50 h-10 min-h-10 shrink-0 flex items-center justify-between pl-4 pr-1"
     >
       <Group gap="xs" data-tauri-drag-region>
         <Text fw={600} size="sm">

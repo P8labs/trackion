@@ -1,16 +1,16 @@
 #[tauri::command]
-async fn handle_window_action(window: tauri::Window, action: &str) -> Result<(), String> {
+async fn handle_window_action(_window: tauri::Window, action: &str) -> Result<(), String> {
     #[cfg(desktop)]
     {
         match action {
-            "close" => window.close().map_err(|e| e.to_string())?,
-            "hide" => window.hide().map_err(|e| e.to_string())?,
-            "min" => window.minimize().map_err(|e| e.to_string())?,
+            "close" => _window.close().map_err(|e| e.to_string())?,
+            "hide" => _window.hide().map_err(|e| e.to_string())?,
+            "min" => _window.minimize().map_err(|e| e.to_string())?,
             "max" => {
-                if window.is_maximized().map_err(|e| e.to_string())? {
-                    window.unmaximize().map_err(|e| e.to_string())?;
+                if _window.is_maximized().map_err(|e| e.to_string())? {
+                    _window.unmaximize().map_err(|e| e.to_string())?;
                 } else {
-                    window.maximize().map_err(|e| e.to_string())?;
+                    _window.maximize().map_err(|e| e.to_string())?;
                 }
             }
             _ => {}

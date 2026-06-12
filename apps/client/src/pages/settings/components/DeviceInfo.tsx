@@ -11,40 +11,51 @@ export default function DeviceInfo() {
   });
 
   useEffect(() => {
-    const ua = navigator.userAgent;
+    const loadClientSpecs = async () => {
+      const ua = navigator.userAgent;
 
-    let device = "Unknown Browser";
-    let os = "Unknown OS";
+      let device = "Unknown Browser";
+      let os = "Unknown OS";
 
-    if (!IsWeb()) {
-      import("@tauri-apps/plugin-os").then((module) => {
-        const osType = module.platform();
-        const osVersion = module.version();
-        const arch = module.arch();
-        device = `${osType} ${osVersion} (${arch})`;
-        os = osType;
+      if (!IsWeb()) {
+        try {
+          const { platform, version, arch } =
+            await import("@tauri-apps/plugin-os");
+
+          const osType = platform();
+          const osVersion = version();
+          const architecture = arch();
+
+          device = `${osType} ${osVersion} (${architecture})`;
+          os = osType;
+        } catch (error) {
+          console.error("Failed to load OS info:", error);
+        }
+      } else {
+        if (ua.includes("Firefox")) device = "Mozilla Firefox";
+        else if (ua.includes("SamsungBrowser")) device = "Samsung Internet";
+        else if (ua.includes("Opera") || ua.includes("OPR")) device = "Opera";
+        else if (ua.includes("Edge") || ua.includes("Edg"))
+          device = "Microsoft Edge";
+        else if (ua.includes("Chrome")) device = "Google Chrome";
+        else if (ua.includes("Safari")) device = "Apple Safari";
+
+        if (ua.includes("Win")) os = "Windows";
+        else if (ua.includes("Mac")) os = "macOS";
+        else if (ua.includes("Linux")) os = "Linux";
+        else if (ua.includes("Android")) os = "Android";
+        else if (ua.includes("like Mac")) os = "iOS";
+      }
+
+      setClientSpecs({
+        device,
+        os,
+        resolution: `${window.screen.width} x ${window.screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
-    } else {
-      if (ua.includes("Firefox")) device = "Mozilla Firefox";
-      else if (ua.includes("SamsungBrowser")) device = "Samsung Internet";
-      else if (ua.includes("Opera") || ua.includes("OPR")) device = "Opera";
-      else if (ua.includes("Edge") || ua.includes("Edg"))
-        device = "Microsoft Edge";
-      else if (ua.includes("Chrome")) device = "Google Chrome";
-      else if (ua.includes("Safari")) device = "Apple Safari";
-      if (ua.includes("Win")) os = "Windows";
-      else if (ua.includes("Mac")) os = "macOS";
-      else if (ua.includes("Linux")) os = "Linux";
-      else if (ua.includes("Android")) os = "Android";
-      else if (ua.includes("like Mac")) os = "iOS";
-    }
+    };
 
-    setClientSpecs({
-      device,
-      os,
-      resolution: `${window.screen.width} x ${window.screen.height}`,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    });
+    loadClientSpecs();
   }, []);
 
   return (

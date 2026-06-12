@@ -1,4 +1,4 @@
-import { IsMobile } from "@/lib/flags";
+import { IsMobile, IsWeb } from "@/lib/flags";
 import { oauthLogin, useGlobalStore } from "@/store";
 import { Button, Paper, Text, TextInput } from "@mantine/core";
 import { modals } from "@mantine/modals";
@@ -122,11 +122,24 @@ export function AuthFooter() {
 }
 
 export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
+  const openOAuthWindow = async (provider: "google" | "github") => {
+    const url = oauthLogin(provider);
+
+    if (IsWeb()) {
+      window.location.href = url;
+    } else {
+      try {
+        const { openUrl } = await import("@tauri-apps/plugin-opener");
+        await openUrl(url);
+      } catch (error) {
+        console.error("Failed to open URL:", error);
+      }
+    }
+  };
   const buttons = (
     <>
       <Button
-        component="a"
-        href={oauthLogin("google")}
+        onClick={() => openOAuthWindow("google")}
         rel="noopener noreferrer"
         variant="default"
         size="lg"
@@ -139,8 +152,7 @@ export function AuthOAuthButtons({ layout = "stack" }: AuthOAuthButtonsProps) {
       </Button>
 
       <Button
-        component="a"
-        href={oauthLogin("github")}
+        onClick={() => openOAuthWindow("github")}
         rel="noopener noreferrer"
         variant="default"
         size="lg"
