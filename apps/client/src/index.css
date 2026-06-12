@@ -31,7 +31,9 @@
 }
 
 @layer base {
+  html,
   body {
+    font-family: var(--font-sans);
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -39,12 +41,11 @@
     min-height: 100vh;
     width: 100%;
     user-select: none;
-    padding-top: env(safe-area-inset-top) !important;
-    padding-bottom: env(safe-area-inset-bottom) !important;
-  }
-  html {
-    font-family: var(--font-sans);
     overscroll-behavior: none;
+  }
+
+  body {
+    padding-bottom: env(safe-area-inset-bottom) !important;
   }
 
   *::-webkit-scrollbar {
