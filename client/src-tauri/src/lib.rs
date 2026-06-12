@@ -30,7 +30,6 @@ pub fn run() {
     let _ = rustls::crypto::ring::default_provider().install_default();
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_deep_link::init())
