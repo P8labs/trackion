@@ -44,7 +44,15 @@ function App() {
                     <Route key={r.path} {...r} />
                   ))}
                 </Route>
-                <Route element={<AppShell links={projectLinks} />}>
+                <Route
+                  element={
+                    <AppShell
+                      links={projectLinks}
+                      backto="/projects"
+                      backtoName="Back to projects"
+                    />
+                  }
+                >
                   {projectRoutes.map((r) => (
                     <Route key={r.path} {...r} />
                   ))}

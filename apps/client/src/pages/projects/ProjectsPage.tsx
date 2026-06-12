@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { PlusIcon, SearchIcon } from "lucide-react";
 
 import {
@@ -20,7 +20,6 @@ import { CreateProjectModal } from "@/components/core/modals/create-project-moda
 import moment from "moment";
 
 export function ProjectsPage() {
-  const navigate = useNavigate();
   const [opened, { open, close }] = useDisclosure(false);
 
   const { data: projects = [], isLoading, error } = projectHooks.useProjects();
@@ -112,14 +111,14 @@ export function ProjectsPage() {
             <div>
               {filteredProjects.map((project) => {
                 const domain = project.domains?.[0] || "No domain";
-
                 return (
                   <Paper
+                    component={Link}
+                    to={`/projects/${project.id}/overview`}
                     key={project.id}
                     withBorder
                     p="xs"
                     className="cursor-pointer first:rounded-b-none! last:rounded-t-none! only:rounded-lg! hover:bg-(--mantine-color-gray-1)! dark:hover:bg-(--mantine-color-dark-4)! transition-colors"
-                    onClick={() => navigate(`/projects/${project.id}/overview`)}
                   >
                     <Group justify="space-between" align="flex-start">
                       <Stack gap={6}>
