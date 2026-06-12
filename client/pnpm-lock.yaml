@@ -42,8 +42,8 @@ importers:
         specifier: ^5.90.21
         version: 5.101.0(react@19.2.7)
       '@tauri-apps/api':
-        specifier: 2.11.0
-        version: 2.11.0
+        specifier: 2.10.1
+        version: 2.10.1
       '@tauri-apps/plugin-deep-link':
         specifier: ~2.4.8
         version: 2.4.9
@@ -742,6 +742,9 @@ packages:
     resolution: {integrity: sha512-rLlJXSpkqfizLWgkR5+eLeIk0MvTx/meEIR7LRjxic+qxiQP8zVjq7BqQkiCMNLQBlLfuOLqqr6KO5GtrDlmSg==}
     peerDependencies:
       react: ^18 || ^19
+
+  '@tauri-apps/api@2.10.1':
+    resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
 
   '@tauri-apps/api@2.11.0':
     resolution: {integrity: sha512-7CinYODhky9lmO23xHnUFv0Xt43fbtWMyxZcLcRBlFkcgXKuEirBvHpmtJ89YMhyeGcq20Wuc47Fa4XjyniywA==}
@@ -2829,6 +2832,8 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.101.0
       react: 19.2.7
+
+  '@tauri-apps/api@2.10.1': {}
 
   '@tauri-apps/api@2.11.0': {}
 
