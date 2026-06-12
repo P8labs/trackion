@@ -9,11 +9,10 @@ BLUE='\033[0;34m'
 NC='\033[0m'
 
 VERSION_FILE="VERSION"
-WEB_PACKAGE_FILE="apps/web/package.json"
-DESKTOP_PACKAGE_FILE="apps/desktop/package.json"
-DESKTOP_CARGO_FILE="apps/desktop/src-tauri/Cargo.toml"
-TAURI_CONF_FILE="apps/desktop/src-tauri/tauri.conf.json"
-DOCS_PACKAGE_FILE="apps/docs/package.json"
+CLIENT_PACKAGE_FILE="client/package.json"
+CARGO_FILE="client/src-tauri/Cargo.toml"
+TAURI_CONF_FILE="client/src-tauri/tauri.conf.json"
+DOCS_PACKAGE_FILE="docs/package.json"
 
 usage() {
   echo -e "${RED}Usage: $0 <major|minor|patch>${NC}"
@@ -21,43 +20,31 @@ usage() {
   exit 1
 }
 
-update_web_version() {
+update_client_version() {
   local new_version=$1
 
-  if [[ ! -f "$WEB_PACKAGE_FILE" ]]; then
-    echo -e "${RED}Missing $WEB_PACKAGE_FILE${NC}"
+  if [[ ! -f "$CLIENT_PACKAGE_FILE" ]]; then
+    echo -e "${RED}Missing $CLIENT_PACKAGE_FILE${NC}"
     exit 1
   fi
 
-  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$WEB_PACKAGE_FILE"
+  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$CLIENT_PACKAGE_FILE"
 
-  echo -e "${GREEN}Updated $WEB_PACKAGE_FILE version to $new_version${NC}"
+  echo -e "${GREEN}Updated $CLIENT_PACKAGE_FILE version to $new_version${NC}"
 }
 
-update_desktop_version() {
+
+update_cargo_version() {
   local new_version=$1
 
-  if [[ ! -f "$DESKTOP_PACKAGE_FILE" ]]; then
-    echo -e "${RED}Missing $DESKTOP_PACKAGE_FILE${NC}"
+  if [[ ! -f "$CARGO_FILE" ]]; then
+    echo -e "${RED}Missing $CARGO_FILE${NC}"
     exit 1
   fi
 
-  sed -i -E "s/(\"version\"[[:space:]]*:[[:space:]]*\")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DESKTOP_PACKAGE_FILE"
+  sed -i -E "s/(^version = \")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$CARGO_FILE"
 
-  echo -e "${GREEN}Updated $DESKTOP_PACKAGE_FILE version to $new_version${NC}"
-}
-
-update_desktop_cargo_version() {
-  local new_version=$1
-
-  if [[ ! -f "$DESKTOP_CARGO_FILE" ]]; then
-    echo -e "${RED}Missing $DESKTOP_CARGO_FILE${NC}"
-    exit 1
-  fi
-
-  sed -i -E "s/(^version = \")([0-9]+\.[0-9]+\.[0-9]+)(\")/\1$new_version\3/" "$DESKTOP_CARGO_FILE"
-
-  echo -e "${GREEN}Updated $DESKTOP_CARGO_FILE version to $new_version${NC}"
+  echo -e "${GREEN}Updated $CARGO_FILE version to $new_version${NC}"
 }
 
 update_tauri_conf_version() {
@@ -158,13 +145,8 @@ create_tag() {
 
 show_info() {
   local version=$1
-
-  echo -e "\n${BLUE}==============================================${NC}"
-  echo -e "${GREEN}Trackion Release Info${NC}"
   echo -e "${BLUE}==============================================${NC}"
   echo -e "${YELLOW}Version:${NC}             $version"
-  echo -e "${YELLOW}Server Binary:${NC}       trackion-server"
-  echo -e "${YELLOW}Desktop Installer:${NC}   Tauri MSI/NSIS"
   echo -e "${YELLOW}Tag:${NC}                 v$version"
   echo -e "${BLUE}==============================================${NC}\n"
 }
@@ -192,9 +174,8 @@ main() {
   update_version_file "$NEW_VERSION"
   echo -e "${GREEN}Updated $VERSION_FILE${NC}"
 
-  update_web_version "$NEW_VERSION"
-  update_desktop_version "$NEW_VERSION"
-  update_desktop_cargo_version "$NEW_VERSION"
+  update_client_version "$NEW_VERSION"
+  update_cargo_version "$NEW_VERSION"
   update_tauri_conf_version "$NEW_VERSION"
   update_docs_version "$NEW_VERSION"
 
