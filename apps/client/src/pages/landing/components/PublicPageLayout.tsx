@@ -8,8 +8,8 @@ interface PublicPageLayoutProps {
 
 export function PublicPageLayout({ children }: PublicPageLayoutProps) {
   return (
-    <div className="min-h-screen bg-background overflow-hidden">
-      <div className="mx-auto relative md:max-w-5xl *:[[id]]:scroll-mt-22">
+    <div className="min-h-screen overflow-hidden select-text">
+      <div className="mx-auto relative md:max-w-6xl">
         <Header />
         {children}
         <Footer />

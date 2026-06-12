@@ -1,13 +1,14 @@
+import { ActionIcon, Group, Loader, Paper, Text } from "@mantine/core";
 import { PauseIcon, PlayIcon } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function DemoSection() {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hoverTimer = useRef<any | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [inside, setInside] = useState(false);
   const [countdown, setCountdown] = useState(3);
   const [playing, setPlaying] = useState(false);
@@ -18,11 +19,11 @@ export default function DemoSection() {
     setLoading(true);
     setCountdown(3);
 
-    let time = 3;
+    let remaining = 3;
 
     const interval = setInterval(() => {
-      time -= 1;
-      setCountdown(time);
+      remaining--;
+      setCountdown(remaining);
     }, 1000);
 
     hoverTimer.current = setTimeout(() => {
@@ -34,7 +35,6 @@ export default function DemoSection() {
 
       if (hoverTimer.current) {
         clearTimeout(hoverTimer.current);
-        hoverTimer.current = null;
       }
 
       if (!started) {
@@ -42,7 +42,7 @@ export default function DemoSection() {
         setCountdown(3);
       }
     };
-  }, [inside]);
+  }, [inside, playing]);
 
   useEffect(() => {
     const handleMove = (e: MouseEvent) => {
@@ -50,78 +50,77 @@ export default function DemoSection() {
 
       const rect = containerRef.current.getBoundingClientRect();
 
-      const isInside =
+      setInside(
         e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom;
-
-      setInside(isInside);
+          e.clientX <= rect.right &&
+          e.clientY >= rect.top &&
+          e.clientY <= rect.bottom,
+      );
     };
 
     window.addEventListener("mousemove", handleMove);
-    return () => window.removeEventListener("mousemove", handleMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMove);
+    };
   }, []);
 
-  const playVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.play().catch(() => {});
+  const playVideo = async () => {
+    try {
+      await videoRef.current?.play();
       setPlaying(true);
       setStarted(true);
       setLoading(false);
-    }
+    } catch {}
   };
 
   const pauseVideo = () => {
-    if (videoRef.current) {
-      videoRef.current.pause();
-      setPlaying(false);
-    }
+    videoRef.current?.pause();
+    setPlaying(false);
   };
 
   return (
-    <div className="relative px-4 py-10">
-      <div className="absolute inset-0 border-l border-r dark:border-card pointer-events-none"></div>
-
-      <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 z-20">
-        <button
-          onClick={playing ? pauseVideo : playVideo}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs 
-            rounded-md border border-border bg-secondary-foreground/5 backdrop-blur-md 
-            hover:bg-accent/10 transition"
-        >
-          {playing ? (
-            <>
-              <PauseIcon className="fill-accent size-3" /> Pause Demo
-            </>
-          ) : (
-            <>
-              <PlayIcon className="fill-accent size-3" />
-              Watch Demo
-            </>
-          )}
-        </button>
-      </div>
+    <>
       <CursorFollower
         active={inside && !playing}
         loading={loading}
         countdown={countdown}
       />
-      <div
-        ref={containerRef}
-        className="relative rounded-2xl border border-white/10 bg-black overflow-hidden cursor-e"
-      >
-        <video
-          ref={videoRef}
-          src="https://res.cloudinary.com/p8labs/video/upload/v1774267109/trackion-product-demo_b2fvuu.mp4"
-          className="w-full aspect-video"
-          muted
-          playsInline
-          controls={false}
-          poster="/hero_dark.png"
-        />
-      </div>
-    </div>
+
+      <Paper pos="relative" py="xl">
+        <Group justify="center" mb="md">
+          <ActionIcon
+            variant="light"
+            radius="xl"
+            size="lg"
+            onClick={playing ? pauseVideo : playVideo}
+          >
+            {playing ? <PauseIcon size={16} /> : <PlayIcon size={16} />}
+          </ActionIcon>
+
+          <Text size="sm" fw={500}>
+            {playing ? "Pause Demo" : "Watch Demo"}
+          </Text>
+        </Group>
+
+        <Paper ref={containerRef} radius="xl" withBorder>
+          <video
+            ref={videoRef}
+            src="https://res.cloudinary.com/p8labs/video/upload/v1774267109/trackion-product-demo_b2fvuu.mp4"
+            poster="/hero_dark.png"
+            muted
+            playsInline
+            controls={false}
+            style={{
+              width: "100%",
+              aspectRatio: "16 / 9",
+              display: "block",
+            }}
+            className="rounded-xl object-cover"
+          />
+        </Paper>
+      </Paper>
+    </>
   );
 }
 
@@ -134,43 +133,53 @@ function CursorFollower({
   loading: boolean;
   countdown: number;
 }) {
-  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({
+    x: 0,
+    y: 0,
+  });
 
   useEffect(() => {
     const move = (e: MouseEvent) => {
-      setPos({ x: e.clientX, y: e.clientY });
+      setPosition({
+        x: e.clientX,
+        y: e.clientY,
+      });
     };
 
     window.addEventListener("mousemove", move);
-    return () => window.removeEventListener("mousemove", move);
+
+    return () => {
+      window.removeEventListener("mousemove", move);
+    };
   }, []);
 
   if (!active) return null;
 
   return (
-    <div
-      className="pointer-events-none fixed z-9999"
-      style={{ left: pos.x, top: pos.y }}
+    <Paper
+      shadow="md"
+      radius="md"
+      p="xs"
+      withBorder
+      pos="fixed"
+      style={{
+        left: position.x + 12,
+        top: position.y + 12,
+        zIndex: 9999,
+        pointerEvents: "none",
+        backdropFilter: "blur(10px)",
+      }}
     >
-      <div
-        className="translate-x-2 translate-y-2 flex items-center gap-2 px-3 py-1.5 rounded-md 
-        bg-white/10 backdrop-blur-md border border-white/10 text-xs text-white shadow-lg"
-      >
+      <Group gap="xs">
         {loading ? (
           <>
-            <div className="relative w-4 h-4">
-              <div className="absolute inset-0 border border-white/30 rounded-full" />
-              <div className="absolute inset-0 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              <span className="absolute inset-0 flex items-center justify-center text-[10px]">
-                {countdown}
-              </span>
-            </div>
-            Activating Demo...
+            <Loader size="xs" />
+            <Text size="xs">Activating Demo ({countdown})</Text>
           </>
         ) : (
-          <>Play</>
+          <Text size="xs">Play Demo</Text>
         )}
-      </div>
-    </div>
+      </Group>
+    </Paper>
   );
 }
