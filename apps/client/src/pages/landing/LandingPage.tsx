@@ -8,16 +8,15 @@ import {
   Shield,
   Zap,
 } from "lucide-react";
-import { Button } from "@trackion/ui/button";
-import { FullLine, PLine, Strip, PlusDecor } from "@trackion/ui/decoration";
 
-import { CodeBox } from "@trackion/ui/code-box";
 import { SCRIPT_TAG_CODE } from "@/lib/constants";
 import { Icons } from "@/lib/icons";
 
 import { Header } from "./components/Header";
 import DemoSection from "./components/DemoSection";
 import { Footer } from "./components/Footer";
+import { Button } from "@mantine/core";
+import { CodeHighlight } from "@mantine/code-highlight";
 
 export function LandingPage() {
   return (
@@ -25,7 +24,6 @@ export function LandingPage() {
       <BackgroundEffects />
       <div className="mx-auto relative md:max-w-5xl *:[[id]]:scroll-mt-22">
         <Header />
-        <FullLine />
         <div className="mx-auto max-w-5xl">
           <div className="flex items-center justify-between gap-4 bg-muted/30 px-4 py-3">
             <div className="flex items-center gap-3 text-sm">
@@ -43,7 +41,6 @@ export function LandingPage() {
           </div>
         </div>
         <section className="relative px-4 pb-20 pt-14 md:pt-20">
-          <PLine />
           <div className="text-center mb-10">
             <h1 className="text-balance text-5xl font-extrabold leading-tight tracking-tight md:text-7xl">
               Love your product telemetry again
@@ -74,19 +71,11 @@ export function LandingPage() {
               </a>
             </div>
           </div>
-          <PlusDecor />
         </section>
-        <FullLine />
 
         <DemoSection />
 
-        <FullLine />
-        <Strip />
-        <FullLine />
-
         <section className="relative">
-          <PlusDecor position="top" />
-          <PLine />
           <div className="relative px-4">
             <div className="py-10 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -111,8 +100,6 @@ export function LandingPage() {
                 </Button>
               </a>
             </div>
-            <FullLine />
-            <PlusDecor position="bottom" />
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-12">
@@ -298,14 +285,8 @@ export function LandingPage() {
               </div>
             ))}
           </div>
-          <PlusDecor position="bottom" />
         </section>
-        <FullLine />
-        <Strip />
-        <FullLine />
         <section className="relative">
-          <PLine />
-          <PlusDecor position="top" />
           <div className="relative px-4">
             <div className="py-10 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -317,8 +298,6 @@ export function LandingPage() {
                 </h2>
               </div>
             </div>
-            <FullLine />
-            <PlusDecor position="bottom" />
           </div>
           <div className="grid lg:grid-cols-2 border border-border/60">
             <div className="group relative px-8 py-10 border-r border-border/60">
@@ -378,7 +357,7 @@ export function LandingPage() {
                 </div>
 
                 <div className="p-4">
-                  <CodeBox code={SCRIPT_TAG_CODE} language="html" />
+                  <CodeHighlight code={SCRIPT_TAG_CODE} language="html" />
                 </div>
               </div>
 
@@ -397,13 +376,7 @@ export function LandingPage() {
           </div>
         </section>
 
-        <FullLine />
-        <Strip />
-        <FullLine />
-
         <section className="relative">
-          <PLine />
-          <PlusDecor position="top" />
           <div className="relative px-4">
             <div className="py-10 flex flex-wrap items-end justify-between gap-4">
               <div>
@@ -415,8 +388,6 @@ export function LandingPage() {
                 </h2>
               </div>
             </div>
-            <FullLine />
-            <PlusDecor position="bottom" />
           </div>
           <div className="grid md:grid-cols-2 border border-border/60">
             <div className="group relative px-8 py-10 border-r border-border/60">
@@ -521,7 +492,6 @@ export function LandingPage() {
               </Link>
             </div>
           </div>
-
           <div className="border-border/60 px-6 py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <p className="text-sm font-medium">Self-hosted</p>
@@ -539,18 +509,10 @@ export function LandingPage() {
               </Button>
             </a>
           </div>
-          <PlusDecor />
+          \{" "}
         </section>
 
-        <FullLine />
-        <Strip />
-        <FullLine />
-
         <section className="relative">
-          <FullLine />
-          <PlusDecor position="top" />
-          <PLine />
-
           <div className="group relative overflow-hidden px-10 py-16 text-center flex items-center flex-col justify-center">
             <div
               className="absolute inset-0 opacity-60 pointer-events-none"
@@ -618,12 +580,7 @@ export function LandingPage() {
               style={{ backgroundColor: "var(--accent-medium)" }}
             />
           </div>
-          <PlusDecor position="bottom" />
         </section>
-
-        <FullLine />
-        <Strip />
-        <FullLine />
 
         <Footer />
       </div>

@@ -1,7 +1,7 @@
 const localhostRegex = /^localhost(:\d{1,5})?$/;
 const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}(:\d{1,5})?$/;
 
-function normalizeSingleDomain(raw: string): string | null {
+export function normalizeSingleDomain(raw: string): string | null {
   const value = raw.trim().toLowerCase();
   if (!value) {
     return null;
