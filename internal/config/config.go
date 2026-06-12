@@ -96,7 +96,7 @@ func Load() *Config {
 		ResendAPIKey: GetEnv("RESEND_API_KEY", ""),
 
 		BaseURL:     GetEnv("BASE_URL", "http://localhost:8000"),
-		FrontendURL: GetEnv("FRONTEND_URL", "http://localhost:5173"),
+		FrontendURL: GetEnv("FRONTEND_URL", "http://localhost:1420"),
 
 		AuthSecret: GetEnv("AUTH_SECRET", "random-noise"),
 

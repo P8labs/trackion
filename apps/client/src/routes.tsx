@@ -1,7 +1,17 @@
 import { lazy } from "react";
 import { Navigate } from "react-router-dom";
 import DownloadsPage from "./pages/landing/DownloadsPage";
-import { ChartPieIcon, CogIcon, FolderIcon } from "lucide-react";
+import {
+  BugIcon,
+  ChartPieIcon,
+  CogIcon,
+  Columns3CogIcon,
+  FolderIcon,
+  LayoutDashboardIcon,
+  TrendingUpIcon,
+  TvMinimalIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 const AuthSignInPage = lazy(() =>
   import("./pages/auth/AuthSignInPage").then((m) => ({
@@ -120,48 +130,193 @@ const NotFoundPage = lazy(() =>
   })),
 );
 
-export const workspaceRoutes = [
-  { path: "/projects", element: <ProjectsPage /> },
-  { path: "/settings", element: <SettingsPage /> },
-  { path: "/subscriptions", element: <SubscriptionsPage /> },
-];
+export const RouteGroup = {
+  authentication: "authentication",
+  workspace: "workspace",
+  project: "project",
+  public: "public",
+} as const;
 
-export const projectRoutes = [
-  { path: "overview", element: <OverviewPage /> },
-  { path: "events", element: <EventsPage /> },
-  { path: "breakdown", element: <BreakdownPage /> },
+export const LinkedSidebar = {
+  workspace: "workspace",
+  project: "project",
+} as const;
+
+export type RouteGroup = (typeof RouteGroup)[keyof typeof RouteGroup];
+export type LinkedSidebar = (typeof LinkedSidebar)[keyof typeof LinkedSidebar];
+
+export type AppRoute = {
+  path: string;
+  element: React.ReactNode;
+  icon?: LucideIcon;
+  group: RouteGroup;
+  linkedSidebar?: LinkedSidebar;
+  meta?: {
+    showBackButton?: boolean;
+    name?: string;
+    showHeader?: boolean;
+  };
+};
+
+export const allRoutes: AppRoute[] = [
   {
-    path: "realtime",
-    element: <Navigate to="../events" />,
+    path: "/auth",
+    element: <Navigate to="/auth/signin" replace />,
+    group: "authentication",
   },
-  { path: "replays", element: <SessionReplayPage /> },
-  { path: "settings", element: <ProjectDetailPage /> },
-  { path: "remote-config", element: <RemoteConfigPage /> },
-  { path: "errors", element: <ErrorListPage /> },
-  { path: "errors/:fingerprint", element: <ErrorDetailPage /> },
+  {
+    path: "/auth/signin",
+    element: <AuthSignInPage />,
+    group: "authentication",
+    meta: { showHeader: false },
+  },
+  {
+    path: "/auth/signup",
+    element: <AuthSignUpPage />,
+    group: "authentication",
+    meta: { showHeader: false },
+  },
+  {
+    path: "/auth/email/verify",
+    element: <AuthEmailVerifyPage />,
+    group: "authentication",
+    meta: { showBackButton: true },
+  },
+  {
+    path: "/auth/email/recovery",
+    element: <AuthEmailRecoveryPage />,
+    group: "authentication",
+    meta: { showBackButton: true },
+  },
+  {
+    path: "/auth/callback",
+    element: <AuthCallbackPage />,
+    group: "authentication",
+    meta: { showHeader: false },
+  },
+  { path: "/subscribe", element: <SubscribePage />, group: "authentication" },
+  {
+    path: "/projects",
+    element: <ProjectsPage />,
+    icon: FolderIcon,
+    group: "workspace",
+    linkedSidebar: "workspace",
+    meta: { name: "Projects" },
+  },
+  {
+    path: "/settings",
+    element: <SettingsPage />,
+    icon: CogIcon,
+    group: "workspace",
+    linkedSidebar: "workspace",
+    meta: { name: "Settings" },
+  },
+  {
+    path: "/subscriptions",
+    element: <SubscriptionsPage />,
+    icon: ChartPieIcon,
+    group: "workspace",
+    linkedSidebar: "workspace",
+    meta: { name: "Subscriptions" },
+  },
+  {
+    path: "/projects/:id/realtime",
+    element: <Navigate to="/projects/:id/events" />,
+    icon: LayoutDashboardIcon,
+    group: "project",
+  },
+  {
+    path: "/projects/:id",
+    element: <Navigate to="/projects/:id/overview" />,
+    icon: FolderIcon,
+    group: "project",
+  },
+  {
+    path: "/projects/:id/overview",
+    element: <OverviewPage />,
+    icon: LayoutDashboardIcon,
+    group: "project",
+    meta: { name: "Overview" },
+    linkedSidebar: "project",
+  },
+  {
+    path: "/projects/:id/events",
+    element: <EventsPage />,
+    icon: TrendingUpIcon,
+    group: "project",
+    linkedSidebar: "project",
+    meta: { name: "Real-time Events" },
+  },
+  {
+    path: "/projects/:id/breakdown",
+    element: <BreakdownPage />,
+    icon: ChartPieIcon,
+    group: "project",
+    linkedSidebar: "project",
+    meta: { name: "Breakdown" },
+  },
+  {
+    path: "/projects/:id/replays",
+    element: <SessionReplayPage />,
+    icon: TvMinimalIcon,
+    group: "project",
+    linkedSidebar: "project",
+    meta: { name: "Session Replays" },
+  },
+  {
+    path: "/projects/:id/remote-config",
+    element: <RemoteConfigPage />,
+    icon: Columns3CogIcon,
+    group: "project",
+    linkedSidebar: "project",
+    meta: { name: "Remote Config" },
+  },
+  {
+    path: "/projects/:id/errors",
+    element: <ErrorListPage />,
+    icon: BugIcon,
+    linkedSidebar: "project",
+    meta: { name: "Errors" },
+    group: "project",
+  },
+  {
+    path: "/projects/:id/settings",
+    element: <ProjectDetailPage />,
+    icon: CogIcon,
+    group: "project",
+    meta: { name: "Project Settings" },
+    linkedSidebar: "project",
+  },
+  {
+    path: "/projects/:id/errors/:fingerprint",
+    element: <ErrorDetailPage />,
+    icon: BugIcon,
+    meta: { showBackButton: true },
+    group: "project",
+  },
+  { path: "/", element: <LandingPage />, group: "public" },
+  { path: "/downloads", element: <DownloadsPage />, group: "public" },
+  { path: "/about", element: <AboutPage />, group: "public" },
+  { path: "/terms", element: <TermsPage />, group: "public" },
+  { path: "/privacy", element: <PrivacyPage />, group: "public" },
+  { path: "*", element: <NotFoundPage />, group: "public" },
 ];
 
-export const publicRoutes = [
-  { path: "/", element: <LandingPage /> },
-  { path: "/downloads", element: <DownloadsPage /> },
-  { path: "/about", element: <AboutPage /> },
-  { path: "/terms", element: <TermsPage /> },
-  { path: "/privacy", element: <PrivacyPage /> },
-  { path: "*", element: <NotFoundPage /> },
-];
-
-export const authRoutes = [
-  { path: "/auth", element: <Navigate to="/auth/signin" replace /> },
-  { path: "/auth/signin", element: <AuthSignInPage /> },
-  { path: "/auth/signup", element: <AuthSignUpPage /> },
-  { path: "/auth/email/verify", element: <AuthEmailVerifyPage /> },
-  { path: "/auth/email/recovery", element: <AuthEmailRecoveryPage /> },
-  { path: "/auth/callback", element: <AuthCallbackPage /> },
-  { path: "/subscribe", element: <SubscribePage /> },
-];
+export const authRoutes = allRoutes.filter((r) => r.group === "authentication");
+export const workspaceRoutes = allRoutes.filter((r) => r.group === "workspace");
+export const projectRoutes = allRoutes.filter((r) => r.group === "project");
+export const publicRoutes = allRoutes.filter((r) => r.group === "public");
 
 export const workspaceLinks = [
   { path: "/projects", name: "Projects", icon: FolderIcon },
   { path: "/subscriptions", name: "Subscriptions", icon: ChartPieIcon },
   { path: "/settings", name: "Settings", icon: CogIcon },
 ];
+
+export const projectLinks = allRoutes
+  .filter((r) => r.linkedSidebar === "project")
+  .map((r) => ({
+    path: r.path,
+    name: r.meta?.name || r.path.split("/").slice(-1)[0],
+    icon: r.icon,
+  }));
