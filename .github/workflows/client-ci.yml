@@ -84,5 +84,4 @@ jobs:
 
       - name: Build Tauri app
         run: |
-          cargo install tauri-cli --version "2.11.0" --locked
-          cargo tauri build --no-sign
+          pnpm tauri build --no-sign
