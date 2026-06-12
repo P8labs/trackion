@@ -8,6 +8,205 @@ importers:
 
   .: {}
 
+  apps/client:
+    dependencies:
+      '@hookform/resolvers':
+        specifier: ^5.2.2
+        version: 5.2.2(react-hook-form@7.74.0(react@19.2.5))
+      '@hugeicons/core-free-icons':
+        specifier: ^4.1.1
+        version: 4.1.1
+      '@hugeicons/react':
+        specifier: ^1.1.6
+        version: 1.1.6(react@19.2.5)
+      '@mantine/charts':
+        specifier: ^9.3.0
+        version: 9.3.0(@mantine/core@9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@mantine/hooks@9.3.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(recharts@3.8.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1))
+      '@mantine/code-highlight':
+        specifier: ^9.3.1
+        version: 9.3.1(@mantine/core@9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@mantine/hooks@9.3.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@mantine/core':
+        specifier: ^9.3.0
+        version: 9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@mantine/form':
+        specifier: ^9.3.0
+        version: 9.3.0(react@19.2.5)
+      '@mantine/hooks':
+        specifier: ^9.3.0
+        version: 9.3.0(react@19.2.5)
+      '@mantine/modals':
+        specifier: ^9.3.0
+        version: 9.3.0(@mantine/core@9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@mantine/hooks@9.3.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@mantine/notifications':
+        specifier: ^9.3.1
+        version: 9.3.1(@mantine/core@9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@mantine/hooks@9.3.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@mantine/nprogress':
+        specifier: ^9.3.0
+        version: 9.3.0(@mantine/core@9.3.0(@mantine/hooks@9.3.0(react@19.2.5))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@mantine/hooks@9.3.0(react@19.2.5))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@rrweb/replay':
+        specifier: 2.0.0-alpha.20
+        version: 2.0.0-alpha.20
+      '@tailwindcss/vite':
+        specifier: ^4.2.1
+        version: 4.2.4(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+      '@tanstack/react-query':
+        specifier: ^5.90.21
+        version: 5.100.6(react@19.2.5)
+      '@tauri-apps/api':
+        specifier: ^2.10.1
+        version: 2.10.1
+      '@tauri-apps/plugin-deep-link':
+        specifier: ~2.4.8
+        version: 2.4.8
+      '@tauri-apps/plugin-os':
+        specifier: ~2.3.2
+        version: 2.3.2
+      '@tauri-apps/plugin-updater':
+        specifier: ~2.10.1
+        version: 2.10.1
+      '@trackion/js':
+        specifier: ^0.2.3
+        version: 0.2.3(react@19.2.5)(vue@3.5.33(typescript@5.9.3))
+      '@trackion/lib':
+        specifier: workspace:*
+        version: link:../../packages/lib
+      '@trackion/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
+      class-variance-authority:
+        specifier: ^0.7.1
+        version: 0.7.1
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      date-fns:
+        specifier: ^4.1.0
+        version: 4.1.0
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
+      lucide-react:
+        specifier: ^0.577.0
+        version: 0.577.0(react@19.2.5)
+      moment:
+        specifier: ^2.30.1
+        version: 2.30.1
+      react:
+        specifier: ^19.2.4
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.2.4
+        version: 19.2.5(react@19.2.5)
+      react-hook-form:
+        specifier: ^7.71.2
+        version: 7.74.0(react@19.2.5)
+      react-icons:
+        specifier: ^5.6.0
+        version: 5.6.0(react@19.2.5)
+      react-router-dom:
+        specifier: ^7.13.1
+        version: 7.14.2(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react-simple-maps:
+        specifier: ^3.0.0
+        version: 3.0.0(prop-types@15.8.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      recharts:
+        specifier: ^3.8.1
+        version: 3.8.1(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react-is@18.3.1)(react@19.2.5)(redux@5.0.1)
+      shiki:
+        specifier: ^4.2.0
+        version: 4.2.0
+      tailwind-merge:
+        specifier: ^3.5.0
+        version: 3.5.0
+      tailwindcss:
+        specifier: ^4.2.1
+        version: 4.2.4
+      tw-animate-css:
+        specifier: ^1.4.0
+        version: 1.4.0
+      zustand:
+        specifier: ^5.0.12
+        version: 5.0.12(@types/react@19.2.14)(immer@11.1.8)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
+    devDependencies:
+      '@babel/core':
+        specifier: ^7.29.0
+        version: 7.29.0
+      '@eslint/js':
+        specifier: ^9.39.4
+        version: 9.39.4
+      '@rolldown/plugin-babel':
+        specifier: ^0.2.0
+        version: 0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+      '@testing-library/jest-dom':
+        specifier: ^6.9.1
+        version: 6.9.1
+      '@testing-library/react':
+        specifier: ^16.3.2
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@testing-library/user-event':
+        specifier: ^14.6.1
+        version: 14.6.1(@testing-library/dom@10.4.1)
+      '@types/babel__core':
+        specifier: ^7.20.5
+        version: 7.20.5
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.2
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.14)
+      '@types/react-simple-maps':
+        specifier: ^3.0.6
+        version: 3.0.6
+      '@vitejs/plugin-react':
+        specifier: ^6.0.0
+        version: 6.0.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))))(babel-plugin-react-compiler@1.0.0)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+      babel-plugin-react-compiler:
+        specifier: ^1.0.0
+        version: 1.0.0
+      eslint:
+        specifier: ^9.39.4
+        version: 9.39.4(jiti@2.6.1)
+      eslint-plugin-react-hooks:
+        specifier: ^7.0.1
+        version: 7.1.1(eslint@9.39.4(jiti@2.6.1))
+      eslint-plugin-react-refresh:
+        specifier: ^0.5.2
+        version: 0.5.2(eslint@9.39.4(jiti@2.6.1))
+      globals:
+        specifier: ^17.4.0
+        version: 17.5.0
+      jsdom:
+        specifier: ^29.1.1
+        version: 29.1.1(@noble/hashes@1.8.0)
+      postcss:
+        specifier: ^8.5.15
+        version: 8.5.15
+      postcss-preset-mantine:
+        specifier: ^1.18.0
+        version: 1.18.0(postcss@8.5.15)
+      postcss-simple-vars:
+        specifier: ^7.0.1
+        version: 7.0.1(postcss@8.5.15)
+      typescript:
+        specifier: ~5.9.3
+        version: 5.9.3
+      typescript-eslint:
+        specifier: ^8.56.1
+        version: 8.59.1(eslint@9.39.4(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: ^8.0.16
+        version: 8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
+      vite-tsconfig-paths:
+        specifier: ^6.1.1
+        version: 6.1.1(typescript@5.9.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+      vitest:
+        specifier: ^4.1.8
+        version: 4.1.8(@types/node@24.12.2)(jsdom@29.1.1(@noble/hashes@1.8.0))(msw@2.13.6(@types/node@24.12.2)(typescript@5.9.3))(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+
   apps/desktop:
     dependencies:
       '@hookform/resolvers':
@@ -130,7 +329,7 @@ importers:
     devDependencies:
       vitepress:
         specifier: ^1.6.4
-        version: 1.6.4(@algolia/client-search@5.51.0)(@types/node@24.12.2)(lightningcss@1.32.0)(postcss@8.5.12)(search-insights@2.17.3)(sugarss@5.0.1(postcss@8.5.15))(typescript@5.9.3)
+        version: 1.6.4(@algolia/client-search@5.51.0)(@types/node@24.12.2)(lightningcss@1.32.0)(postcss@8.5.15)(search-insights@2.17.3)(sugarss@5.0.1(postcss@8.5.15))(typescript@5.9.3)
 
   apps/web:
     dependencies:
@@ -248,9 +447,6 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
       zustand:
         specifier: ^5.0.12
         version: 5.0.12(@types/react@19.2.14)(immer@11.1.8)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
@@ -338,7 +534,7 @@ importers:
     devDependencies:
       tsup:
         specifier: ^8.5.1
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.12)(typescript@5.9.3)
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.15)(typescript@5.9.3)
 
   packages/ui:
     dependencies:
@@ -384,7 +580,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       tsup:
         specifier: ^8.5.1
-        version: 8.5.1(jiti@2.6.1)(postcss@8.5.12)(typescript@5.9.3)
+        version: 8.5.1(jiti@2.6.1)(postcss@8.5.15)(typescript@5.9.3)
 
 packages:
 
@@ -3661,11 +3857,6 @@ packages:
   mz@2.7.0:
     resolution: {integrity: sha512-z81GNO7nnYMEhrGh9LeymoE4+Yr0Wn5McHIZMK5cfQCl+NDX08sCZgUc9/6MHni9IWuFLm1Z3HTCXu2z9fN62Q==}
 
-  nanoid@3.3.11:
-    resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
-    engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
-    hasBin: true
-
   nanoid@3.3.12:
     resolution: {integrity: sha512-ZB9RH/39qpq5Vu6Y+NmUaFhQR6pp+M2Xt76XBnEwDaGcVAqhlvxrl3B2bKS5D3NH3QR76v3aSrKaF/Kiy7lEtQ==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
@@ -3879,10 +4070,6 @@ packages:
     engines: {node: '>=14.0'}
     peerDependencies:
       postcss: ^8.2.1
-
-  postcss@8.5.12:
-    resolution: {integrity: sha512-W62t/Se6rA0Az3DfCL0AqJwXuKwBeYg6nOaIgzP+xZ7N5BFCI7DYi1qs6ygUYT6rvfi6t9k65UMLJC+PHZpDAA==}
-    engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
@@ -5934,6 +6121,15 @@ snapshots:
       vite: 8.0.10(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
     optional: true
 
+  '@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))':
+    dependencies:
+      '@babel/core': 7.29.0
+      picomatch: 4.0.4
+      rolldown: 1.0.3
+    optionalDependencies:
+      '@babel/runtime': 7.29.2
+      vite: 8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
+
   '@rolldown/pluginutils@1.0.0-rc.17': {}
 
   '@rolldown/pluginutils@1.0.0-rc.7': {}
@@ -6511,7 +6707,7 @@ snapshots:
       debug: 4.4.3
       minimatch: 10.2.5
       semver: 7.7.4
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       ts-api-utils: 2.5.0(typescript@5.9.3)
       typescript: 5.9.3
     transitivePeerDependencies:
@@ -6549,6 +6745,14 @@ snapshots:
       vite: 8.0.10(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
     optionalDependencies:
       '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.10(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
+      babel-plugin-react-compiler: 1.0.0
+
+  '@vitejs/plugin-react@6.0.1(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))))(babel-plugin-react-compiler@1.0.0)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.0-rc.7
+      vite: 8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
+    optionalDependencies:
+      '@rolldown/plugin-babel': 0.2.3(@babel/core@7.29.0)(@babel/runtime@7.29.2)(rolldown@1.0.3)(vite@8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15)))
       babel-plugin-react-compiler: 1.0.0
 
   '@vitejs/plugin-vue@5.2.4(vite@5.4.21(@types/node@24.12.2)(lightningcss@1.32.0)(sugarss@5.0.1(postcss@8.5.15)))(vue@3.5.33(typescript@5.9.3))':
@@ -8025,8 +8229,6 @@ snapshots:
       object-assign: 4.1.1
       thenify-all: 1.6.0
 
-  nanoid@3.3.11: {}
-
   nanoid@3.3.12: {}
 
   natural-compare@1.4.0: {}
@@ -8186,12 +8388,12 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.5.15
 
-  postcss-load-config@6.0.1(jiti@2.6.1)(postcss@8.5.12):
+  postcss-load-config@6.0.1(jiti@2.6.1)(postcss@8.5.15):
     dependencies:
       lilconfig: 3.1.3
     optionalDependencies:
       jiti: 2.6.1
-      postcss: 8.5.12
+      postcss: 8.5.15
 
   postcss-mixins@12.1.2(postcss@8.5.15):
     dependencies:
@@ -8199,7 +8401,7 @@ snapshots:
       postcss-js: 4.1.0(postcss@8.5.15)
       postcss-simple-vars: 7.0.1(postcss@8.5.15)
       sugarss: 5.0.1(postcss@8.5.15)
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
 
   postcss-nested@7.0.2(postcss@8.5.15):
     dependencies:
@@ -8220,12 +8422,6 @@ snapshots:
   postcss-simple-vars@7.0.1(postcss@8.5.15):
     dependencies:
       postcss: 8.5.15
-
-  postcss@8.5.12:
-    dependencies:
-      nanoid: 3.3.11
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
 
   postcss@8.5.15:
     dependencies:
@@ -8654,7 +8850,7 @@ snapshots:
       node-fetch: 3.3.2
       open: 11.0.0
       ora: 8.2.0
-      postcss: 8.5.12
+      postcss: 8.5.15
       postcss-selector-parser: 7.1.1
       prompts: 2.4.2
       recast: 0.23.11
@@ -8697,7 +8893,7 @@ snapshots:
       node-fetch: 3.3.2
       open: 11.0.0
       ora: 8.2.0
-      postcss: 8.5.12
+      postcss: 8.5.15
       postcss-selector-parser: 7.1.1
       prompts: 2.4.2
       recast: 0.23.11
@@ -8849,7 +9045,7 @@ snapshots:
       lines-and-columns: 1.2.4
       mz: 2.7.0
       pirates: 4.0.7
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       ts-interface-checker: 0.1.13
 
   sugarss@5.0.1(postcss@8.5.15):
@@ -8955,7 +9151,7 @@ snapshots:
 
   tslib@2.8.1: {}
 
-  tsup@8.5.1(jiti@2.6.1)(postcss@8.5.12)(typescript@5.9.3):
+  tsup@8.5.1(jiti@2.6.1)(postcss@8.5.15)(typescript@5.9.3):
     dependencies:
       bundle-require: 5.1.0(esbuild@0.27.3)
       cac: 6.7.14
@@ -8966,7 +9162,7 @@ snapshots:
       fix-dts-default-cjs-exports: 1.0.1
       joycon: 3.1.1
       picocolors: 1.1.1
-      postcss-load-config: 6.0.1(jiti@2.6.1)(postcss@8.5.12)
+      postcss-load-config: 6.0.1(jiti@2.6.1)(postcss@8.5.15)
       resolve-from: 5.0.0
       rollup: 4.60.2
       source-map: 0.7.6
@@ -8975,7 +9171,7 @@ snapshots:
       tinyglobby: 0.2.16
       tree-kill: 1.2.2
     optionalDependencies:
-      postcss: 8.5.12
+      postcss: 8.5.15
       typescript: 5.9.3
     transitivePeerDependencies:
       - jiti
@@ -9155,7 +9351,7 @@ snapshots:
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
-      postcss: 8.5.12
+      postcss: 8.5.15
       rolldown: 1.0.0-rc.17
       tinyglobby: 0.2.16
     optionalDependencies:
@@ -9179,7 +9375,7 @@ snapshots:
       jiti: 2.6.1
       sugarss: 5.0.1(postcss@8.5.15)
 
-  vitepress@1.6.4(@algolia/client-search@5.51.0)(@types/node@24.12.2)(lightningcss@1.32.0)(postcss@8.5.12)(search-insights@2.17.3)(sugarss@5.0.1(postcss@8.5.15))(typescript@5.9.3):
+  vitepress@1.6.4(@algolia/client-search@5.51.0)(@types/node@24.12.2)(lightningcss@1.32.0)(postcss@8.5.15)(search-insights@2.17.3)(sugarss@5.0.1(postcss@8.5.15))(typescript@5.9.3):
     dependencies:
       '@docsearch/css': 3.8.2
       '@docsearch/js': 3.8.2(@algolia/client-search@5.51.0)(search-insights@2.17.3)
@@ -9200,7 +9396,7 @@ snapshots:
       vite: 5.4.21(@types/node@24.12.2)(lightningcss@1.32.0)(sugarss@5.0.1(postcss@8.5.15))
       vue: 3.5.33(typescript@5.9.3)
     optionalDependencies:
-      postcss: 8.5.12
+      postcss: 8.5.15
     transitivePeerDependencies:
       - '@algolia/client-search'
       - '@types/node'
@@ -9246,7 +9442,7 @@ snapshots:
       std-env: 4.1.0
       tinybench: 2.9.0
       tinyexec: 1.2.4
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vite: 8.0.16(@types/node@24.12.2)(esbuild@0.27.3)(jiti@2.6.1)(sugarss@5.0.1(postcss@8.5.15))
       why-is-node-running: 2.3.0

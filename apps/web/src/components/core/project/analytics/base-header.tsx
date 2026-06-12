@@ -1,9 +1,8 @@
 import { OnlineUsersChip } from "@/components/core/project/analytics/online-users-chip";
-import { RefreshIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ActionIcon, Group, Stack, Text, Tooltip } from "@mantine/core";
 import { useState } from "react";
+import { RefreshCcw } from "lucide-react";
 
 interface Props {
   chipLabel?: string;
@@ -69,8 +68,7 @@ export function BaseHeader({
             loading={refreshing}
             onClick={handleRefresh}
           >
-            <HugeiconsIcon
-              icon={RefreshIcon}
+            <RefreshCcw
               size={16}
               className={refreshing ? "animate-spin" : ""}
             />
