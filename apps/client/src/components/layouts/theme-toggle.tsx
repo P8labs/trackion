@@ -1,9 +1,14 @@
 import { Switch, useMantineColorScheme } from "@mantine/core";
 import { MoonIcon, SunIcon } from "lucide-react";
 
+const ENABLED = false;
+
 export function ThemeToggle() {
   const { colorScheme, toggleColorScheme } = useMantineColorScheme();
 
+  if (!ENABLED) {
+    return null;
+  }
   return (
     <Switch
       onClick={toggleColorScheme}

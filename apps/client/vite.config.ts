@@ -35,14 +35,15 @@ const webVersion = getAutoWebVersion();
 
 export default defineConfig({
   plugins: [
+    tailwindcss({
+      optimize: true,
+    }),
     react(),
-    tailwindcss(),
     babel({ presets: [reactCompilerPreset()] }),
   ],
   define: {
     "import.meta.env.VITE_WEB_VERSION": JSON.stringify(webVersion),
   },
-
   clearScreen: false,
   server: {
     port: 1420,
@@ -60,11 +61,13 @@ export default defineConfig({
     },
   },
 
+  envPrefix: ["VITE_", "TAURI_ENV_*"],
   resolve: {
     tsconfigPaths: true,
   },
   build: {
-    chunkSizeWarningLimit: 700,
+    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
+    sourcemap: !!process.env.TAURI_ENV_DEBUG,
     rolldownOptions: {
       output: {
         manualChunks: (id: string) => {
@@ -96,16 +99,8 @@ export default defineConfig({
             return "rrweb";
           }
 
-          if (id.includes("tailwindcss")) {
-            return "tailwindcss";
-          }
-
           if (id.includes("@mantine/core") || id.includes("@mantine/")) {
             return "mantine";
-          }
-
-          if (id.includes("shiki")) {
-            return "shiki";
           }
 
           return "vendor";

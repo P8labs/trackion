@@ -38,10 +38,10 @@ export function AppShell({
   const profileEmail = user?.email || "email";
 
   return (
-    <div className="h-screen flex">
+    <div className="h-full flex min-h-0">
       <aside
         className={cn(
-          "fixed lg:static inset-y-0 left-0 z-60 w-64",
+          "fixed lg:static inset-y-0 left-0 z-999 w-64 shrink-0",
           sidebarOpened
             ? "translate-x-0"
             : "-translate-x-full lg:translate-x-0",
@@ -70,6 +70,7 @@ export function AppShell({
                 component={Link}
                 key={Item.path}
                 label={Item.name}
+                onClick={() => sideBarToggle()}
                 to={Item.path}
                 active={location.pathname == Item.path}
                 leftSection={<Item.icon className="w-5 h-5" />}
@@ -159,7 +160,7 @@ export function AppShell({
           <LogoutModal close={close} opened={opened} />
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           <Outlet />
         </main>
       </div>
