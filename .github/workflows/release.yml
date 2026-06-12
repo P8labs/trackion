@@ -274,6 +274,9 @@ jobs:
   build-android:
     name: Build Android APKs
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
 
     steps:
       - name: Checkout
