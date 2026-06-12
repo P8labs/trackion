@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
 
 import { useQueryClient } from "@tanstack/react-query";
 import { ReplayPlayer } from "@/components/core/project/replay-player";
@@ -21,6 +20,7 @@ import {
   UnstyledButton,
 } from "@mantine/core";
 import { RefreshCw, Trash2 } from "lucide-react";
+import moment from "moment";
 
 export function SessionReplayPage() {
   const queryClient = useQueryClient();
@@ -102,9 +102,7 @@ export function SessionReplayPage() {
                   </Text>
 
                   <Text size="xs" c="dimmed">
-                    {formatDistanceToNow(new Date(selectedSession.started_at), {
-                      addSuffix: true,
-                    })}
+                    {moment(new Date(selectedSession.started_at)).fromNow()}
                   </Text>
                 </div>
 
@@ -196,12 +194,7 @@ export function SessionReplayPage() {
                           </Group>
 
                           <Text size="xs" c="dimmed" mt={4}>
-                            {formatDistanceToNow(
-                              new Date(session.last_seen_at),
-                              {
-                                addSuffix: true,
-                              },
-                            )}
+                            {moment(new Date(session.last_seen_at)).fromNow()}
                           </Text>
                         </Paper>
                       </UnstyledButton>
