@@ -1,5 +1,4 @@
 import moment from "moment";
-import { WEB_VERSION } from "@/lib/constants";
 import { userHooks } from "@/hooks/queries/use-user";
 import {
   Paper,
@@ -19,6 +18,7 @@ import Updater from "./components/Updater";
 import { FcGoogle } from "react-icons/fc";
 import { FaGithub } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
+import { WEB_VERSION } from "@/lib/flags";
 
 export function SettingsPage() {
   const currentUser = useGlobalStore((state) => state.user);
@@ -165,7 +165,7 @@ export function SettingsPage() {
 
           <div>
             <Text size="xs" tt="uppercase" fw={600} c="dimmed">
-              Web Version
+              Client Version
             </Text>
             <Text mt="xs" size="sm" fw={500}>
               {WEB_VERSION}

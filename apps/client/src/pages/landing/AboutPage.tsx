@@ -1,8 +1,8 @@
 import { Button, Group, Paper, Stack, Text, Title } from "@mantine/core";
 import { Link } from "react-router-dom";
 
-import { Icons } from "@/lib/icons";
 import { PublicPageLayout } from "./components/PublicPageLayout";
+import { FaGithub } from "react-icons/fa";
 
 export function AboutPage() {
   return (
@@ -81,7 +81,7 @@ export function AboutPage() {
               href="https://github.com/P8labs/trackion"
               target="_blank"
               variant="default"
-              leftSection={<Icons.github size={16} />}
+              leftSection={<FaGithub size={16} />}
             >
               View on GitHub
             </Button>

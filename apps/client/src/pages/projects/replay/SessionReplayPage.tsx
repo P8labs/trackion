@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { ReplayPlayer } from "@/components/core/project/replay-player";
 import { projectHooks } from "@/hooks/queries/use-project";
-import { projectQueryKeys } from "@trackion/lib/queries";
+import { projectQueryKeys } from "@/lib/queries";
 import {
   ActionIcon,
   Badge,

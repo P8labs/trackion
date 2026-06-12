@@ -61,9 +61,6 @@ importers:
       '@trackion/js':
         specifier: ^0.2.3
         version: 0.2.3(react@19.2.5)(vue@3.5.33(typescript@5.9.3))
-      '@trackion/lib':
-        specifier: workspace:*
-        version: link:../../packages/lib
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1

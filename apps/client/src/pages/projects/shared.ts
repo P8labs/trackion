@@ -1,4 +1,4 @@
-import type { ProjectSettings } from "@trackion/lib/types";
+import type { ProjectSettings } from "@/types";
 
 export const defaultProjectSettings: ProjectSettings = {
   auto_pageview: true,
