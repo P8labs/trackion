@@ -24,7 +24,7 @@ export function AuthCard({
   className = "",
 }: AuthCardProps) {
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden px-4">
+    <div className="flex items-center justify-center overflow-hidden px-4">
       <Paper p={IsMobile() ? "sm" : "xl"} className={className}>
         <div className="space-y-2">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -44,7 +44,7 @@ export function AuthFooter() {
   const { serverURL } = useGlobalStore();
 
   return (
-    <div className="flex flex-col items-center justify-center fixed bottom-0 left-0 w-full p-4">
+    <div className="flex flex-col items-center justify-center  bottom-0 left-0 w-full p-4">
       <Text
         component="span"
         className="mt-4 flex items-center justify-center gap-1 text-sm"
