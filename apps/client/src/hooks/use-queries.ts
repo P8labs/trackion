@@ -1,4 +1,4 @@
-import { createMutations, createQueries } from "@trackion/lib/queries";
+import { createMutations, createQueries } from "@/lib/queries";
 
 import { useGlobalStore } from "@/store";
 import {

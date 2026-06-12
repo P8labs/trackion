@@ -12,7 +12,7 @@ import {
   Text,
 } from "@mantine/core";
 
-import type { RecentEventData } from "@trackion/lib/types";
+import type { RecentEventData } from "@/types";
 import { useMediaQuery } from "@mantine/hooks";
 import { CodeHighlight } from "@mantine/code-highlight";
 

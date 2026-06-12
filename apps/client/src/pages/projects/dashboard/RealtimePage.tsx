@@ -2,7 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
 import { analyticsHooks } from "@/hooks/queries/use-analytics";
 import { BaseHeader } from "@/components/core/project/analytics/base-header";
-import { analyticsQueryKeys } from "@trackion/lib/queries";
+import { analyticsQueryKeys } from "@/lib/queries";
 
 export function RealtimePage() {
   const { id: projectId = "" } = useParams<{ id: string }>();

@@ -1,23 +1,23 @@
 import { projectHooks } from "@/hooks/queries/use-project";
 import { type CreateProjectData } from "@/pages/projects/shared";
-import type { ProjectSettings } from "@trackion/lib/types";
+import type { ProjectSettings } from "@/types";
 
 import { ErrorBanner } from "@/components/core/error-banner";
-import { projectQueryKeys } from "@trackion/lib/queries";
+import { projectQueryKeys } from "@/lib/queries";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Badge,
   Button,
   Divider,
   Group,
   Modal,
   Stack,
   Switch,
+  TagsInput,
   Text,
   TextInput,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { parseDomainsInput } from "@/lib/domain";
+import { normalizeSingleDomain } from "@/lib/utils";
 
 interface EditProjectDetailsProps {
   opened: boolean;
@@ -34,7 +34,7 @@ export function EditProjectDetailsModal({
     // Removed mode: "uncontrolled" so form.values updates reactively for badges/switches
     initialValues: {
       name: project.name,
-      domains: project.domains.join(", "), // Convert array to string for TextInput
+      domains: project.domains, // Convert array to string for TextInput
       settings: project.settings,
     },
     validate: {
@@ -45,12 +45,18 @@ export function EditProjectDetailsModal({
         return null;
       },
       domains: (value) => {
-        // value is now a string, no need to .join(",")
-        const { invalidDomains } = parseDomainsInput(value);
-        if (invalidDomains.length > 0) {
-          return `Invalid domains: ${invalidDomains.join(", ")}`;
+        try {
+          console.log("Validating domains:", value);
+          value.forEach((domain) => {
+            const normalized = normalizeSingleDomain(domain);
+            if (!normalized) {
+              throw new Error(`Invalid domain: ${domain}`);
+            }
+          });
+          return null;
+        } catch (err) {
+          return "One or more domains are invalid. Please check your input.";
         }
-        return null;
       },
     },
   });
@@ -60,16 +66,7 @@ export function EditProjectDetailsModal({
 
   const onSubmit = async (data: typeof form.values) => {
     try {
-      // Transform domains string back into a clean array for the API
-      const payload = {
-        ...data,
-        domains: data.domains
-          .split(",")
-          .map((d) => d.trim())
-          .filter(Boolean),
-      };
-
-      await editProjectMutation.mutateAsync(payload, {
+      await editProjectMutation.mutateAsync(data, {
         onSuccess: () => {
           close();
           qc.invalidateQueries({
@@ -83,15 +80,8 @@ export function EditProjectDetailsModal({
   };
 
   const toggleSetting = (key: keyof ProjectSettings, checked: boolean) => {
-    // Use setFieldValue instead of setValues to avoid wiping out the whole form
     form.setFieldValue(`settings.${key}`, checked);
   };
-
-  // Safely parse the domains string to an array for the live badges
-  const currentDomains = form.values.domains
-    .split(",")
-    .map((d) => d.trim())
-    .filter(Boolean);
 
   return (
     <Modal opened={opened} onClose={close} title="Edit Project" size="lg">
@@ -106,22 +96,20 @@ export function EditProjectDetailsModal({
                 disabled={editProjectMutation.isPending}
               />
               <div>
-                <TextInput
+                <TagsInput
                   {...form.getInputProps("domains")}
-                  label="Domains"
-                  placeholder="example.com, app.example.com"
+                  label="Allowed Domains"
+                  data={[]}
+                  value={form.values.domains}
+                  onChange={(formValue) =>
+                    form.setFieldValue("domains", formValue)
+                  }
+                  description="Press Enter to add multiple domains. Protocols like https:// are not needed."
+                  placeholder="example.com"
                   disabled={editProjectMutation.isPending}
+                  clearable
+                  withAsterisk
                 />
-
-                {currentDomains.length > 0 && (
-                  <Group gap="xs" mt="sm">
-                    {currentDomains.map((domain) => (
-                      <Badge key={domain} variant="light">
-                        {domain}
-                      </Badge>
-                    ))}
-                  </Group>
-                )}
               </div>
             </Stack>
           </div>
