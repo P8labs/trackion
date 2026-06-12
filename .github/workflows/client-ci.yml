@@ -83,4 +83,6 @@ jobs:
         run: pnpm build
 
       - name: Build Tauri app
-        run: pnpm client tauri build --no-sign
+        run: |
+          cargo install tauri-cli --version "^2.0.0" --locked
+          cargo tauri build --no-sign

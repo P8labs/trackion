@@ -165,7 +165,8 @@ jobs:
           VITE_SERVER_URL: "https://api.trackion.tech"
           VITE_DEVICE: "desktop"
         run: |
-          pnpm run tauri build
+          cargo install tauri-cli --version "^2.0.0" --locked
+          cargo tauri build
 
       - name: Create latest.json for updater
         shell: pwsh
@@ -373,7 +374,7 @@ jobs:
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
           cd src-tauri
           cargo install tauri-cli --version "^2.0.0" --locked
-          pnpm run tauri android build --split-per-abi
+          cargo tauri android build --split-per-abi
 
       - name: Rename Android APKs
         shell: bash
