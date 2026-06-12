@@ -1,12 +1,10 @@
-@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
-
 @import "tailwindcss";
+
 @import "@mantine/core/styles.css";
 @import "@mantine/charts/styles.css";
 @import "@mantine/nprogress/styles.css";
 @import "@mantine/notifications/styles.css";
 @import "@mantine/code-highlight/styles.css";
-@source "../../../packages/ui/";
 
 @custom-variant dark (&:where([data-mantine-color-scheme=dark], [data-mantine-color-scheme=dark] *));
 
@@ -37,10 +35,16 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    min-height: 100vh;
+    width: 100%;
     user-select: none;
+    padding-top: env(safe-area-inset-top) !important;
+    padding-bottom: env(safe-area-inset-bottom) !important;
   }
   html {
     font-family: var(--font-sans);
+    overscroll-behavior: none;
   }
 
   *::-webkit-scrollbar {
@@ -136,4 +140,8 @@
 .replay-stage .replayer-wrapper > iframe {
   display: block;
   border: 0;
+}
+
+*[data-tauri-drag-region] {
+  app-region: drag;
 }

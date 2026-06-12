@@ -6,7 +6,6 @@ import { ErrorBoundary } from "@/components/core/error-boundary";
 import { queryClient } from "@/lib/queryClient";
 
 import { ModalsProvider } from "@mantine/modals";
-import { TrackionProvider } from "@trackion/js/react";
 import {
   authRoutes,
   projectRoutes,
@@ -20,16 +19,19 @@ import {
   createHighlightJsAdapter,
 } from "@mantine/code-highlight";
 
-import { flags, IsDesktop } from "@/lib/flags";
+import { IsDesktop } from "@/lib/flags";
 import { AppShell } from "./components/layouts/app-shell";
 import { RouteMiddleware } from "./middleware";
 import { LoadingView } from "./Loader";
 import TitleBar from "./components/core/title-bar";
+
 import "highlight.js/styles/dark.min.css";
+
 import hljs from "highlight.js/lib/core";
 import tsLang from "highlight.js/lib/languages/typescript";
 import json from "highlight.js/lib/languages/json";
 import xml from "highlight.js/lib/languages/xml";
+
 hljs.registerLanguage("typescript", tsLang);
 hljs.registerLanguage("json", json);
 hljs.registerLanguage("html", xml);
@@ -38,61 +40,61 @@ const highlightJsAdapter = createHighlightJsAdapter(hljs);
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TrackionProvider
-        options={{
-          enabled: false,
-          apiKey: flags.trackionToken,
-          serverUrl: flags.trackionUrl,
-          replay: {
-            enabled: false,
-          },
-        }}
-      >
-        <ErrorBoundary>
-          <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
-            <ModalsProvider>
-              <Notifications position="top-left" />
-              {IsDesktop() && <TitleBar />}
-              <BrowserRouter>
-                <RouteMiddleware>
-                  <Suspense fallback={<LoadingView />}>
-                    <Routes>
-                      <Route>
-                        {publicRoutes.map((r) => (
-                          <Route key={r.path} {...r} />
-                        ))}
-                      </Route>
-                      <Route>
-                        {authRoutes.map((r) => (
-                          <Route key={r.path} {...r} />
-                        ))}
-                      </Route>
+      <ErrorBoundary>
+        <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
+          <ModalsProvider>
+            <Notifications position="top-left" />
 
-                      <Route element={<AppShell links={workspaceLinks} />}>
-                        {workspaceRoutes.map((r) => (
-                          <Route key={r.path} {...r} />
-                        ))}
-                      </Route>
+            <div className="h-screen w-screen flex flex-col overflow-hidden">
+              {IsDesktop() && (
+                <div className="shrink-0">
+                  <TitleBar />
+                </div>
+              )}
 
-                      <Route element={<ProjectDashboardLayout />}>
-                        <Route path="/projects/:id">
-                          <Route
-                            index
-                            element={<Navigate to="overview" replace />}
-                          />
-                          {projectRoutes.map((r) => (
+              <main className="flex-1 min-h-0 overflow-auto">
+                <BrowserRouter>
+                  <RouteMiddleware>
+                    <Suspense fallback={<LoadingView />}>
+                      <Routes>
+                        <Route>
+                          {publicRoutes.map((r) => (
                             <Route key={r.path} {...r} />
                           ))}
                         </Route>
-                      </Route>
-                    </Routes>
-                  </Suspense>
-                </RouteMiddleware>
-              </BrowserRouter>
-            </ModalsProvider>
-          </CodeHighlightAdapterProvider>
-        </ErrorBoundary>
-      </TrackionProvider>
+
+                        <Route>
+                          {authRoutes.map((r) => (
+                            <Route key={r.path} {...r} />
+                          ))}
+                        </Route>
+
+                        <Route element={<AppShell links={workspaceLinks} />}>
+                          {workspaceRoutes.map((r) => (
+                            <Route key={r.path} {...r} />
+                          ))}
+                        </Route>
+
+                        <Route element={<ProjectDashboardLayout />}>
+                          <Route path="/projects/:id">
+                            <Route
+                              index
+                              element={<Navigate to="overview" replace />}
+                            />
+                            {projectRoutes.map((r) => (
+                              <Route key={r.path} {...r} />
+                            ))}
+                          </Route>
+                        </Route>
+                      </Routes>
+                    </Suspense>
+                  </RouteMiddleware>
+                </BrowserRouter>
+              </main>
+            </div>
+          </ModalsProvider>
+        </CodeHighlightAdapterProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }
