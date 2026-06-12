@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Icons } from "@/lib/icons";
 import { Download, ExternalLink } from "lucide-react";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 import moment from "moment";
@@ -13,6 +12,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { FaGithub } from "react-icons/fa";
 
 type GithubAsset = {
   id: number;
@@ -203,7 +203,7 @@ export default function DownloadsPage() {
                   href="https://github.com/P8labs/trackion/releases"
                   target="_blank"
                   variant="default"
-                  leftSection={<Icons.github size={14} />}
+                  leftSection={<FaGithub size={14} />}
                 >
                   All releases
                 </Button>

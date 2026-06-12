@@ -15,7 +15,7 @@ import {
 
 import { Bug, ChevronRight } from "lucide-react";
 
-import type { GroupedError } from "@trackion/lib/types";
+import type { GroupedError } from "@/types";
 
 import { projectHooks } from "@/hooks/queries/use-project";
 

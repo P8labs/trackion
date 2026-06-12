@@ -4,7 +4,7 @@ import { analyticsHooks } from "@/hooks/queries/use-analytics";
 import { LoadingBanner } from "@/components/core/loading-banner";
 import { ErrorBanner } from "@/components/core/error-banner";
 import { ChoroplethMap } from "mantine-choropleth";
-import type { CountryMapData } from "@trackion/lib/types";
+import type { CountryMapData } from "@/types";
 
 interface OverviewGeoTrafficProps {
   projectId: string;

@@ -14,7 +14,7 @@ import { TrafficHeatmap } from "@/components/core/project/analytics/traffic-heat
 
 import { projectHooks } from "@/hooks/queries/use-project";
 
-import { analyticsQueryKeys } from "@trackion/lib/queries";
+import { analyticsQueryKeys } from "@/lib/queries";
 
 export function OverviewPage() {
   const { id = "" } = useParams<{ id: string }>();

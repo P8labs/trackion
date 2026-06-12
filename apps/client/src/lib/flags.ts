@@ -8,6 +8,10 @@ type Flags = {
   devMode: boolean;
 };
 
+export const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL || "http://localhost:8000";
+export const WEB_VERSION = import.meta.env.VITE_WEB_VERSION || "0.0.0";
+
 export const flags: Flags = {
   mode: import.meta.env.VITE_TRACKION_MODE || "saas",
   isSaaS: (import.meta.env.VITE_TRACKION_MODE || "saas") === "saas",

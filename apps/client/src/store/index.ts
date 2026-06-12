@@ -1,9 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { SERVER_URL } from "@/lib/constants";
-import { createApi, createApiClient } from "@trackion/lib/api";
-import { flags } from "@/lib/flags";
-import type { User } from "@trackion/lib/types";
+import { createApi, createApiClient } from "@/lib/api";
+import { flags, SERVER_URL } from "@/lib/flags";
+import type { User } from "@/types";
 
 const USER_STALE_TIME_MS = 5 * 60 * 1000; // 5 minutes
 

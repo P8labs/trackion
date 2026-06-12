@@ -17,8 +17,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { projectHooks } from "@/hooks/queries/use-project";
 
-import { projectQueryKeys } from "@trackion/lib/queries";
-import type { RuntimeFlag } from "@trackion/lib/types";
+import { projectQueryKeys } from "@/lib/queries";
+import type { RuntimeFlag } from "@/types";
 
 interface Props {
   projectId: string;

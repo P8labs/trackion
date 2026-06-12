@@ -12,7 +12,7 @@ import {
   SimpleGrid,
   Divider,
 } from "@mantine/core";
-import { normalizeSingleDomain } from "@/lib/domain";
+import { normalizeSingleDomain } from "@/lib/utils";
 
 import { useMediaQuery } from "@mantine/hooks";
 import { hasLength, useForm } from "@mantine/form";
