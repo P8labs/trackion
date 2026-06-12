@@ -66,11 +66,9 @@ func (j *MaintenanceJob) Run(ctx context.Context) error {
 	}
 
 	deletedReplaySessions := int64(0)
-	if j.cfg.IsSaaS() {
-		deletedReplaySessions, err = j.cleanupFreeTierReplaySessions(jobCtx)
-		if err != nil {
-			return fmt.Errorf("cleanup free-tier replay sessions: %w", err)
-		}
+	deletedReplaySessions, err = j.cleanupFreeTierReplaySessions(jobCtx)
+	if err != nil {
+		return fmt.Errorf("cleanup free-tier replay sessions: %w", err)
 	}
 
 	j.log.Info("maintenance cleanup summary",
@@ -183,7 +181,6 @@ func (j *MaintenanceJob) cleanupExpiredSessions(ctx context.Context) (int64, err
 }
 
 func (j *MaintenanceJob) cleanupFreeTierReplaySessions(ctx context.Context) (int64, error) {
-	// Keep only the most recent replay sessions per project for free tier users.
 	deleteChunksQuery := `
 		WITH ranked AS (
 			SELECT

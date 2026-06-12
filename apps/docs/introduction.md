@@ -56,29 +56,6 @@ Errors are grouped using a fingerprint derived from error message + stack charac
 - Analytics under `/api/analytics/*`
 - Usage and billing summaries under `/api/settings/*` and `/api/billing/*`
 
-## Runtime Modes
-
-Trackion behavior changes depending on `TRACKION_MODE`.
-
-### Selfhost Mode
-
-- `TRACKION_MODE=selfhost`
-- `TRACKION_ADMIN_TOKEN` is required
-- Login path: `POST /api/auth/verify`
-- Protected APIs accept `Authorization: Bearer <TRACKION_ADMIN_TOKEN>`
-
-### SaaS Mode
-
-- `TRACKION_MODE=saas`
-- OAuth login routes are enabled:
-  - `GET /auth/login/github`
-  - `GET /auth/login/google`
-  - `GET /auth/callback/github`
-  - `GET /auth/callback/google`
-- Session routes:
-  - `GET /auth/me`
-  - `POST /auth/logout`
-
 ## Technical Stack
 
 - API server: Go 1.26 + Chi + GORM

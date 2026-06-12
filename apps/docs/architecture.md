@@ -8,9 +8,8 @@ Trackion consists of:
 
 1. Go API server (`cmd/main.go` + `internal/*`)
 2. PostgreSQL database
-3. React web dashboard (`web/`)
-4. Optional Tauri desktop client (`desktop/`)
-5. Browser tracker assets served by API (`/t.js`, `/t.min.js`)
+3. React web dashboard (`client/`)
+4. Browser tracker assets served by API (`/t.js`, `/t.min.js`)
 
 ## Backend Composition
 
@@ -54,18 +53,7 @@ Protected `/api` mounts (auth middleware applied):
 
 ## Authentication Architecture
 
-Two runtime modes:
-
-### Selfhost Mode
-
-- configured by `TRACKION_MODE=selfhost`
-- requires `TRACKION_ADMIN_TOKEN`
-- `POST /api/auth/verify` validates token
-- bearer auth on `/api/*` compares against admin token
-
-### SaaS Mode
-
-- configured by `TRACKION_MODE=saas`
+- Email Authentication
 - OAuth providers (GitHub + Google) enabled
 - session tokens are created/stored in `sessions`
 - bearer token can come from header and/or cookie depending on endpoint path

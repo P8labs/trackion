@@ -14,10 +14,6 @@ const (
 	BETA      Mode = "beta"
 	UNLIMITED Mode = "unlimited"
 	PAID      Mode = "paid"
-
-	// todo: remove selfhost mode in favor of just using the plan types, but for now we can keep it for clarity
-	ModeSelfHost Mode = "selfhost"
-	ModeSaaS     Mode = "saas"
 )
 
 type Config struct {
@@ -166,14 +162,6 @@ func Load() *Config {
 	return cfg
 }
 
-func (c *Config) IsSelfHost() bool {
-	return c.Mode == ModeSelfHost
-}
-
-func (c *Config) IsSaaS() bool {
-	return c.Mode == ModeSaaS
-}
-
 func parseMode(s string) (Mode, error) {
 	switch strings.ToLower(s) {
 	case "beta":
@@ -182,10 +170,6 @@ func parseMode(s string) (Mode, error) {
 		return UNLIMITED, nil
 	case "paid":
 		return PAID, nil
-	case "selfhost", "self-host", "self_host":
-		return ModeSelfHost, nil
-	case "saas", "saaS":
-		return ModeSaaS, nil
 	default:
 		return "", fmt.Errorf("invalid mode: %s", s)
 	}

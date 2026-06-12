@@ -46,10 +46,8 @@ func (s *Service) CreateProject(ctx context.Context, params CreateProjectParams)
 
 	userId := ctx.Value(auth.UserIdContextKey).(string)
 
-	if s.config.IsSaaS() {
-		if err := s.billing.CheckProjectLimit(ctx, uuid.MustParse(userId)); err != nil {
-			return "", err
-		}
+	if err := s.billing.CheckProjectLimit(ctx, uuid.MustParse(userId)); err != nil {
+		return "", err
 	}
 
 	id := uuid.New()
@@ -104,12 +102,10 @@ func (s *Service) CreateProject(ctx context.Context, params CreateProjectParams)
 		return "", errors.New("Unable to create project. Try again")
 	}
 
-	if s.config.IsSaaS() {
-		userUUID := uuid.MustParse(userId)
-		if err := s.billing.IncrementProjectUsage(ctx, userUUID); err != nil {
-			log.Printf("Failed to increment project usage for user %s: %v", userUUID, err)
-			// Don't fail the request if usage tracking fails
-		}
+	userUUID := uuid.MustParse(userId)
+	if err := s.billing.IncrementProjectUsage(ctx, userUUID); err != nil {
+		log.Printf("Failed to increment project usage for user %s: %v", userUUID, err)
+		// Don't fail the request if usage tracking fails
 	}
 
 	return project.ID.String(), nil
@@ -229,11 +225,9 @@ func (s *Service) DeleteProject(ctx context.Context, projectId string) error {
 		return errors.New("Unable to delete project")
 	}
 
-	if s.config.IsSaaS() {
-		if err := s.billing.DecrementProjectUsage(ctx, project.UserID); err != nil {
-			log.Printf("Failed to decrement project usage for user %s: %v", project.UserID, err)
-			// Don't fail the request if usage tracking fails
-		}
+	if err := s.billing.DecrementProjectUsage(ctx, project.UserID); err != nil {
+		log.Printf("Failed to decrement project usage for user %s: %v", project.UserID, err)
+		// Don't fail the request if usage tracking fails
 	}
 
 	return nil

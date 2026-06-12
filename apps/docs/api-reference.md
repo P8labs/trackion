@@ -46,9 +46,6 @@ Used by `/events/*` and `/replay` ingestion routes.
 Authorization: Bearer TOKEN
 ```
 
-- Selfhost: `TOKEN == TRACKION_ADMIN_TOKEN`
-- SaaS: session token from OAuth flow
-
 ## Public Routes
 
 ### `GET /health`
@@ -233,26 +230,6 @@ Config body:
 - `GET /api/errors/stats?project_id=...&time_range=7d`
 
 See dedicated [Error Tracking API](/api/errors) page for full details.
-
-## Protected Settings + Billing Routes
-
-- `GET /api/settings/usage`
-- `GET /api/billing/usage`
-- `GET /api/billing/plan`
-
-## Example Flow: Verify + List Projects
-
-```bash
-TOKEN="your-admin-or-session-token"
-
-curl -X POST http://localhost:8000/api/auth/verify \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d "{\"token\": \"$TOKEN\"}"
-
-curl http://localhost:8000/api/projects/ \
-  -H "Authorization: Bearer $TOKEN"
-```
 
 ## Related Pages
 

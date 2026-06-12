@@ -2,8 +2,6 @@
 
 This guide gets Trackion running locally in development mode.
 
-If you only want to evaluate product behavior first, use [SaaS Guide](/saas-guide).
-
 ## Prerequisites
 
 - Go `1.26+`
@@ -30,15 +28,12 @@ Create a root `.env` file:
 
 ```bash
 cat > .env <<'EOF'
-TRACKION_MODE=selfhost
 PORT=8000
 DATABASE_URL=postgres://trackion:trackion@localhost:5432/trackion?sslmode=disable
-
-TRACKION_ADMIN_TOKEN=dev-admin-token
 AUTH_SECRET=dev-auth-secret
 
 BASE_URL=http://localhost:8000
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=http://localhost:1420
 CORS_ORIGINS=*
 
 EVENT_RETENTION_DAYS=30
@@ -73,20 +68,15 @@ On startup, Trackion auto-runs DB migrations and custom indexes.
 In another shell:
 
 ```bash
-cd web
+cd client
 pnpm install
 pnpm dev
 ```
 
 ### 5. Open and login
 
-- Dashboard: `http://localhost:5173`
+- Dashboard: `http://localhost:1420`
 - Health: `http://localhost:8000/health`
-
-Use login values in the web app:
-
-- Server URL: `http://localhost:8000`
-- Token: value from `TRACKION_ADMIN_TOKEN`
 
 ## Option B: API + DB in Docker
 
@@ -114,17 +104,15 @@ docker run -d \
   --restart unless-stopped \
   --network trackion_default \
   -p 8000:8000 \
-  -e TRACKION_MODE=selfhost \
   -e PORT=8000 \
   -e DATABASE_URL="postgres://trackion:trackion@db:5432/trackion?sslmode=disable" \
-  -e TRACKION_ADMIN_TOKEN="replace-with-long-random-token" \
   -e AUTH_SECRET="replace-with-long-random-secret" \
   -e BASE_URL="http://localhost:8000" \
-  -e FRONTEND_URL="http://localhost:5173" \
+  -e FRONTEND_URL="http://localhost:1420" \
   ghcr.io/p8labs/trackion:latest
 ```
 
-4. Continue with web dashboard (`web/pnpm dev`) or host your own frontend build.
+4. Continue with web dashboard (`client/pnpm dev`) or host your own frontend build.
 
 If you want to build the server image locally instead, use compose server service:
 
@@ -137,7 +125,7 @@ If you want to build the server image locally instead, use compose server servic
 docker compose up -d --build
 ```
 
-Then run web dashboard locally (`web/pnpm dev`) or host your own frontend build.
+Then run web dashboard locally (`client/pnpm dev`) or host your own frontend build.
 
 ## Create Your First Project
 
@@ -197,11 +185,9 @@ Checklist:
 
 - Ensure `DATABASE_URL` is valid
 - Ensure PostgreSQL is running
-- Ensure `TRACKION_ADMIN_TOKEN` is set in selfhost mode
 
 ### Login fails with unauthorized
 
-- Use exact `TRACKION_ADMIN_TOKEN` value
 - Confirm frontend is pointing to the correct API URL
 
 ### Events do not appear

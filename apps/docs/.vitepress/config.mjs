@@ -27,7 +27,6 @@ export default defineConfig({
         items: [
           { text: "Home", link: "/" },
           { text: "Introduction", link: "/introduction" },
-          { text: "SaaS Guide", link: "/saas-guide" },
           { text: "Quick Start", link: "/quick-start" },
           { text: "Self Hosting", link: "/self-hosting" },
         ],
