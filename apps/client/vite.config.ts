@@ -96,6 +96,18 @@ export default defineConfig({
             return "rrweb";
           }
 
+          if (id.includes("tailwindcss")) {
+            return "tailwindcss";
+          }
+
+          if (id.includes("@mantine/core") || id.includes("@mantine/")) {
+            return "mantine";
+          }
+
+          if (id.includes("shiki")) {
+            return "shiki";
+          }
+
           return "vendor";
         },
       },

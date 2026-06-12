@@ -17,7 +17,7 @@ import {
 import { Notifications } from "@mantine/notifications";
 import {
   CodeHighlightAdapterProvider,
-  createShikiAdapter,
+  createHighlightJsAdapter,
 } from "@mantine/code-highlight";
 
 import { flags, IsDesktop } from "@/lib/flags";
@@ -25,18 +25,15 @@ import { AppShell } from "./components/layouts/app-shell";
 import { RouteMiddleware } from "./middleware";
 import { LoadingView } from "./Loader";
 import TitleBar from "./components/core/title-bar";
-
-const { createHighlighter } = await import("shiki");
-async function loadShiki() {
-  const shiki = await createHighlighter({
-    langs: ["tsx", "scss", "html", "js", "json"],
-    themes: [],
-  });
-
-  return shiki;
-}
-
-const shikiAdapter = createShikiAdapter(loadShiki);
+import "highlight.js/styles/dark.min.css";
+import hljs from "highlight.js/lib/core";
+import tsLang from "highlight.js/lib/languages/typescript";
+import json from "highlight.js/lib/languages/json";
+import xml from "highlight.js/lib/languages/xml";
+hljs.registerLanguage("typescript", tsLang);
+hljs.registerLanguage("json", json);
+hljs.registerLanguage("html", xml);
+const highlightJsAdapter = createHighlightJsAdapter(hljs);
 
 function App() {
   return (
@@ -52,7 +49,7 @@ function App() {
         }}
       >
         <ErrorBoundary>
-          <CodeHighlightAdapterProvider adapter={shikiAdapter}>
+          <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
             <ModalsProvider>
               <Notifications position="top-left" />
               {IsDesktop() && <TitleBar />}

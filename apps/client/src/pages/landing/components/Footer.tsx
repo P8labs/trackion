@@ -1,4 +1,3 @@
-import { FullLine, PLine, PlusDecor } from "@trackion/ui/decoration";
 import { Link } from "react-router-dom";
 
 export function Footer() {
@@ -14,9 +13,6 @@ export function Footer() {
       />
 
       <div className="relative mx-auto py-16 px-4">
-        <PLine />
-
-        <PlusDecor position="top" />
         <div className="grid md:grid-cols-5 gap-10">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -101,10 +97,6 @@ export function Footer() {
       </div>
 
       <div className="relative">
-        <PLine />
-        <FullLine />
-        <PlusDecor position="top" />
-
         <div className="py-6 px-4 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <p>
             © {new Date().getFullYear()} Trackion. Built at{" "}

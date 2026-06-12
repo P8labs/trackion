@@ -1,14 +1,12 @@
 import { Link } from "react-router-dom";
 import { Code, Zap, Database } from "lucide-react";
-import { Button } from "@trackion/ui/button";
 import { PublicPageLayout } from "./components/PublicPageLayout";
 import { Icons } from "@/lib/icons";
-import { FullLine, PLine } from "@trackion/ui/decoration";
+import { Button } from "@mantine/core";
 
 export function AboutPage() {
   return (
     <PublicPageLayout>
-      <PLine />
       <div className="text-center mb-20 p-6">
         <h1 className="text-5xl font-bold mb-6 tracking-tight">Trackion</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
@@ -140,7 +138,6 @@ export function AboutPage() {
           </div>
         </div>
       </section>
-      <FullLine />
     </PublicPageLayout>
   );
 }
