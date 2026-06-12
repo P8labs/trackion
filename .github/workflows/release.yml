@@ -152,6 +152,9 @@ jobs:
 
       - name: Build frontend
         shell: bash
+        env:
+          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_DEVICE: "desktop"
         run: pnpm build
 
       - name: Build Tauri app
@@ -160,6 +163,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
           VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_DEVICE: "desktop"
         run: |
           pnpm run tauri build
 
@@ -344,6 +348,7 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
           ANDROID_KEY_BASE64: ${{ secrets.ANDROID_KEY_BASE64 }}
+
         run: |
           cd src-tauri/gen/android
           base64 -d <<< "$ANDROID_KEY_BASE64" > "$RUNNER_TEMP/trackion-android-keystore.jks"
@@ -356,11 +361,14 @@ jobs:
       - name: Build android frontend
         shell: bash
         run: pnpm build
-
+        env:
+          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_DEVICE: "android"
       - name: Build Tauri app
         shell: bash
         env:
           VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_DEVICE: "android"
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
           cd src-tauri

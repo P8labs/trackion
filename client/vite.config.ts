@@ -66,8 +66,6 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   build: {
-    minify: !process.env.TAURI_ENV_DEBUG ? "esbuild" : false,
-    sourcemap: !!process.env.TAURI_ENV_DEBUG,
     rolldownOptions: {
       output: {
         manualChunks: (id: string) => {
