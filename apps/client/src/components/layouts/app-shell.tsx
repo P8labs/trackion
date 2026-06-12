@@ -20,11 +20,15 @@ export function AppShell({
   showHeader = true,
   showSidebar = true,
   minimalHeader = false,
+  backto,
+  backtoName = "go back",
 }: {
   links?: { path: string; name: string; icon: any; handleBack?: boolean }[];
   showHeader?: boolean;
   showSidebar?: boolean;
   minimalHeader?: boolean;
+  backto?: string;
+  backtoName?: string;
 }) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -101,11 +105,23 @@ export function AppShell({
             </div>
 
             <div className="border-t border-(--mantine-color-gray-4) dark:border-(--mantine-color-dark-4) p-3 text-md space-y-4">
+              {backto && (
+                <NavLink
+                  component={Link}
+                  leftSection={<ArrowLeftIcon className="w-5 h-5" />}
+                  label={backtoName}
+                  to={backto}
+                  onClick={() => sideBarToggle()}
+                />
+              )}
               <NavLink
                 component={"button"}
                 label="Log out"
                 leftSection={<LogOutIcon className="w-5 h-5" />}
-                onClick={open}
+                onClick={() => {
+                  sideBarToggle();
+                  open();
+                }}
               />
               <LogoutModal opened={opened} close={close} />
             </div>

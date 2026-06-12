@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { IsWeb } from "@/lib/flags";
+import { IsDesktop } from "@/lib/flags";
 import { Button, Group, Text, Divider } from "@mantine/core";
 
 export default function Updater() {
@@ -22,13 +22,13 @@ export default function Updater() {
       }
     };
 
-    if (!IsWeb()) {
+    if (IsDesktop()) {
       checkUpdate();
     }
   }, []);
 
   const handleUpdate = async () => {
-    if (IsWeb()) return;
+    if (IsDesktop()) return;
 
     try {
       setIsUpdating(true);
