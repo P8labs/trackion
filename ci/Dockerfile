@@ -14,4 +14,3 @@ RUN chmod +x /usr/local/bin/trackion-server
 EXPOSE 3000
 
 ENTRYPOINT ["/usr/local/bin/trackion-server"]
-  
