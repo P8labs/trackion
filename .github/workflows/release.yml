@@ -165,7 +165,7 @@ jobs:
           VITE_SERVER_URL: "https://api.trackion.tech"
           VITE_DEVICE: "desktop"
         run: |
-          cargo install tauri-cli --version "^2.0.0" --locked
+          cargo install tauri-cli --version "2.11.0" --locked
           cargo tauri build
 
       - name: Create latest.json for updater
@@ -373,7 +373,7 @@ jobs:
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"
           cd src-tauri
-          cargo install tauri-cli --version "^2.0.0" --locked
+          cargo install tauri-cli --version "2.11.0" --locked
           cargo tauri android build --split-per-abi
 
       - name: Rename Android APKs
@@ -513,7 +513,7 @@ jobs:
             echo ""
             echo "#### Android"
             echo "1. Download the APK that matches your device ABI"
-            echo "2. Install the APK on the device or emulator"
+            echo "2. Install the APK on the device (you may need to enable installation from unknown sources)"
             echo "3. Use the release notes to confirm the supported ABI list"
             echo ""
             echo "#### Docker"
