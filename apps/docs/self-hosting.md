@@ -21,9 +21,7 @@ The API server exposes:
 
 At minimum, set:
 
-- `TRACKION_MODE=selfhost`
 - `DATABASE_URL=postgres://...`
-- `TRACKION_ADMIN_TOKEN=<long-random-token>`
 - `AUTH_SECRET=<long-random-secret>`
 - `BASE_URL=https://api.your-domain.com`
 - `FRONTEND_URL=https://your-dashboard-domain.com`
@@ -88,10 +86,8 @@ docker run -d \
   --name trackion-server \
   --restart unless-stopped \
   -p 8000:8000 \
-  -e TRACKION_MODE=selfhost \
   -e PORT=8000 \
   -e DATABASE_URL="postgres://trackion:trackion@db:5432/trackion?sslmode=disable" \
-  -e TRACKION_ADMIN_TOKEN="replace-with-long-random-token" \
   -e AUTH_SECRET="replace-with-long-random-secret" \
   -e BASE_URL="https://api.example.com" \
   -e FRONTEND_URL="https://app.example.com" \
@@ -148,12 +144,12 @@ set +a
 Build web app:
 
 ```bash
-cd web
+cd client
 pnpm install --frozen-lockfile
 pnpm run build
 ```
 
-Serve `web/dist` from your static host or reverse proxy, and ensure users can reach your API `BASE_URL`.
+Serve `client/dist` from your static host or reverse proxy, and ensure users can reach your API `BASE_URL`.
 
 ## Reverse Proxy + TLS
 
@@ -164,12 +160,6 @@ Production recommendations:
 3. Keep PostgreSQL private (no public ingress)
 4. Restrict allowed origins at edge/proxy layer
 5. Add request size + rate limits at gateway level
-
-## Authentication Model in Selfhost
-
-- Login API: `POST /api/auth/verify`
-- Credential: admin token
-- Protected APIs: `Authorization: Bearer <TRACKION_ADMIN_TOKEN>`
 
 ## Backups
 
@@ -212,7 +202,6 @@ For image/binary deployments, roll forward to next release tag and keep DB backu
 
 - Check `DATABASE_URL`
 - Ensure DB network reachability
-- Ensure `TRACKION_ADMIN_TOKEN` is set in selfhost mode
 
 ### Dashboard loads but no data
 

@@ -72,7 +72,6 @@ export function LandingPage() {
 
         <DemoSection />
 
-        {/* Features */}
         <Stack gap="xl">
           <Title order={2} ta="center">
             Features
@@ -97,7 +96,6 @@ export function LandingPage() {
           </SimpleGrid>
         </Stack>
 
-        {/* Pricing */}
         <Stack gap="xl">
           <Title order={2} ta="center">
             Pricing
@@ -152,7 +150,6 @@ export function LandingPage() {
           </SimpleGrid>
         </Stack>
 
-        {/* CTA */}
         <Paper withBorder p="xl" radius="lg">
           <Stack align="center" gap="md">
             <Text size="xs" tt="uppercase" c="dimmed" fw={700}>

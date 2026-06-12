@@ -44,24 +44,21 @@ features:
 # Welcome
 
 Trackion is a telemetry platform for product teams that want actionable analytics without sending critical data to third parties.
-
 Use these docs to run Trackion locally, deploy it in production, integrate SDKs, and operate the platform safely.
 
 ## Choose Your Path
 
 1. New to Trackion: start with [Introduction](/introduction)
-2. Evaluate quickly (hosted): follow [SaaS Guide](/saas-guide)
-3. Run your own stack: follow [Quick Start](/quick-start)
-4. Deploy long-term: use [Self Hosting](/self-hosting)
-5. Integrate clients: read [SDK Usage](/sdk-usage) and [JavaScript API](/javascript-api)
-6. Build against APIs: use [API Reference](/api-reference)
+2. Run your own stack: follow [Quick Start](/quick-start)
+3. Deploy long-term: use [Self Hosting](/self-hosting)
+4. Integrate clients: read [JavaScript API](/javascript-api)
+5. Build against APIs: use [API Reference](/api-reference)
 
 ## Documentation Map
 
 ### Getting Started
 
 - [Introduction](/introduction)
-- [SaaS Guide](/saas-guide)
 - [Quick Start](/quick-start)
 - [Self Hosting](/self-hosting)
 
@@ -96,12 +93,5 @@ Core services and components:
 Default local ports:
 
 - API: `http://localhost:8000`
-- Web dashboard dev: `http://localhost:5173`
-- Desktop frontend dev (Tauri): `http://localhost:1420`
+- Web dashboard dev: `http://localhost:1420`
 - PostgreSQL: `localhost:5432`
-
-## Important Notes
-
-- In self-host mode, `TRACKION_ADMIN_TOKEN` is required.
-- In SaaS mode, OAuth providers are used and dashboard APIs require session tokens.
-- The API currently applies permissive CORS middleware (`AllowAll`) globally; lock down network access with reverse proxy rules in production.

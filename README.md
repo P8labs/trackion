@@ -91,7 +91,6 @@ You can use Trackion in two ways:
 
 Guides:
 
-- SaaS → [https://trackion.tech/docs/saas-guide/](https://trackion.tech/docs/saas-guide/)
 - Self-host → [https://trackion.tech/docs/quick-start/](https://trackion.tech/docs/quick-start/)
 
 ## Screenshots

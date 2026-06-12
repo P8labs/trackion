@@ -1,6 +1,7 @@
 package billing
 
 import (
+	"encoding/json"
 	"time"
 	db "trackion/internal/db/models"
 )
@@ -96,5 +97,42 @@ func ParsePlan(plan string) (PlanType, error) {
 		return UnlimitedPlan, nil
 	default:
 		return FreePlan, ErrPlanNotFound
+	}
+}
+
+func IsUnlimitedPlan(plan PlanType) bool {
+	return plan == UnlimitedPlan
+}
+
+func ParsePlans(raw []byte) ([]Plan, error) {
+	var plans []Plan
+	err := json.Unmarshal(raw, &plans)
+	if err != nil {
+		return nil, err
+	}
+	return plans, nil
+}
+
+func (s *Service) getHardcodedPlans() PlansResponse {
+	plans := []Plan{
+		{
+			Type:        FreePlan,
+			Limits:      GetPlanLimits(FreePlan),
+			Href:        "#",
+			Cta:         "Get Started",
+			Message:     "Ideal for small projects and personal use. Get started with basic features and limited usage.",
+			Description: "The Free Plan offers essential features for small projects and personal use. It includes a monthly event limit of 10,000, support for up to 3 projects, and basic error retention for 3 days. This plan is perfect for those who are just getting started and want to explore our platform without any cost.",
+			Title:       "Free Plan",
+			Price:       "$0/month",
+			Features: []string{
+				"10,000 monthly events",
+				"Up to 3 projects",
+				"10 config keys per project",
+				"3 days error retention",
+			},
+		}}
+
+	return PlansResponse{
+		Plans: plans,
 	}
 }

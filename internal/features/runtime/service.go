@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"hash/fnv"
-	"log"
 	"maps"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -112,35 +112,30 @@ func (s *Service) GetProjectRuntime(ctx context.Context, projectID string) (Proj
 }
 
 func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params UpsertFlagParams) error {
-	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
-		return err
-	}
-
 	err := core.Require("flag key", key)
+
 	if err != nil {
 		return err
-	}
-
-	if s.config.IsSaaS() && params.RolloutPercentage > 0 && params.RolloutPercentage < 100 {
-		if err := s.billing.CheckFeatureFlagRollout(ctx); err != nil {
-			return err
-		}
 	}
 
 	if params.RolloutPercentage < 0 || params.RolloutPercentage > 100 {
 		return errors.New("rollout_percentage must be between 0 and 100")
 	}
 
-	projectUUID := uuid.MustParse(projectID)
+	project, err := s.ensureProjectOwnership(ctx, projectID)
+	if err != nil {
+		return err
+	}
+
 	var item db.Flag
 
 	item, err = gorm.G[db.Flag](s.db).
-		Where(repo.Flag.ProjectID.Eq(projectUUID)).
+		Where(repo.Flag.ProjectID.Eq(project.ID)).
 		Where(repo.Flag.Key.Eq(key)).
 		First(ctx)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		item = db.Flag{
-			ProjectID:         projectUUID,
+			ProjectID:         project.ID,
 			Key:               key,
 			Enabled:           params.Enabled,
 			RolloutPercentage: params.RolloutPercentage,
@@ -154,14 +149,12 @@ func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params 
 	item.Enabled = params.Enabled
 	item.RolloutPercentage = params.RolloutPercentage
 	item.UpdatedAt = time.Now()
-	log.Print(item)
 	_, err = gorm.G[db.Flag](s.db).
 		Where(repo.Flag.ID.Eq(item.ID)).Set(
 		repo.Flag.Enabled.Set(params.Enabled),
 		repo.Flag.RolloutPercentage.Set(params.RolloutPercentage)).
 		Update(ctx)
 	if err != nil {
-
 		return err
 	}
 
@@ -170,12 +163,12 @@ func (s *Service) UpsertFlag(ctx context.Context, projectID, key string, params 
 }
 
 func (s *Service) DeleteFlag(ctx context.Context, projectID, key string) error {
-	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
-		return err
-	}
-
 	if key == "" {
 		return errors.New("flag key is required")
+	}
+
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+		return err
 	}
 
 	projectUUID := uuid.MustParse(projectID)
@@ -191,40 +184,11 @@ func (s *Service) DeleteFlag(ctx context.Context, projectID, key string) error {
 }
 
 func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, params UpsertConfigParams) error {
-	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
-		return err
-	}
+	projectUUID := uuid.MustParse(projectID)
 
 	key = strings.TrimSpace(key)
 	if key == "" {
 		return errors.New("config key is required")
-	}
-
-	if s.config.IsSaaS() {
-		var configCount int64
-		projectUUID := uuid.MustParse(projectID)
-
-		configs, countErr := gorm.G[db.Config](s.db).
-			Where(repo.Config.ProjectID.Eq(projectUUID)).
-			Find(ctx)
-		if countErr != nil {
-			return countErr
-		}
-		configCount = int64(len(configs))
-
-		_, existingErr := gorm.G[db.Config](s.db).
-			Where(repo.Config.ProjectID.Eq(projectUUID)).
-			Where(repo.Config.Key.Eq(key)).
-			First(ctx)
-		if existingErr != nil && !errors.Is(existingErr, gorm.ErrRecordNotFound) {
-			return existingErr
-		}
-
-		if errors.Is(existingErr, gorm.ErrRecordNotFound) {
-			if err := s.billing.CheckConfigLimit(ctx, projectUUID, int(configCount)); err != nil {
-				return err
-			}
-		}
 	}
 
 	value := strings.TrimSpace(string(params.Value))
@@ -236,34 +200,52 @@ func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, param
 		return errors.New("config value must be valid JSON")
 	}
 
-	if err := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		projectUUID := uuid.MustParse(projectID)
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+		return err
+	}
 
-		var item db.Config
-		item, err := gorm.G[db.Config](tx).
-			Where(repo.Config.ProjectID.Eq(projectUUID)).
-			Where(repo.Config.Key.Eq(key)).
-			First(ctx)
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			item = db.Config{
-				ProjectID: projectUUID,
-				Key:       key,
-				Value:     datatypes.JSON(params.Value),
-			}
-			return gorm.G[db.Config](tx).Create(ctx, &item)
+	var configCount int64
+	configs, err := gorm.G[db.Config](s.db).
+		Where(repo.Config.ProjectID.Eq(projectUUID)).
+		Find(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	configCount = int64(len(configs))
+
+	idx := slices.IndexFunc(configs, func(c db.Config) bool {
+		return c.Key == key
+	})
+
+	// config with this key doesn't exist, check limit before creating new one
+	if idx == -1 {
+		if err := s.billing.CheckConfigLimit(ctx, projectUUID, int(configCount)); err != nil {
+			return err
 		}
+		item := db.Config{
+			ProjectID: projectUUID,
+			Key:       key,
+			Value:     datatypes.JSON(params.Value),
+		}
+
+		err = gorm.G[db.Config](s.db).Create(ctx, &item)
 		if err != nil {
 			return err
 		}
 
+	} else {
+		// config with this key already exists, update it
+		item := configs[idx]
 		item.Value = datatypes.JSON(params.Value)
 		item.UpdatedAt = time.Now()
-		_, err = gorm.G[db.Config](tx).
+		_, err = gorm.G[db.Config](s.db).
 			Where(repo.Config.ID.Eq(item.ID)).
 			Updates(ctx, item)
-		return err
-	}); err != nil {
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	s.cache.invalidate(projectID)
@@ -271,15 +253,16 @@ func (s *Service) UpsertConfig(ctx context.Context, projectID, key string, param
 }
 
 func (s *Service) DeleteConfig(ctx context.Context, projectID, key string) error {
-	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
-		return err
-	}
+	projectUUID := uuid.MustParse(projectID)
 
 	if key == "" {
 		return errors.New("config key is required")
 	}
 
-	projectUUID := uuid.MustParse(projectID)
+	if _, err := s.ensureProjectOwnership(ctx, projectID); err != nil {
+		return err
+	}
+
 	if _, err := gorm.G[db.Config](s.db).
 		Where(repo.Config.ProjectID.Eq(projectUUID)).
 		Where(repo.Config.Key.Eq(key)).
@@ -293,19 +276,17 @@ func (s *Service) DeleteConfig(ctx context.Context, projectID, key string) error
 
 func (s *Service) ensureProjectOwnership(ctx context.Context, projectID string) (db.Project, error) {
 	userIDRaw, ok := ctx.Value(auth.UserIdContextKey).(string)
-
 	if !ok || userIDRaw == "" {
 		return db.Project{}, errors.New("unauthorized")
+	}
+	userID, err := uuid.Parse(userIDRaw)
+	if err != nil {
+		return db.Project{}, errors.New("invalid user id")
 	}
 
 	projectUUID, err := uuid.Parse(projectID)
 	if err != nil {
 		return db.Project{}, errors.New("invalid project id")
-	}
-
-	userID, err := uuid.Parse(userIDRaw)
-	if err != nil {
-		return db.Project{}, errors.New("invalid user id")
 	}
 
 	p, err := gorm.G[db.Project](s.db).

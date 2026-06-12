@@ -35,6 +35,26 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 }
 
 func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
+	projectId, err := uuid.Parse(ctx.Value(ProjectIdContextKey).(string))
+
+	if err != nil {
+		return errors.New("invalid project_id in context")
+	}
+
+	var project db.Project
+	project, err = gorm.G[db.Project](s.db).
+		Select("user_id").
+		Where(repo.Project.ID.Eq(projectId)).
+		First(ctx)
+
+	if err != nil {
+		return err
+	}
+
+	if err := s.billing.CheckEventLimit(ctx, project.UserID, 1); err != nil {
+		return ErrMonthlyLimitReached
+	}
+
 	geo, err := s.geoResolver.Resolve(ctx, params.ClientIP)
 	if err != nil {
 		log.Printf("geo lookup failed for ip=%s: %v", params.ClientIP, err)
@@ -53,23 +73,6 @@ func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
 	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
 	if err != nil {
 		return err
-	}
-
-	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
-
-	var project db.Project
-	project, err = gorm.G[db.Project](s.db).
-		Select("user_id").
-		Where(repo.Project.ID.Eq(projectId)).
-		First(ctx)
-	if err != nil {
-		return err
-	}
-
-	if s.cfg.IsSaaS() {
-		if err := s.billing.CheckEventLimit(ctx, project.UserID, 1); err != nil {
-			return ErrMonthlyLimitReached
-		}
 	}
 
 	deviceInfo := resolveEventDeviceInfo(params)
@@ -96,11 +99,9 @@ func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
 			return err
 		}
 
-		if s.cfg.IsSaaS() {
-			if err := s.billing.IncrementEventUsage(ctx, project.UserID, 1); err != nil {
-				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
-				// Don't fail the request if usage tracking fails
-			}
+		if err := s.billing.IncrementEventUsage(ctx, project.UserID, 1); err != nil {
+			log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+			// Don't fail the request if usage tracking fails
 		}
 
 		return nil
@@ -110,15 +111,9 @@ func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
 }
 
 func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
-	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
-
-	var geo *geoip.Location
-	var err error
-	if len(params.Events) > 0 {
-		geo, err = s.geoResolver.Resolve(ctx, params.Events[0].ClientIP)
-		if err != nil {
-			log.Printf("geo lookup failed for ip=%s: %v", params.Events[0].ClientIP, err)
-		}
+	projectId, err := uuid.Parse(ctx.Value(ProjectIdContextKey).(string))
+	if err != nil {
+		return errors.New("invalid project_id in context")
 	}
 
 	eventCount := len(params.Events)
@@ -135,10 +130,14 @@ func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParam
 		return err
 	}
 
-	if s.cfg.IsSaaS() {
-		if err := s.billing.CheckEventLimit(ctx, project.UserID, eventCount); err != nil {
-			return ErrMonthlyLimitReached
-		}
+	if err := s.billing.CheckEventLimit(ctx, project.UserID, eventCount); err != nil {
+		return ErrMonthlyLimitReached
+	}
+
+	var geo *geoip.Location
+	geo, err = s.geoResolver.Resolve(ctx, params.Events[0].ClientIP)
+	if err != nil {
+		log.Printf("geo lookup failed for ip=%s: %v", params.Events[0].ClientIP, err)
 	}
 
 	events, err := ToInsertEvents(projectId, params.Events, geo)
@@ -151,11 +150,9 @@ func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParam
 			return err
 		}
 
-		if s.cfg.IsSaaS() {
-			if err := s.billing.IncrementEventUsage(ctx, project.UserID, eventCount); err != nil {
-				log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
-				// Don't fail the request if usage tracking fails
-			}
+		if err := s.billing.IncrementEventUsage(ctx, project.UserID, eventCount); err != nil {
+			log.Printf("Failed to increment event usage for user %s: %v", project.UserID, err)
+			// Don't fail the request if usage tracking fails
 		}
 
 		return nil
@@ -190,106 +187,4 @@ func (s *Service) GetProjectConfig(ctx context.Context, projectId string) (Proje
 	applyDefaults(&cfg)
 	return cfg, nil
 
-}
-
-func ToInsertEvents(projectID uuid.UUID, events []EventParams, geo *geoip.Location) ([]db.Event, error) {
-	out := make([]db.Event, 0, len(events))
-
-	for _, e := range events {
-		p, err := ToInsertEvent(projectID, e, geo)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, p)
-	}
-
-	return out, nil
-}
-
-func ToInsertEvent(projectID uuid.UUID, e EventParams, geo *geoip.Location) (db.Event, error) {
-	deviceInfo := resolveEventDeviceInfo(e)
-	cleanedProps := make(map[string]any)
-	for k, v := range e.Properties {
-		switch k {
-		case "device", "platform", "browser", "user_agent", "device_type":
-			continue
-		default:
-			cleanedProps[k] = v
-		}
-	}
-
-	props, err := json.Marshal(mergeGeoProperties(cleanedProps, geo))
-
-	if err != nil {
-		return db.Event{}, err
-	}
-	return db.Event{
-		ProjectID:   projectID,
-		EventName:   e.Event,
-		EventType:   e.Type,
-		SessionID:   core.StrPtr(e.SessionID),
-		PagePath:    core.StrPtr(e.Page.Path),
-		PageTitle:   core.StrPtr(e.Page.Title),
-		Referrer:    core.StrPtr(e.Page.Referrer),
-		UTMSource:   core.StrPtr(e.Utm.Source),
-		UTMMedium:   core.StrPtr(e.Utm.Medium),
-		UTMCampaign: core.StrPtr(e.Utm.Campaign),
-		Properties:  props,
-		Platform:    &deviceInfo.Platform,
-		Device:      &deviceInfo.Device,
-		OSVersion:   &deviceInfo.OS,
-		AppVersion:  &deviceInfo.AppVersion,
-		Browser:     &deviceInfo.Browser,
-	}, nil
-}
-
-func resolveEventDeviceInfo(e EventParams) core.DeviceInfo {
-	info := core.ResolveDeviceInfo(e.Properties, e.UserAgent)
-
-	if e.Platform != nil && *e.Platform != "" && *e.Platform != "Unknown" {
-		info.Platform = *e.Platform
-	}
-	if e.Device != nil && *e.Device != "" && *e.Device != "Unknown" {
-		info.Device = *e.Device
-	}
-	if e.Browser != nil && *e.Browser != "" && *e.Browser != "Unknown" {
-		info.Browser = *e.Browser
-	}
-
-	return info
-}
-
-func mergeGeoProperties(properties map[string]any, geo *geoip.Location) map[string]any {
-	if properties == nil {
-		properties = map[string]any{}
-	}
-
-	if geo == nil {
-		return properties
-	}
-
-	properties["geo"] = map[string]any{
-		"country":      geo.Country,
-		"country_code": geo.CountryCode,
-		"emoji":        geo.Emoji,
-		"region":       geo.Region,
-		"city":         geo.City,
-		"latitude":     geo.Latitude,
-		"longitude":    geo.Longitude,
-	}
-
-	return properties
-}
-
-func applyDefaults(cfg *ProjectConfig) {
-
-	if !cfg.AutoPageview {
-		cfg.AutoPageview = true
-	}
-	if !cfg.TrackTimeSpent {
-		cfg.TrackTimeSpent = true
-	}
-	if !cfg.TrackCampaign {
-		cfg.TrackCampaign = true
-	}
 }
