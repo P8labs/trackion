@@ -20,10 +20,9 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
     // to  { id: 'United States of America', value: 100, label: 'United States of America' },
     const transformed: { id: string; value: number; label: string }[] = [];
 
-    for (const code in data.by_code) {
-      const country = data.by_code[code];
+    for (const country of data.countries) {
       transformed.push({
-        id: country.normalized_name,
+        id: country.name,
         value: country.count,
         label: country.name,
       });
@@ -34,9 +33,11 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
   useEffect(() => {
     // Load world GeoJSON
     // fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
-    // fetch('https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries.geo.json')
+    // fetch(
+    //   "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+    // )
     fetch(
-      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+      "https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries.geo.json",
     )
       .then((res) => res.json())
       .then((data) => setGeoJson(data));
@@ -70,7 +71,7 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
           <ChoroplethMap
             mapData={geoJson}
             data={transformdata(data)}
-            propertyKey="NAME"
+            propertyKey="name"
             height={500}
             projection="naturalEarth1"
             zoomEnabled

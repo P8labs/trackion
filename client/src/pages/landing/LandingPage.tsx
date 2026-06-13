@@ -14,7 +14,6 @@ import {
 import { ArrowRightIcon, BarChart3, Code, Shield, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Footer } from "./components/Footer";
-import DemoSection from "./components/DemoSection";
 import { Header } from "./components/Header";
 
 export function LandingPage() {
