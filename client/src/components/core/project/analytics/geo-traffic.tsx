@@ -71,7 +71,7 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
           <ChoroplethMap
             mapData={geoJson}
             data={transformdata(data)}
-            propertyKey="NAME_EN"
+            propertyKey="WB_A2"
             height={500}
             projection="naturalEarth1"
             zoomEnabled
