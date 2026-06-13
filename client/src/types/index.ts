@@ -111,8 +111,6 @@ export interface CountryMapEntry {
 export interface CountryMapData {
   countries: CountryMapEntry[];
   max_count: number;
-  by_code: Record<string, CountryMapEntry>;
-  by_name: Record<string, CountryMapEntry>;
 }
 
 export interface TrafficHeatmapData {

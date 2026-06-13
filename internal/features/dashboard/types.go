@@ -56,16 +56,14 @@ type BreakdownItem struct {
 type CountryMapEntry struct {
 	Name           string `json:"name"`
 	Count          int64  `json:"count"`
-	CountryCode    string `json:"country_code,omitempty"`
+	CountryCode    string `json:"country_code"`
 	Emoji          string `json:"emoji,omitempty"`
 	NormalizedName string `json:"normalized_name"`
 }
 
 type CountryMapData struct {
-	Countries []CountryMapEntry          `json:"countries"`
-	MaxCount  int64                      `json:"max_count"`
-	ByCode    map[string]CountryMapEntry `json:"by_code"`
-	ByName    map[string]CountryMapEntry `json:"by_name"`
+	Countries []CountryMapEntry `json:"countries"`
+	MaxCount  int64             `json:"max_count"`
 }
 
 type UTMBreakdown struct {

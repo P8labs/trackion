@@ -168,14 +168,16 @@ func (s *Service) GetCountryMapData(ctx context.Context, projectId string) (*Cou
 
 	maxCount := int64(1)
 	result := make([]CountryMapEntry, len(countries))
-	byCode := make(map[string]CountryMapEntry, len(countries))
-	byName := make(map[string]CountryMapEntry, len(countries))
 
 	for i, country := range countries {
+		countryCode := strings.ToUpper(strings.TrimSpace(country.CountryCode))
+		if countryCode == "" {
+			countryCode = "XX"
+		}
 		entry := CountryMapEntry{
 			Name:           country.Name,
 			Count:          country.Count,
-			CountryCode:    strings.ToUpper(strings.TrimSpace(country.CountryCode)),
+			CountryCode:    countryCode,
 			Emoji:          country.Emoji,
 			NormalizedName: strings.TrimSpace(nonAlnumCountryName.ReplaceAllString(strings.ToLower(country.Name), " ")),
 		}
@@ -185,19 +187,11 @@ func (s *Service) GetCountryMapData(ctx context.Context, projectId string) (*Cou
 		}
 
 		result[i] = entry
-		if entry.CountryCode != "" {
-			byCode[entry.CountryCode] = entry
-		}
-		if entry.NormalizedName != "" {
-			byName[entry.NormalizedName] = entry
-		}
 	}
 
 	return &CountryMapData{
 		Countries: result,
 		MaxCount:  maxCount,
-		ByCode:    byCode,
-		ByName:    byName,
 	}, nil
 }
 func (s *Service) GetTrafficHeatmap(

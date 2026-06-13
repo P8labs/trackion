@@ -22,7 +22,7 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
 
     for (const country of data.countries) {
       transformed.push({
-        id: country.name,
+        id: country.country_code ?? "",
         value: country.count,
         label: country.name,
       });
