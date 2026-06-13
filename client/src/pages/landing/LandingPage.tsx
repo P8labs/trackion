@@ -70,7 +70,7 @@ export function LandingPage() {
           </Group>
         </Stack>
 
-        <DemoSection />
+        {/* <DemoSection /> */}
 
         <Stack gap="xl">
           <Title order={2} ta="center">

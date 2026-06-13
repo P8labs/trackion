@@ -35,14 +35,10 @@ func NewService(db *gorm.DB, cfg config.Config) Service {
 }
 
 func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
-	projectId, err := uuid.Parse(ctx.Value(ProjectIdContextKey).(string))
-
-	if err != nil {
-		return errors.New("invalid project_id in context")
-	}
+	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	var project db.Project
-	project, err = gorm.G[db.Project](s.db).
+	project, err := gorm.G[db.Project](s.db).
 		Select("user_id").
 		Where(repo.Project.ID.Eq(projectId)).
 		First(ctx)
@@ -111,10 +107,7 @@ func (s *Service) CreateEvent(ctx context.Context, params EventParams) error {
 }
 
 func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParams) error {
-	projectId, err := uuid.Parse(ctx.Value(ProjectIdContextKey).(string))
-	if err != nil {
-		return errors.New("invalid project_id in context")
-	}
+	projectId := ctx.Value(ProjectIdContextKey).(uuid.UUID)
 
 	eventCount := len(params.Events)
 	if eventCount == 0 {
@@ -122,7 +115,7 @@ func (s *Service) CreateBatchEvents(ctx context.Context, params BatchEventsParam
 	}
 
 	var project db.Project
-	project, err = gorm.G[db.Project](s.db).
+	project, err := gorm.G[db.Project](s.db).
 		Select("user_id").
 		Where(repo.Project.ID.Eq(projectId)).
 		First(ctx)

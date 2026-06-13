@@ -2,6 +2,7 @@ package `in`.p8labs.trackion
 
 
 import android.os.Bundle
+import android.graphics.Color
 import android.view.View
 import android.webkit.WebView
 import androidx.activity.enableEdgeToEdge
@@ -36,7 +37,7 @@ class MainActivity : TauriActivity() {
 
   override fun onWebViewCreate(webView: WebView) {
     super.onWebViewCreate(webView)
-    webView.setBackgroundColor(0x00242424)
+    webView.setBackgroundColor(Color.parseColor("#242424"))
     
     webView.fitsSystemWindows = true
 

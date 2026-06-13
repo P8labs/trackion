@@ -17,6 +17,9 @@ import { normalizeSingleDomain } from "@/lib/utils";
 import { useMediaQuery } from "@mantine/hooks";
 import { hasLength, useForm } from "@mantine/form";
 import type { CreateProjectData } from "@/pages/projects/shared";
+import { notifications } from "@mantine/notifications";
+import { useQueryClient } from "@tanstack/react-query";
+import { projectQueryKeys } from "@/lib";
 
 interface Props {
   opened: boolean;
@@ -24,6 +27,7 @@ interface Props {
 }
 
 export function CreateProjectModal({ opened, close }: Props) {
+  const qc = useQueryClient();
   const navigate = useNavigate();
   const createProjectMutation = projectHooks.useCreateProject();
   const mobile = useMediaQuery("(max-width: 768px)");
@@ -65,13 +69,27 @@ export function CreateProjectModal({ opened, close }: Props) {
   const handleCreateProject = async (data: typeof form.values) => {
     try {
       await createProjectMutation.mutateAsync(data, {
-        onSuccess: (project) => {
+        onError: (err) => {
+          notifications.show({
+            title: "Error",
+            message: err.message,
+            color: "red",
+          });
+        },
+        onSuccess: async (project) => {
+          await qc.invalidateQueries({
+            queryKey: projectQueryKeys.projects,
+          });
           close();
-          navigate(`/projects/${project.id}`);
+          navigate(`/projects/${project.id}/overview`);
         },
       });
     } catch (err) {
-      console.error("Failed to create project:", err);
+      notifications.show({
+        title: "Error",
+        message: "Failed to create project. Please try again.",
+        color: "red",
+      });
     }
   };
 
