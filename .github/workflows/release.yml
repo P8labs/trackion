@@ -401,7 +401,10 @@ jobs:
         with:
           name: android-apks
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/**/release/*.apk
+            src-tauri/gen/android/app/build/outputs/apk/arm64/release/trackion-arm64-release.apk
+            src-tauri/gen/android/app/build/outputs/apk/arm/release/trackion-arm-release.apk
+            src-tauri/gen/android/app/build/outputs/apk/x86/release/trackion-x86-release.apk
+            src-tauri/gen/android/app/build/outputs/apk/x86_64/release/trackion-x86_64-release.apk
           retention-days: 1
 
   prepare-release:

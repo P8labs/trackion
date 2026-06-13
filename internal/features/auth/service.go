@@ -37,8 +37,8 @@ func (s *Service) SignUpWithEmail(ctx context.Context, email, password string) (
 		return uuid.Nil, err
 	}
 
-	extractedName := strings.Split(email, "@")[0]
-	name := strings.Title(strings.ReplaceAll(extractedName, ".", " "))
+	extractedName, _, _ := strings.Cut(email, "@")
+	name := strings.ReplaceAll(extractedName, ".", " ")
 
 	hashedPassword, err := core.HashPassword(password)
 	if err != nil {
@@ -73,11 +73,6 @@ func (s *Service) SignUpWithEmail(ctx context.Context, email, password string) (
 			return err
 		}
 
-		// send verification email
-		if err := s.SendVerificationEmail(ctx, db.EmailVerificationReason, email); err != nil {
-			log.Printf("failed to send verification email to %s: %v", email, err)
-		}
-
 		return nil
 	})
 
@@ -89,6 +84,10 @@ func (s *Service) SignUpWithEmail(ctx context.Context, email, password string) (
 		return uuid.Nil, err
 	}
 
+	// send verification email
+	if err := s.SendVerificationEmail(ctx, db.EmailVerificationReason, email); err != nil {
+		log.Printf("failed to send verification email to %s: %v", email, err)
+	}
 	return user.ID, nil
 }
 
@@ -175,7 +174,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, reason db.EmailReas
 
 	err = s.db.WithContext(ctx).Model(&db.User{}).
 		Where("id = ?", user.ID).
-		Updates(map[string]interface{}{
+		Updates(map[string]any{
 			"email_attempts":  user.EmailAttempts,
 			"last_email_sent": user.LastEmailSent,
 		}).Error
