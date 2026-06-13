@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build:withdocs": "tsc -b && vite build && pnpm run build:docs",
     "build": "tsc -b && vite build",
-    "build:docs": "pnpm -C ../docs install --no-frozen-lockfile && pnpm -C ../docs run build && rm -rf dist/docs && mkdir -p dist/docs && cp -R ../docs/.vitepress/dist/. dist/docs/",
+    "build:docs": "pnpm -C ../docs install --no-frozen-lockfile && pnpm -C ../docs run build && rm -rf dist/docs && mkdir -p dist/docs && cp -R ../docs//dist/. dist/docs/",
     "test": "vitest",
     "test:run": "vitest run",
     "lint": "eslint .",

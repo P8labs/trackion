@@ -1,0 +1,74 @@
+{
+  "title": "Trackion Docs",
+  "url": "https://trackion.tech/docs",
+  "src": "docs",
+  "out": "dist",
+  "engine": "js",
+  "layout": {
+    "spa": true,
+    "header": {
+      "enabled": true
+    },
+    "sidebar": {
+      "collapsible": true,
+      "defaultCollapsed": false
+    },
+    "optionsMenu": {
+      "position": "sidebar-top",
+      "components": {
+        "search": true,
+        "themeSwitch": true
+      }
+    },
+    "footer": {
+      "style": "minimal",
+      "content": "© 2026 Trackion, A Product of P8labs. All rights reserved.",
+      "branding": true
+    }
+  },
+  "theme": {
+    "name": "default",
+    "appearance": "dark",
+    "codeHighlight": true
+  },
+  "minify": true,
+  "autoTitleFromH1": true,
+  "copyCode": true,
+  "pageNavigation": true,
+  "navigation": [
+    { "title": "Introduction", "path": "/" },
+    {
+      "title": "Quick Start Guide",
+      "path": "/quick-start"
+    },
+    {
+      "title": "Self-Hosted Setup",
+      "collapsible": false,
+      "children": [
+        {
+          "title": "Installation",
+          "path": "/self-host"
+        },
+        {
+          "title": "Authentication Setup",
+          "path": "/authentication-setup"
+        }
+      ]
+    },
+    {
+      "title": "GitHub",
+      "path": "https://github.com/P8labs/trackion",
+      "icon": "github",
+      "external": true
+    }
+  ],
+  "plugins": {
+    "git": {
+      "commitHistory": true,
+      "maxCommits": 5
+    },
+    "seo": {
+      "defaultDescription": "Documentation for Trackion, the open-source analytics platform."
+    }
+  }
+}

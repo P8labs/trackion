@@ -8,7 +8,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-trackion}
       POSTGRES_DB: ${POSTGRES_DB:-trackion}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trackion} -d ${POSTGRES_DB:-trackion}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-trackion} -d ${POSTGRES_DB:-trackion}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -16,7 +20,6 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-
 
 volumes:
   db-data:

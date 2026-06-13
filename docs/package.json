@@ -1,14 +1,8 @@
 {
-  "name": "@trackion/docs",
-  "private": true,
-  "version": "4.0.2",
-  "type": "module",
   "scripts": {
-    "dev": "vitepress dev .",
-    "build": "vitepress build .",
-    "preview": "vitepress preview ."
+    "build": "pnpm docmd build --build-only"
   },
   "devDependencies": {
-    "vitepress": "^1.6.4"
+    "@docmd/core": "^0.8.6"
   }
 }
