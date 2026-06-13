@@ -34,10 +34,10 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
     // Load world GeoJSON
     // fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson')
     // fetch(
-    //   "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
+    //   "https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries.geo.json",
     // )
     fetch(
-      "https://raw.githubusercontent.com/johan/world.geo.json/refs/heads/master/countries.geo.json",
+      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson",
     )
       .then((res) => res.json())
       .then((data) => setGeoJson(data));
@@ -71,7 +71,7 @@ export function GeoTraffic({ projectId }: OverviewGeoTrafficProps) {
           <ChoroplethMap
             mapData={geoJson}
             data={transformdata(data)}
-            propertyKey="name"
+            propertyKey="NAME_EN"
             height={500}
             projection="naturalEarth1"
             zoomEnabled
