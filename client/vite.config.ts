@@ -1,6 +1,5 @@
 import { defineConfig } from "vite";
-import react, { reactCompilerPreset } from "@vitejs/plugin-react";
-import babel from "@rolldown/plugin-babel";
+import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -39,7 +38,6 @@ export default defineConfig({
       optimize: true,
     }),
     react(),
-    babel({ presets: [reactCompilerPreset()] }),
   ],
   define: {
     "import.meta.env.VITE_WEB_VERSION": JSON.stringify(webVersion),

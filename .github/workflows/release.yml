@@ -395,16 +395,19 @@ jobs:
 
           echo "APK files after rename:"
           find src-tauri/gen/android/app/build/outputs/apk -name "*.apk"
+          mkdir -p artifacts/android
+          find src-tauri/gen/android/app/build/outputs/apk \
+            -name "*.apk" \
+            -exec cp {} artifacts/android/ \;
+
+          ls -lah artifacts/android
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-apks
           path: |
-            src-tauri/gen/android/app/build/outputs/apk/arm64/release/trackion-arm64-release.apk
-            src-tauri/gen/android/app/build/outputs/apk/arm/release/trackion-arm-release.apk
-            src-tauri/gen/android/app/build/outputs/apk/x86/release/trackion-x86-release.apk
-            src-tauri/gen/android/app/build/outputs/apk/x86_64/release/trackion-x86_64-release.apk
+            client/artifacts/android/*.apk
           retention-days: 1
 
   prepare-release:

@@ -9,6 +9,7 @@
     "beforeBuildCommand": "pnpm build",
     "frontendDist": "../dist"
   },
+  "mainBinaryName": "Trackion",
   "app": {
     "windows": [
       {
@@ -39,6 +40,10 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "android": {
+      "autoIncrementVersionCode": true,
+      "minSdkVersion": 24
+    },
     "windows": {
       "allowDowngrades": false,
       "digestAlgorithm": "sha256",
