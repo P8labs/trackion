@@ -15,6 +15,7 @@ import { ArrowRightIcon, BarChart3, Code, Shield, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
+import DemoSection from "./components/DemoSection";
 
 export function LandingPage() {
   return (
@@ -69,7 +70,7 @@ export function LandingPage() {
           </Group>
         </Stack>
 
-        {/* <DemoSection /> */}
+        <DemoSection />
 
         <Stack gap="xl">
           <Title order={2} ta="center">
