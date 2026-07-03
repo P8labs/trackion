@@ -18,8 +18,6 @@ Trackion is built to be:
 - fast and minimal
 - self-hostable with full data ownership
 
----
-
 ## Features
 
 - **Event tracking** (custom + automatic)
@@ -88,14 +86,9 @@ You can use Trackion in two ways:
   [https://trackion.tech/](https://trackion.tech/)
 
 - **Self-hosted** → run on your own infrastructure
-
-Guides:
-
-- Self-host → [https://trackion.tech/docs/quick-start/](https://trackion.tech/docs/quick-start/)
+  [https://trackion.tech/docs/quick-start/](https://trackion.tech/docs/quick-start/)
 
 ## Screenshots
-
-> Dashboard preview (more in docs)
 
 ![Trackion Dashboard](./client/public/hero.png)
 
@@ -132,3 +125,11 @@ The hosted version may include additional features, scaling, and managed service
 
 "Trackion" and "P8labs" are trademarks of P8labs.
 You may not use the Trackion name, logo, or branding for commercial purposes without permission.
+
+## Partners
+
+Trackion is proudly sponsored by **Greptile** — The AI Code Reviewer.
+
+Greptile automatically reviews pull requests, catches bugs before they reach production, and helps teams ship higher-quality code with AI-powered code reviews.
+
+Learn more at **https://greptile.com**.

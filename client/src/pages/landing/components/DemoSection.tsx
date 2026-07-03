@@ -106,8 +106,8 @@ export default function DemoSection() {
         <Paper ref={containerRef} radius="xl" withBorder>
           <video
             ref={videoRef}
-            src="https://res.cloudinary.com/p8labs/video/upload/v1774267109/trackion-product-demo_b2fvuu.mp4"
-            poster="/hero_dark.png"
+            src="https://res.cloudinary.com/pz-public-assets/video/upload/v1783053168/trackion_al7kti.mp4"
+            poster="/hero.png"
             muted
             playsInline
             controls={false}
