@@ -121,7 +121,9 @@ export function LandingPage() {
                   <List.Item>Error retention: 3 days</List.Item>
                 </List>
 
-                <Button>Get Started</Button>
+                <Link to="/auth">
+                  <Button>Get Started</Button>
+                </Link>
               </Stack>
             </Card>
 
@@ -144,7 +146,7 @@ export function LandingPage() {
                   <List.Item>Error retention: 30 days</List.Item>
                 </List>
 
-                <Button>Get Started</Button>
+                <Button disabled>Coming Soon</Button>
               </Stack>
             </Card>
           </SimpleGrid>
