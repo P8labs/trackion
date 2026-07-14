@@ -4,6 +4,7 @@ import { Button, Group, PinInput, Text } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import { hasLength, useForm } from "@mantine/form";
 import { notifications } from "@mantine/notifications";
+import { useGlobalStore } from "@/store";
 
 export function AuthEmailVerifyPage() {
   const { mutateAsync, isPending } = userHooks.useVerifyEmail();
@@ -38,7 +39,8 @@ export function AuthEmailVerifyPage() {
                 : "An unexpected error occurred during email verification.",
           });
         },
-        onSuccess() {
+        async onSuccess() {
+          await useGlobalStore.getState().actions.fetchCurrentUser(true);
           navigate("/projects", { replace: true });
         },
       });
