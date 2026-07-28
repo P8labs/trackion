@@ -1,6 +1,6 @@
 [package]
 name = "trackion"
-version = "4.0.3"
+version = "5.0.0"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"

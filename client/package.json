@@ -1,7 +1,7 @@
 {
   "name": "@trackion/client",
   "private": true,
-  "version": "4.0.3",
+  "version": "5.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
