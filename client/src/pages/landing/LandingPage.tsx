@@ -3,8 +3,6 @@ import {
   Card,
   Container,
   Group,
-  List,
-  Paper,
   SimpleGrid,
   Stack,
   Text,
@@ -12,7 +10,6 @@ import {
   Title,
 } from "@mantine/core";
 import { ArrowRightIcon, BarChart3, Code, Shield, Zap } from "lucide-react";
-import { Link } from "react-router-dom";
 import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 import DemoSection from "./components/DemoSection";
@@ -20,25 +17,6 @@ import DemoSection from "./components/DemoSection";
 export function LandingPage() {
   return (
     <Container className="relative select-text!" size="lg" px={0}>
-      <div className="absolute inset-0 overflow-hidden z-[-1]">
-        <Dots
-          className="absolute text-(--mantine-color-gray-1) dark:text-(--mantine-color-dark-5) max-sm:hidden"
-          style={{ left: 0, top: 0 }}
-        />
-        <Dots
-          className="absolute text-(--mantine-color-gray-1) dark:text-(--mantine-color-dark-5) max-sm:hidden"
-          style={{ left: 60, top: 0 }}
-        />
-        <Dots
-          className="absolute text-(--mantine-color-gray-1) dark:text-(--mantine-color-dark-5) max-sm:hidden"
-          style={{ left: 0, top: 140 }}
-        />
-        <Dots
-          className="absolute text-(--mantine-color-gray-1) dark:text-(--mantine-color-dark-5) max-sm:hidden"
-          style={{ right: 0, top: 60 }}
-        />
-      </div>
-
       <Header />
       <Stack gap={80} py={80}>
         <Stack align="center" gap="xl">
@@ -50,22 +28,33 @@ export function LandingPage() {
               lineHeight: 1.1,
             }}
           >
-            Love your product telemetry again
+            Open-source telemetry that stays under your control
           </Title>
 
-          <Text size="lg" c="dimmed" ta="center" maw={700}>
-            Trackion delivers session insights, custom events, and reliable
-            observability in one clean workflow. Start in cloud beta, then move
-            to self-hosting when you are ready to scale with full control.
+          <Text size="lg" c="dimmed" ta="center" maw={760}>
+            Trackion is a lightweight telemetry platform for developers. Capture
+            events, monitor your application, and understand product usage with
+            a simple, self-hosted solution without vendor lock-in or expensive
+            SaaS pricing.
           </Text>
-
           <Group>
-            <Button component={Link} to="/auth" size="lg">
-              Start Free
+            <Button
+              component="a"
+              href="https://github.com/P8labs/trackion"
+              target="_blank"
+              size="lg"
+              rightSection={<ArrowRightIcon size={16} />}
+            >
+              Get Started
             </Button>
 
-            <Button component="a" href="/docs/" variant="default" size="lg">
-              Read Docs
+            <Button
+              component="a"
+              href="/docs/quick-start/"
+              variant="default"
+              size="lg"
+            >
+              Quick Start
             </Button>
           </Group>
         </Stack>
@@ -95,100 +84,48 @@ export function LandingPage() {
             ))}
           </SimpleGrid>
         </Stack>
-
         <Stack gap="xl">
           <Title order={2} ta="center">
-            Pricing
+            Open Source
           </Title>
 
-          <SimpleGrid cols={{ base: 1, md: 2 }}>
-            <Card withBorder p="xl">
-              <Stack>
-                <Text fw={700}>Free</Text>
+          <Card withBorder p="xl" radius="md">
+            <Stack align="center" gap="md">
+              <ThemeIcon size={60} variant="light" radius="xl">
+                <Code className="h-8 w-8" />
+              </ThemeIcon>
 
-                <Title order={2}>
-                  $0
-                  <Text span size="sm" c="dimmed">
-                    {" "}
-                    /month
-                  </Text>
-                </Title>
+              <Title ta="center">Free forever. Self-hosted by default.</Title>
 
-                <List spacing="xs">
-                  <List.Item>10,000 events / month</List.Item>
-                  <List.Item>3 projects</List.Item>
-                  <List.Item>10 config keys</List.Item>
-                  <List.Item>Error retention: 3 days</List.Item>
-                </List>
+              <Text ta="center" maw={700} c="dimmed">
+                Trackion is completely open source. Deploy it on your own
+                infrastructure, own your telemetry data, and customize it
+                however you like. No subscriptions, no vendor lock-in, and no
+                usage limits imposed by us.
+              </Text>
 
-                <Link to="/auth">
-                  <Button>Get Started</Button>
-                </Link>
-              </Stack>
-            </Card>
+              <Group mt="sm">
+                <Button
+                  component="a"
+                  href="https://github.com/your-org/trackion"
+                  target="_blank"
+                  size="lg"
+                >
+                  View on GitHub
+                </Button>
 
-            <Card withBorder p="xl">
-              <Stack>
-                <Text fw={700}>Pro</Text>
-
-                <Title order={2}>
-                  $9
-                  <Text span size="sm" c="dimmed">
-                    {" "}
-                    /month
-                  </Text>
-                </Title>
-
-                <List spacing="xs">
-                  <List.Item>100,000 events / month</List.Item>
-                  <List.Item>10 projects</List.Item>
-                  <List.Item>100 config keys</List.Item>
-                  <List.Item>Error retention: 30 days</List.Item>
-                </List>
-
-                <Button disabled>Coming Soon</Button>
-              </Stack>
-            </Card>
-          </SimpleGrid>
+                <Button
+                  component="a"
+                  href="/docs/quick-start/"
+                  variant="default"
+                  size="lg"
+                >
+                  Quick Start
+                </Button>
+              </Group>
+            </Stack>
+          </Card>
         </Stack>
-
-        <Paper withBorder p="xl" radius="lg">
-          <Stack align="center" gap="md">
-            <Text size="xs" tt="uppercase" c="dimmed" fw={700}>
-              Ready To Ship
-            </Text>
-
-            <Title ta="center" maw={800}>
-              Build telemetry your team will actually use
-            </Title>
-
-            <Text c="dimmed" ta="center" maw={650}>
-              Trackion keeps the setup simple, the data useful, and the
-              deployment path flexible from day one.
-            </Text>
-
-            <Group mt="md">
-              <Button
-                component={Link}
-                to="/auth"
-                size="lg"
-                rightSection={<ArrowRightIcon size={16} />}
-              >
-                Create Free Project
-              </Button>
-
-              <Button
-                component="a"
-                href="/docs/quick-start/"
-                target="_blank"
-                variant="default"
-                size="lg"
-              >
-                Quick Start Guide
-              </Button>
-            </Group>
-          </Stack>
-        </Paper>
 
         <Footer />
       </Stack>
@@ -222,123 +159,3 @@ const featureCards = [
       "Self-hosted mode gives full data ownership with no third-party dependency.",
   },
 ];
-
-export interface DotsProps extends React.ComponentPropsWithoutRef<"svg"> {
-  size?: number;
-  radius?: number;
-}
-
-export function Dots({ size = 185, radius = 2.5, ...others }: DotsProps) {
-  return (
-    <svg
-      aria-hidden
-      xmlns="http://www.w3.org/2000/svg"
-      fill="currentColor"
-      viewBox="0 0 185 185"
-      width={size}
-      height={size}
-      {...others}
-    >
-      <rect width="5" height="5" rx={radius} />
-      <rect width="5" height="5" x="60" rx={radius} />
-      <rect width="5" height="5" x="120" rx={radius} />
-      <rect width="5" height="5" x="20" rx={radius} />
-      <rect width="5" height="5" x="80" rx={radius} />
-      <rect width="5" height="5" x="140" rx={radius} />
-      <rect width="5" height="5" x="40" rx={radius} />
-      <rect width="5" height="5" x="100" rx={radius} />
-      <rect width="5" height="5" x="160" rx={radius} />
-      <rect width="5" height="5" x="180" rx={radius} />
-      <rect width="5" height="5" y="20" rx={radius} />
-      <rect width="5" height="5" x="60" y="20" rx={radius} />
-      <rect width="5" height="5" x="120" y="20" rx={radius} />
-      <rect width="5" height="5" x="20" y="20" rx={radius} />
-      <rect width="5" height="5" x="80" y="20" rx={radius} />
-      <rect width="5" height="5" x="140" y="20" rx={radius} />
-      <rect width="5" height="5" x="40" y="20" rx={radius} />
-      <rect width="5" height="5" x="100" y="20" rx={radius} />
-      <rect width="5" height="5" x="160" y="20" rx={radius} />
-      <rect width="5" height="5" x="180" y="20" rx={radius} />
-      <rect width="5" height="5" y="40" rx={radius} />
-      <rect width="5" height="5" x="60" y="40" rx={radius} />
-      <rect width="5" height="5" x="120" y="40" rx={radius} />
-      <rect width="5" height="5" x="20" y="40" rx={radius} />
-      <rect width="5" height="5" x="80" y="40" rx={radius} />
-      <rect width="5" height="5" x="140" y="40" rx={radius} />
-      <rect width="5" height="5" x="40" y="40" rx={radius} />
-      <rect width="5" height="5" x="100" y="40" rx={radius} />
-      <rect width="5" height="5" x="160" y="40" rx={radius} />
-      <rect width="5" height="5" x="180" y="40" rx={radius} />
-      <rect width="5" height="5" y="60" rx={radius} />
-      <rect width="5" height="5" x="60" y="60" rx={radius} />
-      <rect width="5" height="5" x="120" y="60" rx={radius} />
-      <rect width="5" height="5" x="20" y="60" rx={radius} />
-      <rect width="5" height="5" x="80" y="60" rx={radius} />
-      <rect width="5" height="5" x="140" y="60" rx={radius} />
-      <rect width="5" height="5" x="40" y="60" rx={radius} />
-      <rect width="5" height="5" x="100" y="60" rx={radius} />
-      <rect width="5" height="5" x="160" y="60" rx={radius} />
-      <rect width="5" height="5" x="180" y="60" rx={radius} />
-      <rect width="5" height="5" y="80" rx={radius} />
-      <rect width="5" height="5" x="60" y="80" rx={radius} />
-      <rect width="5" height="5" x="120" y="80" rx={radius} />
-      <rect width="5" height="5" x="20" y="80" rx={radius} />
-      <rect width="5" height="5" x="80" y="80" rx={radius} />
-      <rect width="5" height="5" x="140" y="80" rx={radius} />
-      <rect width="5" height="5" x="40" y="80" rx={radius} />
-      <rect width="5" height="5" x="100" y="80" rx={radius} />
-      <rect width="5" height="5" x="160" y="80" rx={radius} />
-      <rect width="5" height="5" x="180" y="80" rx={radius} />
-      <rect width="5" height="5" y="100" rx={radius} />
-      <rect width="5" height="5" x="60" y="100" rx={radius} />
-      <rect width="5" height="5" x="120" y="100" rx={radius} />
-      <rect width="5" height="5" x="20" y="100" rx={radius} />
-      <rect width="5" height="5" x="80" y="100" rx={radius} />
-      <rect width="5" height="5" x="140" y="100" rx={radius} />
-      <rect width="5" height="5" x="40" y="100" rx={radius} />
-      <rect width="5" height="5" x="100" y="100" rx={radius} />
-      <rect width="5" height="5" x="160" y="100" rx={radius} />
-      <rect width="5" height="5" x="180" y="100" rx={radius} />
-      <rect width="5" height="5" y="120" rx={radius} />
-      <rect width="5" height="5" x="60" y="120" rx={radius} />
-      <rect width="5" height="5" x="120" y="120" rx={radius} />
-      <rect width="5" height="5" x="20" y="120" rx={radius} />
-      <rect width="5" height="5" x="80" y="120" rx={radius} />
-      <rect width="5" height="5" x="140" y="120" rx={radius} />
-      <rect width="5" height="5" x="40" y="120" rx={radius} />
-      <rect width="5" height="5" x="100" y="120" rx={radius} />
-      <rect width="5" height="5" x="160" y="120" rx={radius} />
-      <rect width="5" height="5" x="180" y="120" rx={radius} />
-      <rect width="5" height="5" y="140" rx={radius} />
-      <rect width="5" height="5" x="60" y="140" rx={radius} />
-      <rect width="5" height="5" x="120" y="140" rx={radius} />
-      <rect width="5" height="5" x="20" y="140" rx={radius} />
-      <rect width="5" height="5" x="80" y="140" rx={radius} />
-      <rect width="5" height="5" x="140" y="140" rx={radius} />
-      <rect width="5" height="5" x="40" y="140" rx={radius} />
-      <rect width="5" height="5" x="100" y="140" rx={radius} />
-      <rect width="5" height="5" x="160" y="140" rx={radius} />
-      <rect width="5" height="5" x="180" y="140" rx={radius} />
-      <rect width="5" height="5" y="160" rx={radius} />
-      <rect width="5" height="5" x="60" y="160" rx={radius} />
-      <rect width="5" height="5" x="120" y="160" rx={radius} />
-      <rect width="5" height="5" x="20" y="160" rx={radius} />
-      <rect width="5" height="5" x="80" y="160" rx={radius} />
-      <rect width="5" height="5" x="140" y="160" rx={radius} />
-      <rect width="5" height="5" x="40" y="160" rx={radius} />
-      <rect width="5" height="5" x="100" y="160" rx={radius} />
-      <rect width="5" height="5" x="160" y="160" rx={radius} />
-      <rect width="5" height="5" x="180" y="160" rx={radius} />
-      <rect width="5" height="5" y="180" rx={radius} />
-      <rect width="5" height="5" x="60" y="180" rx={radius} />
-      <rect width="5" height="5" x="120" y="180" rx={radius} />
-      <rect width="5" height="5" x="20" y="180" rx={radius} />
-      <rect width="5" height="5" x="80" y="180" rx={radius} />
-      <rect width="5" height="5" x="140" y="180" rx={radius} />
-      <rect width="5" height="5" x="40" y="180" rx={radius} />
-      <rect width="5" height="5" x="100" y="180" rx={radius} />
-      <rect width="5" height="5" x="160" y="180" rx={radius} />
-      <rect width="5" height="5" x="180" y="180" rx={radius} />
-    </svg>
-  );
-}

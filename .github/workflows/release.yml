@@ -153,7 +153,7 @@ jobs:
       - name: Build frontend
         shell: bash
         env:
-          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_SERVER_URL: "http://localhost:8000"
           VITE_DEVICE: "desktop"
         run: pnpm build
 
@@ -162,7 +162,7 @@ jobs:
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_SERVER_URL: "http://localhost:8000"
           VITE_DEVICE: "desktop"
         run: |
           cargo install tauri-cli --version "2.11.0" --locked
@@ -366,12 +366,12 @@ jobs:
         shell: bash
         run: pnpm build
         env:
-          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_SERVER_URL: "http://localhost:8000"
           VITE_DEVICE: "android"
       - name: Build Tauri app
         shell: bash
         env:
-          VITE_SERVER_URL: "https://api.trackion.tech"
+          VITE_SERVER_URL: "http://localhost:8000"
           VITE_DEVICE: "android"
         run: |
           export NDK_HOME="$ANDROID_HOME/ndk/27.0.12077973"

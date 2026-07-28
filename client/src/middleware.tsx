@@ -23,10 +23,14 @@ const publicOnlyRoutePrefixes = ["/auth"];
 const webOnlyRoutePrefixes = publicRoutes.map((route) => route.path); // one is *
 
 export function RouteMiddleware({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
   if (!IsWeb()) {
     useDeepLinkAuth(); // for desktop and mobile.
   }
-  const location = useLocation();
+
+  if (webOnlyRoutePrefixes.includes(location.pathname)) {
+    return <>{children}</>;
+  }
 
   // 1. Add a loading state to block rendering while checking auth
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);

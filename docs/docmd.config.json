@@ -1,6 +1,6 @@
 {
   "title": "Trackion Docs",
-  "url": "https://trackion.tech/docs",
+  "url": "https://trackion.p8labs.in/docs",
   "src": "docs",
   "out": "dist",
   "engine": "js",

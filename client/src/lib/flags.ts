@@ -15,7 +15,7 @@ export const WEB_VERSION = import.meta.env.VITE_WEB_VERSION || "0.0.0";
 export const flags: Flags = {
   mode: import.meta.env.VITE_TRACKION_MODE || "saas",
   isSaaS: (import.meta.env.VITE_TRACKION_MODE || "saas") === "saas",
-  trackionUrl: import.meta.env.VITE_TRACKION_URL || "https://api.trackion.tech",
+  trackionUrl: import.meta.env.VITE_TRACKION_URL || "http://localhost:8000",
   trackionToken:
     import.meta.env.VITE_TRACKION_TOKEN ||
     "8673e3bb-026f-5f43-891f-16363b28d465",

@@ -1,3 +1,15 @@
+> [!WARNING]
+>
+> Trackion Cloud is shutting down
+>
+> Due to funding constraints, I've made the decision to discontinue the hosted Trackion Cloud service. Running a reliable cloud platform requires ongoing infrastructure costs that I can't sustainably support at this time.
+>
+> Trackion itself is not going away. The open-source/self-hosted version will continue to be available and remain the primary focus of development.
+>
+> If you're using Trackion Cloud, please export your data and migrate to a self-hosted deployment before the shutdown date. I'll provide migration documentation and support throughout the transition.
+>
+> Thank you to everyone who tried Trackion Cloud and supported the project.
+
 # Trackion
 
 Trackion is a lightweight telemetry infrastructure for developers.
@@ -34,10 +46,7 @@ Trackion is built to be:
 Add Trackion to your app:
 
 ```html
-<script
-  src="https://api.trackion.tech/t.js"
-  data-api-key="YOUR_API_KEY"
-></script>
+<script src="http://localhost:8000/t.js" data-api-key="YOUR_API_KEY"></script>
 ```
 
 Track events:
@@ -80,13 +89,8 @@ Errors appear in your dashboard under the "Errors" section, grouped by their fin
 
 ## Getting started
 
-You can use Trackion in two ways:
-
-- **Cloud (beta)** → quick start, no setup
-  [https://trackion.tech/](https://trackion.tech/)
-
 - **Self-hosted** → run on your own infrastructure
-  [https://trackion.tech/docs/quick-start/](https://trackion.tech/docs/quick-start/)
+  [https://trackion.p8labs.in/docs/quick-start/](https://trackion.p8labs.in/docs/quick-start/)
 
 ## Screenshots
 
@@ -100,7 +104,7 @@ You can use Trackion in two ways:
 
 ## Documentation
 
-Full docs: [https://trackion.tech/docs/](https://trackion.tech/docs/)
+Full docs: [https://trackion.p8labs.in/docs/](https://trackion.p8labs.in/docs/)
 
 SDK examples are available in `examples/` for web, react, vue, node, and script integrations.
 

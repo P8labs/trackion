@@ -6,9 +6,13 @@ title: "Quick Start"
 
 Get Trackion running in minutes and start tracking events from your applications.
 
+# Host Trackion on your server
+
+Check [self-host guide](./self-host.md) to setup and than go to any client like [Trackion Web](https://trackion.p8labs.in) and update the api url to your server url.
+
 ## Create a Project
 
-After signing in to [Trackion](https://trackion.tech), create your first project from the dashboard.
+create your first project from the dashboard.
 
 Each project has its own:
 
@@ -61,7 +65,7 @@ Configure the SDK using your project API key.
 import { createTrackionClient } from "@trackion/js/react";
 
 const trackion = createTrackionClient({
-  serverUrl: "https://api.trackion.tech", // change of selfhosted
+  serverUrl: "http://localhost:8000",
   apiKey: "PROJECT_API_KEY",
   userId: "user-123",
 });
@@ -104,7 +108,7 @@ const client = createTrackionNodeClient({
 
 ```html
 <script
-  src="https://api.trackion.tech/t.js"
+  src="http://localhost:8000/t.js"
   data-api-key="PROJECT_API_KEY"
 ></script>
 ```

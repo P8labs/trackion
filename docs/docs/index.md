@@ -71,6 +71,4 @@ Trackion is suitable for:
 
 Trackion is part of the P8Labs ecosystem and is designed with modern technologies, extensibility, and developer experience in mind. The platform integrates seamlessly with existing workflows while remaining flexible enough to adapt to evolving business requirements.
 
----
-
 Ready to get started? Continue with the installation guide to set up your first Trackion workspace.

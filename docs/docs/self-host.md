@@ -123,7 +123,7 @@ Create a `.env` file with these.
 ```env
 DATABASE_URL="postgresql://trackion:trackion@localhost:5432/trackion"
 BASE_URL="https://localhost:8000" # skip if same default
-FRONTEND_URL="https://trackion.tech" # default is http://localhost:1420
+FRONTEND_URL="https://trackion.p8labs.in" # default is http://localhost:1420
 ```
 
 ## Health Checks
